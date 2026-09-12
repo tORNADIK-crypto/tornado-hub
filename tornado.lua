@@ -1,5 +1,5 @@
 -- ============================================================
--- TORNADO HUB v3.5 | Xeno Edition | Key: TORNADIK
+-- TORNADO HUB v3.6 | Xeno Edition | Key: TORNADIK
 -- ============================================================
 
 local CoreGui = game:GetService("CoreGui")
@@ -15,17 +15,20 @@ local LP = Players.LocalPlayer
 local PG = LP:WaitForChild("PlayerGui")
 local Camera = Workspace.CurrentCamera
 
+-- ============================================================
+-- LANGUAGE
+-- ============================================================
 local Lang = {
     current = "ru",
     s = {
         ru = {
-            title = "TORNADO HUB v3.5",
+            title = "TORNADO HUB v3.6",
             home = "Главная", move = "Движение", vis = "Визуал",
             games = "Игры", troll = "Тролль", misc = "Прочее",
             settings = "Настройки",
             fly = "Полёт", speed = "Скорость", jump = "Сила прыжка",
             noclip = "Noclip", infjump = "Беск. прыжок",
-            fullbright = "Fullbright", fov = "FOV",
+            fullbright = "Fullbright", fov = "FOV", esp = "ESP (подсветка)",
             antiafk = "Анти-AFK", godmode = "God Mode",
             brookhaven = "Brookhaven", mm2 = "Murder Mystery 2",
             sab = "Steal a Brainrot", sae = "Steal an Egg",
@@ -40,20 +43,25 @@ local Lang = {
             follow = "Следовать (10с)", copyemote = "Копировать эмоцию",
             spin = "Крутить", void = "Утопить (Void)",
             selectplayer = "Выбрать игрока",
+            search = "Поиск по имени",
+            searchBtn = "Найти",
             selected = "Выбран: ", random = "Случайный",
-            noTarget = "Нет цели",
+            noTarget = "Нет цели", notFound = "Не найден",
+            tpToPlayer = "ТП к игроку",
+            tpSpawn = "ТП на спавн",
+            tpForward = "ТП вперёд (по взгляду)",
             theme = "Сменить цвет",
             lang = "Сменить язык",
             keyOk = "Ключ принят"
         },
         en = {
-            title = "TORNADO HUB v3.5",
+            title = "TORNADO HUB v3.6",
             home = "Home", move = "Movement", vis = "Visuals",
             games = "Games", troll = "Troll", misc = "Misc",
             settings = "Settings",
             fly = "Fly", speed = "Speed", jump = "Jump Power",
             noclip = "Noclip", infjump = "Infinite Jump",
-            fullbright = "Fullbright", fov = "FOV",
+            fullbright = "Fullbright", fov = "FOV", esp = "ESP (Highlight)",
             antiafk = "Anti-AFK", godmode = "God Mode",
             brookhaven = "Brookhaven", mm2 = "Murder Mystery 2",
             sab = "Steal a Brainrot", sae = "Steal an Egg",
@@ -68,8 +76,13 @@ local Lang = {
             follow = "Follow (10s)", copyemote = "Copy Emote",
             spin = "Spin", void = "Void",
             selectplayer = "Select Player",
+            search = "Search by Name",
+            searchBtn = "Search",
             selected = "Selected: ", random = "Random",
-            noTarget = "No target",
+            noTarget = "No target", notFound = "Not found",
+            tpToPlayer = "TP to Player",
+            tpSpawn = "TP to Spawn",
+            tpForward = "TP Forward (look)",
             theme = "Change Theme",
             lang = "Change Language",
             keyOk = "Key accepted"
@@ -81,6 +94,9 @@ local function T(k)
     return t[k] or k
 end
 
+-- ============================================================
+-- KEY SYSTEM
+-- ============================================================
 local KEY = "TORNADIK"
 local keyGui = Instance.new("ScreenGui")
 keyGui.Name = "TornadoKey"
@@ -157,6 +173,9 @@ while not keyPassed do
     task.wait(0.1)
 end
 
+-- ============================================================
+-- THEME
+-- ============================================================
 local Theme = {
     accent = Color3.fromRGB(160, 60, 240),
     bgDark = Color3.fromRGB(18, 8, 30),
@@ -164,6 +183,9 @@ local Theme = {
     text = Color3.fromRGB(220, 190, 255)
 }
 
+-- ============================================================
+-- MAIN GUI
+-- ============================================================
 local gui = Instance.new("ScreenGui")
 gui.Name = "TornadoHub"
 gui.ResetOnSpawn = false
@@ -282,6 +304,9 @@ for name, _ in pairs(pages) do
     pageY[name] = 4
 end
 
+-- ============================================================
+-- ELEMENTS
+-- ============================================================
 local function makeToggle(parent, pageName, text, default, cb)
     local y = pageY[pageName]
     pageY[pageName] = y + 42
@@ -404,11 +429,46 @@ local function makeSlider(parent, pageName, text, minV, maxV, default, cb)
     end)
 end
 
-local State = {fly = false, noclip = false, infjump = false, antiafk = true}
+-- TextBox для поиска игрока
+local function makeTextBox(parent, pageName, placeholder, onEnter)
+    local y = pageY[pageName]
+    pageY[pageName] = y + 46
+    local box = Instance.new("TextBox")
+    box.Size = UDim2.new(1, -8, 0, 38)
+    box.Position = UDim2.new(0, 4, 0, y)
+    box.BackgroundColor3 = Theme.bgMid
+    box.BorderSizePixel = 0
+    box.PlaceholderText = placeholder
+    box.Text = ""
+    box.TextColor3 = Theme.text
+    box.PlaceholderColor3 = Color3.fromRGB(120, 100, 150)
+    box.Font = Enum.Font.GothamSemibold
+    box.TextSize = 13
+    box.ClearTextOnFocus = false
+    box.Parent = parent
+    Instance.new("UICorner", box).CornerRadius = UDim.new(0, 7)
+    box.FocusLost:Connect(function(enterPressed)
+        if enterPressed then
+            pcall(onEnter, box.Text)
+        end
+    end)
+    return box
+end
+
+-- ============================================================
+-- STATE
+-- ============================================================
+local State = {fly = false, noclip = false, infjump = false, antiafk = true, esp = false}
 local FLY_SPEED = 60
 local flyBV, flyBG, flyConn
 local selectedPlayer = nil
+local espFolder = Instance.new("Folder")
+espFolder.Name = "TornadoESP"
+espFolder.Parent = Workspace
 
+-- ============================================================
+-- FLY
+-- ============================================================
 local function stopFly()
     if flyConn then flyConn:Disconnect(); flyConn = nil end
     if flyBV and flyBV.Parent then flyBV:Destroy(); flyBV = nil end
@@ -463,6 +523,9 @@ local function startFly()
     end)
 end
 
+-- ============================================================
+-- PLAYER HELPERS
+-- ============================================================
 local function getRandomPlayer()
     local list = {}
     for _, p in ipairs(Players:GetPlayers()) do
@@ -477,6 +540,53 @@ local function getTargetPlayer()
         return selectedPlayer
     end
     return getRandomPlayer()
+end
+
+local function findPlayerByName(name)
+    if not name or name == "" then return nil end
+    name = string.lower(name)
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LP and string.find(string.lower(p.Name), name, 1, true) then
+            return p
+        end
+    end
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LP and p.DisplayName and string.find(string.lower(p.DisplayName), name, 1, true) then
+            return p
+        end
+    end
+    return nil
+end
+
+-- ============================================================
+-- ESP
+-- ============================================================
+local function addESP(plr)
+    if plr == LP then return end
+    if espFolder:FindFirstChild(plr.Name) then return end
+
+    local function onChar(char)
+        if not State.esp then return end
+        local old = espFolder:FindFirstChild(plr.Name)
+        if old then old:Destroy() end
+        local hl = Instance.new("Highlight")
+        hl.Name = plr.Name
+        hl.FillColor = Theme.accent
+        hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+        hl.FillTransparency = 0.5
+        hl.OutlineTransparency = 0
+        hl.Adornee = char
+        hl.Parent = espFolder
+    end
+
+    if plr.Character then onChar(plr.Character) end
+    plr.CharacterAdded:Connect(onChar)
+end
+
+local function clearESP()
+    for _, obj in ipairs(espFolder:GetChildren()) do
+        obj:Destroy()
+    end
 end
 
 -- ============================================================
@@ -525,6 +635,17 @@ makeToggle(pages.vis, "vis", T("fullbright"), false, function(s)
 end)
 makeSlider(pages.vis, "vis", T("fov"), 70, 150, 70, function(v)
     Camera.FieldOfView = v
+end)
+makeToggle(pages.vis, "vis", T("esp"), false, function(s)
+    State.esp = s
+    if s then
+        for _, p in ipairs(Players:GetPlayers()) do addESP(p) end
+        Players.PlayerAdded:Connect(function(p)
+            if State.esp then addESP(p) end
+        end)
+    else
+        clearESP()
+    end
 end)
 
 -- ============================================================
@@ -589,6 +710,22 @@ end)
 -- ============================================================
 -- BUILD: TROLL
 -- ============================================================
+-- Поиск игрока по имени
+makeTextBox(pages.troll, "troll", T("search") .. "...", function(text)
+    local found = findPlayerByName(text)
+    if found then
+        selectedPlayer = found
+        if selectBtn then
+            selectBtn.Text = T("selected") .. found.Name
+        end
+    else
+        if selectBtn then
+            selectBtn.Text = T("notFound")
+        end
+    end
+end)
+
+-- Кнопка выбора игрока (круговой перебор)
 local selectBtn = Instance.new("TextButton")
 local selectY = pageY["troll"]
 pageY["troll"] = selectY + 42
@@ -619,6 +756,7 @@ selectBtn.MouseButton1Click:Connect(function()
     selectBtn.Text = T("selected") .. selectedPlayer.Name
 end)
 
+-- Тролль-функции
 makeButton(pages.troll, "troll", T("fling"), function()
     local t = getTargetPlayer()
     if not t or not t.Character then return end
@@ -760,8 +898,38 @@ makeButton(pages.troll, "troll", T("void"), function()
 end)
 
 -- ============================================================
--- BUILD: MISC
+-- BUILD: MISC (Телепорт + God Mode)
 -- ============================================================
+makeButton(pages.misc, "misc", T("tpToPlayer"), function()
+    local t = getTargetPlayer()
+    if not t or not t.Character then return end
+    local thrp = t.Character:FindFirstChild("HumanoidRootPart")
+    if not thrp then return end
+    local c = LP.Character
+    local hrp = c and c:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    hrp.CFrame = thrp.CFrame + Vector3.new(0, 0, 3)
+end)
+
+makeButton(pages.misc, "misc", T("tpSpawn"), function()
+    local c = LP.Character
+    if not c then return end
+    local hrp = c:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    local spawn = Workspace:FindFirstChildOfClass("SpawnLocation")
+    if spawn then
+        hrp.CFrame = spawn.CFrame + Vector3.new(0, 4, 0)
+    end
+end)
+
+makeButton(pages.misc, "misc", T("tpForward"), function()
+    local c = LP.Character
+    if not c then return end
+    local hrp = c:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    hrp.CFrame = hrp.CFrame + Camera.CFrame.LookVector * 50
+end)
+
 makeToggle(pages.misc, "misc", T("godmode"), false, function(s)
     if s then
         RunService.Heartbeat:Connect(function()
@@ -839,6 +1007,7 @@ end)
 -- ============================================================
 closeBtn.MouseButton1Click:Connect(function()
     stopFly()
+    clearESP()
     gui:Destroy()
 end)
 
