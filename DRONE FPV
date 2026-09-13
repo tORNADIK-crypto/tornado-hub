@@ -1,0 +1,723 @@
+-- ============================================================
+-- FPV DRONE v1.1 | PC + MOBILE | Brookhaven | Xeno/Delta
+-- Ключ: DRONE2026
+-- ============================================================
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
+local CoreGui = game:GetService("CoreGui")
+local Lighting = game:GetService("Lighting")
+local LP = Players.LocalPlayer
+local Camera = Workspace.CurrentCamera
+local PG = LP:WaitForChild("PlayerGui")
+
+-- ============================================================
+-- НАСТРОЙКИ
+-- ============================================================
+local CONFIG = {
+    KEY = "DRONE2026",
+    Speed = 100,
+    BoostMult = 2.0,
+    Accel = 0.15,
+    Decel = 0.85,
+    RotSpeed = 0.05,
+    TouchRotSpeed = 0.008,
+    CamSmooth = 0.12,
+    FPVRoll = 0.35,
+    FPVShake = 0.008,
+    ExplosionRadius = 18,
+    ExplosionDamage = 100,
+    CollisionDist = 3,
+    ESPColor = Color3.fromRGB(0, 255, 100),
+    SoundExplosion = "rbxassetid://5801257793",
+}
+
+-- Платформа: если нет клавиатуры → мобильный режим
+local IS_MOBILE = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+local platform = IS_MOBILE and "mobile" or "pc"
+
+-- ============================================================
+-- КЛЮЧ
+-- ============================================================
+local keyGui = Instance.new("ScreenGui")
+keyGui.Name = "DroneKey"
+keyGui.ResetOnSpawn = false
+pcall(function() keyGui.Parent = CoreGui end)
+if not keyGui.Parent then keyGui.Parent = PG end
+
+local kf = Instance.new("Frame")
+kf.Size = UDim2.new(0, 360, 0, 180)
+kf.Position = UDim2.new(0.5, -180, 0.5, -90)
+kf.BackgroundColor3 = Color3.fromRGB(10, 20, 15)
+kf.BorderSizePixel = 0
+kf.Parent = keyGui
+Instance.new("UICorner", kf).CornerRadius = UDim.new(0, 12)
+local kstroke = Instance.new("UIStroke", kf)
+kstroke.Color = Color3.fromRGB(0, 255, 100)
+kstroke.Thickness = 2
+
+local ktitle = Instance.new("TextLabel", kf)
+ktitle.Size = UDim2.new(1, 0, 0, 50)
+ktitle.BackgroundTransparency = 1
+ktitle.Text = "FPV DRONE v1.1"
+ktitle.TextColor3 = Color3.fromRGB(0, 255, 100)
+ktitle.Font = Enum.Font.GothamBold
+ktitle.TextSize = 22
+
+local kbox = Instance.new("TextBox", kf)
+kbox.Size = UDim2.new(1, -60, 0, 36)
+kbox.Position = UDim2.new(0, 30, 0, 65)
+kbox.BackgroundColor3 = Color3.fromRGB(15, 30, 25)
+kbox.BorderSizePixel = 0
+kbox.PlaceholderText = "Enter key..."
+kbox.Text = ""
+kbox.TextColor3 = Color3.fromRGB(200, 255, 200)
+kbox.Font = Enum.Font.GothamSemibold
+kbox.TextSize = 15
+Instance.new("UICorner", kbox).CornerRadius = UDim.new(0, 8)
+
+local kbtn = Instance.new("TextButton", kf)
+kbtn.Size = UDim2.new(1, -60, 0, 36)
+kbtn.Position = UDim2.new(0, 30, 0, 115)
+kbtn.BackgroundColor3 = Color3.fromRGB(0, 180, 80)
+kbtn.BorderSizePixel = 0
+kbtn.Text = "LOGIN"
+kbtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+kbtn.Font = Enum.Font.GothamBold
+kbtn.TextSize = 15
+Instance.new("UICorner", kbtn).CornerRadius = UDim.new(0, 8)
+
+local kstatus = Instance.new("TextLabel", kf)
+kstatus.Size = UDim2.new(1, 0, 0, 18)
+kstatus.Position = UDim2.new(0, 0, 1, -20)
+kstatus.BackgroundTransparency = 1
+kstatus.Text = ""
+kstatus.TextColor3 = Color3.fromRGB(255, 80, 80)
+kstatus.Font = Enum.Font.Gotham
+kstatus.TextSize = 12
+
+local keyPassed = false
+kbtn.MouseButton1Click:Connect(function()
+    if kbox.Text == CONFIG.KEY then
+        keyPassed = true
+        kstatus.TextColor3 = Color3.fromRGB(100, 255, 120)
+        kstatus.Text = "Access granted"
+        task.wait(0.4)
+        keyGui:Destroy()
+    else
+        kstatus.Text = "Invalid key"
+        kbox.Text = ""
+    end
+end)
+
+while not keyPassed do task.wait(0.1) end
+
+-- ============================================================
+-- СОСТОЯНИЕ
+-- ============================================================
+local droneActive = false
+local droneModel = nil
+local droneParts = {}
+local droneLoop = nil
+local yaw, pitch = 0, 0
+local tYaw, tPitch = 0, 0
+local roll = 0
+local mouseConn = nil
+local touchConn = nil
+local collideConn = nil
+local velocity = Vector3.zero
+local thermalOn = false
+local espOn = false
+local espFolder = nil
+local origAmbient = Lighting.Ambient
+local origBrightness = Lighting.Brightness
+
+-- Экранные кнопки движения (mobile)
+local mobileInput = {W = false, S = false, A = false, D = false, Up = false, Down = false}
+
+-- ============================================================
+-- ПАНЕЛЬ
+-- ============================================================
+local ctrlGui = Instance.new("ScreenGui")
+ctrlGui.Name = "DroneCtrl"
+ctrlGui.ResetOnSpawn = false
+pcall(function() ctrlGui.Parent = CoreGui end)
+if not ctrlGui.Parent then ctrlGui.Parent = PG end
+
+local panel = Instance.new("Frame")
+panel.Size = UDim2.new(0, 230, 0, 280)
+panel.Position = UDim2.new(1, -250, 0.5, -140)
+panel.BackgroundColor3 = Color3.fromRGB(10, 20, 15)
+panel.BorderSizePixel = 0
+panel.Visible = true
+panel.Parent = ctrlGui
+Instance.new("UICorner", panel).CornerRadius = UDim.new(0, 10)
+local pstroke = Instance.new("UIStroke", panel)
+pstroke.Color = Color3.fromRGB(0, 255, 100)
+pstroke.Thickness = 1
+
+local pTitle = Instance.new("TextLabel", panel)
+pTitle.Size = UDim2.new(1, 0, 0, 30)
+pTitle.BackgroundTransparency = 1
+pTitle.Text = "FPV DRONE v1.1"
+pTitle.TextColor3 = Color3.fromRGB(0, 255, 100)
+pTitle.Font = Enum.Font.GothamBold
+pTitle.TextSize = 14
+
+local statusBar = Instance.new("TextLabel", panel)
+statusBar.Size = UDim2.new(1, -20, 0, 18)
+statusBar.Position = UDim2.new(0, 10, 0, 235)
+statusBar.BackgroundTransparency = 1
+statusBar.Text = "Platform: " .. string.upper(platform)
+statusBar.TextColor3 = Color3.fromRGB(180, 255, 180)
+statusBar.Font = Enum.Font.Gotham
+statusBar.TextSize = 11
+statusBar.TextXAlignment = Enum.TextXAlignment.Left
+
+local function setStatus(text, isError)
+    statusBar.Text = text
+    statusBar.TextColor3 = isError and Color3.fromRGB(255, 120, 120) or Color3.fromRGB(180, 255, 180)
+end
+
+local btnLaunch = Instance.new("TextButton", panel)
+btnLaunch.Size = UDim2.new(1, -20, 0, 30)
+btnLaunch.Position = UDim2.new(0, 10, 0, 35)
+btnLaunch.BackgroundColor3 = Color3.fromRGB(0, 150, 70)
+btnLaunch.BorderSizePixel = 0
+btnLaunch.Text = "LAUNCH"
+btnLaunch.TextColor3 = Color3.fromRGB(255, 255, 255)
+btnLaunch.Font = Enum.Font.GothamBold
+btnLaunch.TextSize = 12
+Instance.new("UICorner", btnLaunch).CornerRadius = UDim.new(0, 6)
+
+local btnExplode = Instance.new("TextButton", panel)
+btnExplode.Size = UDim2.new(1, -20, 0, 30)
+btnExplode.Position = UDim2.new(0, 10, 0, 70)
+btnExplode.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+btnExplode.BorderSizePixel = 0
+btnExplode.Text = "EXPLODE"
+btnExplode.TextColor3 = Color3.fromRGB(255, 255, 255)
+btnExplode.Font = Enum.Font.GothamBold
+btnExplode.TextSize = 12
+Instance.new("UICorner", btnExplode).CornerRadius = UDim.new(0, 6)
+
+local btnESP = Instance.new("TextButton", panel)
+btnESP.Size = UDim2.new(1, -20, 0, 30)
+btnESP.Position = UDim2.new(0, 10, 0, 105)
+btnESP.BackgroundColor3 = Color3.fromRGB(40, 80, 140)
+btnESP.BorderSizePixel = 0
+btnESP.Text = "ESP: OFF"
+btnESP.TextColor3 = Color3.fromRGB(255, 255, 255)
+btnESP.Font = Enum.Font.GothamBold
+btnESP.TextSize = 12
+Instance.new("UICorner", btnESP).CornerRadius = UDim.new(0, 6)
+
+local btnThermal = Instance.new("TextButton", panel)
+btnThermal.Size = UDim2.new(1, -20, 0, 30)
+btnThermal.Position = UDim2.new(0, 10, 0, 140)
+btnThermal.BackgroundColor3 = Color3.fromRGB(80, 40, 140)
+btnThermal.BorderSizePixel = 0
+btnThermal.Text = "THERMAL: OFF"
+btnThermal.TextColor3 = Color3.fromRGB(255, 255, 255)
+btnThermal.Font = Enum.Font.GothamBold
+btnThermal.TextSize = 12
+Instance.new("UICorner", btnThermal).CornerRadius = UDim.new(0, 6)
+
+-- Переключатель платформы
+local btnPlatform = Instance.new("TextButton", panel)
+btnPlatform.Size = UDim2.new(1, -20, 0, 30)
+btnPlatform.Position = UDim2.new(0, 10, 0, 175)
+btnPlatform.BackgroundColor3 = Color3.fromRGB(60, 100, 160)
+btnPlatform.BorderSizePixel = 0
+btnPlatform.Text = "MODE: " .. string.upper(platform)
+btnPlatform.TextColor3 = Color3.fromRGB(255, 255, 255)
+btnPlatform.Font = Enum.Font.GothamBold
+btnPlatform.TextSize = 12
+Instance.new("UICorner", btnPlatform).CornerRadius = UDim.new(0, 6)
+
+btnPlatform.MouseButton1Click:Connect(function()
+    platform = (platform == "pc") and "mobile" or "pc"
+    btnPlatform.Text = "MODE: " .. string.upper(platform)
+    setStatus("Mode changed")
+end)
+
+-- ============================================================
+-- МОБИЛЬНЫЕ КНОПКИ УПРАВЛЕНИЯ (внизу экрана)
+-- ============================================================
+local mobileGui = Instance.new("ScreenGui")
+mobileGui.Name = "DroneMobileCtrl"
+mobileGui.ResetOnSpawn = false
+mobileGui.IgnoreGuiInset = true
+pcall(function() mobileGui.Parent = CoreGui end)
+if not mobileGui.Parent then mobileGui.Parent = PG end
+mobileGui.Enabled = false
+
+local function makeMobileBtn(text, pos, key)
+    local b = Instance.new("TextButton")
+    b.Size = UDim2.new(0, 60, 0, 60)
+    b.Position = pos
+    b.BackgroundColor3 = Color3.fromRGB(0, 150, 70)
+    b.BackgroundTransparency = 0.3
+    b.BorderSizePixel = 0
+    b.Text = text
+    b.TextColor3 = Color3.fromRGB(255, 255, 255)
+    b.Font = Enum.Font.GothamBold
+    b.TextSize = 22
+    b.Parent = mobileGui
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 30)
+
+    b.MouseButton1Down:Connect(function()
+        mobileInput[key] = true
+    end)
+    b.MouseButton1Up:Connect(function()
+        mobileInput[key] = false
+    end)
+    b.MouseLeave:Connect(function()
+        mobileInput[key] = false
+    end)
+    return b
+end
+
+-- Левый "джойстик" — WASD
+makeMobileBtn("▲", UDim2.new(0, 80, 1, -230), "W")
+makeMobileBtn("◀", UDim2.new(0, 10, 1, -160), "A")
+makeMobileBtn("▶", UDim2.new(0, 150, 1, -160), "D")
+makeMobileBtn("▼", UDim2.new(0, 80, 1, -90), "S")
+
+-- Правый — вверх/вниз/ускорение
+makeMobileBtn("↑", UDim2.new(1, -140, 1, -230), "Up")
+makeMobileBtn("↓", UDim2.new(1, -140, 1, -90), "Down")
+
+local boostBtn = makeMobileBtn("⚡", UDim2.new(1, -80, 1, -160), "Boost")
+boostBtn.BackgroundColor3 = Color3.fromRGB(200, 160, 30)
+
+-- Кнопка возврата/скрыть мобилку
+local closeMobileBtn = makeMobileBtn("✕", UDim2.new(0.5, -30, 0, 30), "Close")
+closeMobileBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+closeMobileBtn.MouseButton1Click:Connect(function()
+    mobileGui.Enabled = false
+    panel.Visible = true
+end)
+
+-- ============================================================
+-- МОДЕЛЬ (из v6, работает)
+-- ============================================================
+local function createDroneModel()
+    local model = Instance.new("Model")
+    model.Name = "TornadoDrone"
+
+    local function makePart(name, size, color, material, shape)
+        local p = Instance.new("Part")
+        p.Name = name
+        p.Size = size
+        p.BrickColor = color
+        p.Material = material or Enum.Material.SmoothPlastic
+        p.Anchored = true
+        p.CanCollide = false
+        p.Shape = shape or Enum.PartType.Block
+        p.Parent = model
+        return p
+    end
+
+    local bottomPlate = makePart("BottomPlate", Vector3.new(1.4, 0.08, 1.8), BrickColor.new("Really black"), Enum.Material.Metal)
+    local topPlate = makePart("TopPlate", Vector3.new(1.2, 0.08, 1.6), BrickColor.new("Really black"), Enum.Material.Metal)
+
+    local arms = {}
+    for i = 1, 4 do
+        table.insert(arms, makePart("Arm" .. i, Vector3.new(1.8, 0.06, 0.12), BrickColor.new("Really black"), Enum.Material.Metal))
+    end
+
+    local motors = {}
+    for i = 1, 4 do
+        table.insert(motors, makePart("Motor" .. i, Vector3.new(0.4, 0.3, 0.4), BrickColor.new("Dark stone grey"), Enum.Material.Metal))
+    end
+
+    local props = {}
+    for i = 1, 4 do
+        local blades = {}
+        for b = 1, 2 do
+            table.insert(blades, makePart("Blade" .. i .. "_" .. b, Vector3.new(1.5, 0.03, 0.08), BrickColor.new("Lime green"), Enum.Material.Neon))
+        end
+        table.insert(props, blades)
+    end
+
+    local camMount = makePart("CameraMount", Vector3.new(0.5, 0.4, 0.25), BrickColor.new("Really black"), Enum.Material.Metal)
+    local lens = makePart("Lens", Vector3.new(0.28, 0.28, 0.28), BrickColor.new("Cyan"), Enum.Material.Neon, Enum.PartType.Ball)
+    local battery = makePart("Battery", Vector3.new(0.7, 0.25, 1.2), BrickColor.new("Really black"), Enum.Material.SmoothPlastic)
+    local antenna = makePart("Antenna", Vector3.new(0.06, 0.9, 0.06), BrickColor.new("Really black"), Enum.Material.SmoothPlastic)
+    local led = makePart("LED", Vector3.new(0.12, 0.12, 0.12), BrickColor.new("Really red"), Enum.Material.Neon, Enum.PartType.Ball)
+
+    model.PrimaryPart = bottomPlate
+    return model, {
+        bottomPlate = bottomPlate, topPlate = topPlate,
+        arms = arms, motors = motors, props = props,
+        camMount = camMount, lens = lens,
+        battery = battery, antenna = antenna, led = led
+    }
+end
+
+local function updateVisual(baseCF)
+    if not droneModel or not droneModel.PrimaryPart then return end
+    local p = droneParts
+
+    p.bottomPlate.CFrame = baseCF
+    p.topPlate.CFrame = baseCF * CFrame.new(0, 0.35, 0)
+
+    local armAngles = {45, -45, 135, -135}
+    for i, arm in ipairs(p.arms) do
+        arm.CFrame = baseCF * CFrame.Angles(0, math.rad(armAngles[i]), 0) * CFrame.new(0.75, 0, 0)
+    end
+
+    local motorOffsets = {
+        CFrame.new(1.05, 0.15, 1.05),
+        CFrame.new(-1.05, 0.15, 1.05),
+        CFrame.new(1.05, 0.15, -1.05),
+        CFrame.new(-1.05, 0.15, -1.05),
+    }
+    local spinAngle = tick() * 40
+    for i, motor in ipairs(p.motors) do
+        motor.CFrame = baseCF * motorOffsets[i]
+        p.props[i][1].CFrame = baseCF * motorOffsets[i] * CFrame.Angles(0, spinAngle, 0) * CFrame.new(0, 0.18, 0)
+        p.props[i][2].CFrame = baseCF * motorOffsets[i] * CFrame.Angles(0, spinAngle + math.pi/2, 0) * CFrame.new(0, 0.18, 0)
+    end
+
+    p.camMount.CFrame = baseCF * CFrame.new(0, 0.15, 0.85) * CFrame.Angles(math.rad(-30), 0, 0)
+    p.lens.CFrame = baseCF * CFrame.new(0, 0.3, 1.05) * CFrame.Angles(math.rad(-30), 0, 0)
+    p.battery.CFrame = baseCF * CFrame.new(0, 0.55, -0.1)
+    p.antenna.CFrame = baseCF * CFrame.new(0, 0.55, -0.85) * CFrame.Angles(math.rad(45), 0, 0)
+    p.led.CFrame = baseCF * CFrame.new(0, -0.05, 0.7)
+end
+
+local function playSound(id, volume, position)
+    local part = Instance.new("Part")
+    part.Anchored = true
+    part.CanCollide = false
+    part.Transparency = 1
+    part.Size = Vector3.new(0.1, 0.1, 0.1)
+    part.Position = position or Vector3.new(0, 0, 0)
+    part.Parent = Workspace
+    local sound = Instance.new("Sound")
+    sound.SoundId = id
+    sound.Volume = volume or 1
+    sound.Parent = part
+    sound:Play()
+    task.delay(6, function() part:Destroy() end)
+end
+
+local function explodeDrone()
+    if not droneModel or not droneModel.PrimaryPart then return end
+    local pos = droneModel.PrimaryPart.Position
+
+    playSound(CONFIG.SoundExplosion, 3, pos)
+
+    local explosion = Instance.new("Explosion")
+    explosion.BlastRadius = CONFIG.ExplosionRadius
+    explosion.BlastPressure = 0
+    explosion.DestroyJointRadiusPercent = 0
+    explosion.Position = pos
+    explosion.Parent = Workspace
+
+    local hitOnce = {}
+    explosion.Hit:Connect(function(part, distance)
+        local mdl = part.Parent
+        if not mdl or hitOnce[mdl] then return end
+        hitOnce[mdl] = true
+        local hum = mdl:FindFirstChildOfClass("Humanoid")
+        if hum and hum.Health > 0 then
+            local factor = math.clamp(1 - distance / CONFIG.ExplosionRadius, 0, 1)
+            hum:TakeDamage(CONFIG.ExplosionDamage * factor)
+        end
+    end)
+
+    local fire = Instance.new("Part")
+    fire.Size = Vector3.new(2, 2, 2)
+    fire.Shape = Enum.PartType.Ball
+    fire.BrickColor = BrickColor.new("Bright orange")
+    fire.Material = Enum.Material.Neon
+    fire.Anchored = true
+    fire.CanCollide = false
+    fire.Transparency = 0.3
+    fire.Position = pos
+    fire.Parent = Workspace
+    local light = Instance.new("PointLight", fire)
+    light.Brightness = 5
+    light.Range = 20
+
+    task.delay(0.5, function() fire:Destroy() end)
+    task.delay(1, function() explosion:Destroy() end)
+
+    if droneLoop then droneLoop:Disconnect(); droneLoop = nil end
+    if mouseConn then mouseConn:Disconnect(); mouseConn = nil end
+    if touchConn then touchConn:Disconnect(); touchConn = nil end
+    if collideConn then collideConn:Disconnect(); collideConn = nil end
+    droneModel:Destroy()
+    droneModel = nil
+    droneActive = false
+
+    mobileGui.Enabled = false
+    Camera.CameraType = Enum.CameraType.Custom
+    if LP.Character then
+        Camera.CameraSubject = LP.Character:FindFirstChildOfClass("Humanoid")
+    end
+    UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+    UserInputService.MouseIconEnabled = true
+
+    if thermalOn then
+        Lighting.Ambient = origAmbient
+        Lighting.Brightness = origBrightness
+    end
+    setStatus("Exploded")
+end
+
+local function setThermal(state)
+    thermalOn = state
+    if state then
+        origAmbient = Lighting.Ambient
+        origBrightness = Lighting.Brightness
+        Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+        Lighting.Brightness = 3
+        Lighting.ClockTime = 14
+        for _, plr in ipairs(Players:GetPlayers()) do
+            if plr ~= LP and plr.Character then
+                for _, part in ipairs(plr.Character:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.Material = Enum.Material.Neon
+                        part.Color = Color3.fromRGB(255, 255, 255)
+                    end
+                end
+            end
+        end
+    else
+        Lighting.Ambient = origAmbient
+        Lighting.Brightness = origBrightness
+        for _, plr in ipairs(Players:GetPlayers()) do
+            if plr ~= LP and plr.Character then
+                for _, part in ipairs(plr.Character:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.Material = Enum.Material.Plastic
+                    end
+                end
+            end
+        end
+    end
+end
+
+local function addESP(plr)
+    if plr == LP then return end
+    if not espFolder then return end
+    if espFolder:FindFirstChild(plr.Name) then return end
+    local function onChar(char)
+        if not espOn then return end
+        local old = espFolder:FindFirstChild(plr.Name)
+        if old then old:Destroy() end
+        local hl = Instance.new("Highlight")
+        hl.Name = plr.Name
+        hl.FillColor = CONFIG.ESPColor
+        hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+        hl.FillTransparency = 0.5
+        hl.OutlineTransparency = 0
+        hl.Adornee = char
+        hl.Parent = espFolder
+    end
+    if plr.Character then onChar(plr.Character) end
+    plr.CharacterAdded:Connect(onChar)
+end
+
+local function setESP(state)
+    espOn = state
+    if state then
+        espFolder = Instance.new("Folder")
+        espFolder.Name = "DroneESP"
+        espFolder.Parent = Workspace
+        for _, plr in ipairs(Players:GetPlayers()) do addESP(plr) end
+    else
+        if espFolder then espFolder:Destroy(); espFolder = nil end
+    end
+end
+
+-- ============================================================
+-- ЗАПУСК ДРОНА
+-- ============================================================
+local function startDrone()
+    if droneActive then setStatus("Already active", true); return end
+
+    setStatus("Creating...")
+
+    local ok, model, parts = pcall(createDroneModel)
+    if not ok then
+        setStatus("Model error!", true)
+        warn("[DRONE] " .. tostring(model))
+        return
+    end
+
+    droneActive = true
+    droneModel = model
+    droneParts = parts
+    droneModel.Parent = Workspace
+
+    local char = LP.Character
+    local startCF = char and char:FindFirstChild("HumanoidRootPart")
+        and char.HumanoidRootPart.CFrame * CFrame.new(0, 15, 0)
+        or CFrame.new(0, 100, 0)
+
+    local ok2, err2 = pcall(function()
+        droneModel.PrimaryPart.CFrame = startCF
+        updateVisual(startCF)
+    end)
+    if not ok2 then
+        setStatus("Visual error!", true)
+        warn("[DRONE] " .. tostring(err2))
+        droneModel:Destroy()
+        droneModel = nil
+        droneActive = false
+        return
+    end
+
+    velocity = Vector3.zero
+    roll = 0
+    tYaw, tPitch = 0, 0
+    yaw, pitch = 0, 0
+
+    Camera.CameraType = Enum.CameraType.Scriptable
+
+    -- === Управление ===
+    if platform == "pc" then
+        UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
+        UserInputService.MouseIconEnabled = false
+
+        mouseConn = UserInputService.InputChanged:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseMovement and droneActive then
+                tYaw = tYaw - input.Delta.X * CONFIG.RotSpeed
+                tPitch = math.clamp(tPitch - input.Delta.Y * CONFIG.RotSpeed, -math.pi/2, math.pi/2)
+            end
+        end)
+    else
+        mobileGui.Enabled = true
+        panel.Visible = false
+
+        -- Свайп по экрану крутит камеру
+        touchConn = UserInputService.TouchMoved:Connect(function(input, gpe)
+            if gpe then return end
+            if not droneActive then return end
+            local delta = input.Delta
+            tYaw = tYaw - delta.X * CONFIG.TouchRotSpeed
+            tPitch = math.clamp(tPitch - delta.Y * CONFIG.TouchRotSpeed, -math.pi/2, math.pi/2)
+        end)
+    end
+
+    collideConn = RunService.Heartbeat:Connect(function()
+        if not droneActive or not droneModel then return end
+        local base = droneModel.PrimaryPart
+        local ray = Ray.new(base.Position, base.CFrame.LookVector * CONFIG.CollisionDist)
+        local hit = Workspace:FindPartOnRay(ray, droneModel)
+        if hit and not hit:IsDescendantOf(droneModel) and not hit:IsDescendantOf(LP.Character) then
+            explodeDrone()
+        end
+    end)
+
+    droneLoop = RunService.RenderStepped:Connect(function(dt)
+        if not droneActive or not droneModel then return end
+
+        local smooth = CONFIG.CamSmooth * (dt * 60)
+        yaw = yaw + (tYaw - yaw) * smooth
+        pitch = pitch + (tPitch - pitch) * smooth
+
+        local spd = CONFIG.Speed
+        local boost = false
+        if platform == "pc" then
+            boost = UserInputService:IsKeyDown(Enum.KeyCode.LeftShift)
+        else
+            boost = mobileInput.Boost
+        end
+        if boost then spd = spd * CONFIG.BoostMult end
+
+        local rot = CFrame.Angles(0, yaw, 0) * CFrame.Angles(pitch, 0, 0)
+        local fwd = rot.LookVector
+        local right = rot.RightVector
+        local up = Vector3.new(0, 1, 0)
+
+        local inp = Vector3.zero
+        if platform == "pc" then
+            if UserInputService:IsKeyDown(Enum.KeyCode.W) then inp = inp + fwd end
+            if UserInputService:IsKeyDown(Enum.KeyCode.S) then inp = inp - fwd end
+            if UserInputService:IsKeyDown(Enum.KeyCode.D) then inp = inp + right; roll = roll + 0.05 end
+            if UserInputService:IsKeyDown(Enum.KeyCode.A) then inp = inp - right; roll = roll - 0.05 end
+            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then inp = inp + up end
+            if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then inp = inp - up end
+        else
+            if mobileInput.W then inp = inp + fwd end
+            if mobileInput.S then inp = inp - fwd end
+            if mobileInput.D then inp = inp + right; roll = roll + 0.05 end
+            if mobileInput.A then inp = inp - right; roll = roll - 0.05 end
+            if mobileInput.Up then inp = inp + up end
+            if mobileInput.Down then inp = inp - up end
+        end
+
+        roll = math.clamp(roll, -CONFIG.FPVRoll, CONFIG.FPVRoll)
+        local movingSide = (platform == "pc" and (UserInputService:IsKeyDown(Enum.KeyCode.D) or UserInputService:IsKeyDown(Enum.KeyCode.A)))
+            or (platform == "mobile" and (mobileInput.D or mobileInput.A))
+        if not movingSide then roll = roll * 0.9 end
+
+        if inp.Magnitude > 0 then
+            velocity = velocity:Lerp(inp.Unit * spd, CONFIG.Accel)
+        else
+            velocity = velocity * CONFIG.Decel
+        end
+
+        local newPos = droneModel.PrimaryPart.Position + velocity * dt
+        local newCF = CFrame.new(newPos) * rot
+        updateVisual(newCF)
+
+        local shakeX = (math.random() - 0.5) * CONFIG.FPVShake * velocity.Magnitude / 100
+        local shakeY = (math.random() - 0.5) * CONFIG.FPVShake * velocity.Magnitude / 100
+        Camera.CFrame = CFrame.new(newCF.Position, newCF.Position + fwd)
+            * CFrame.Angles(0, 0, roll + shakeX)
+            * CFrame.new(shakeY, shakeY, 0)
+    end)
+
+    setStatus("Flying (" .. platform .. ")")
+end
+
+-- ============================================================
+-- КНОПКИ
+-- ============================================================
+btnLaunch.MouseButton1Click:Connect(startDrone)
+btnExplode.MouseButton1Click:Connect(function()
+    if droneActive then explodeDrone() else setStatus("No drone", true) end
+end)
+btnESP.MouseButton1Click:Connect(function()
+    setESP(not espOn)
+    btnESP.Text = espOn and "ESP: ON" or "ESP: OFF"
+    btnESP.BackgroundColor3 = espOn and Color3.fromRGB(0, 150, 70) or Color3.fromRGB(40, 80, 140)
+end)
+btnThermal.MouseButton1Click:Connect(function()
+    setThermal(not thermalOn)
+    btnThermal.Text = thermalOn and "THERMAL: ON" or "THERMAL: OFF"
+    btnThermal.BackgroundColor3 = thermalOn and Color3.fromRGB(0, 150, 70) or Color3.fromRGB(80, 40, 140)
+end)
+
+-- ПК-хоткеи (не сработают на мобилке — ничего страшного)
+UserInputService.InputBegan:Connect(function(input, gpe)
+    if gpe then return end
+    if input.KeyCode == Enum.KeyCode.RightShift then
+        panel.Visible = not panel.Visible
+    end
+    if input.KeyCode == Enum.KeyCode.Q and droneActive then
+        explodeDrone()
+    end
+    if input.KeyCode == Enum.KeyCode.T then
+        setThermal(not thermalOn)
+        btnThermal.Text = thermalOn and "THERMAL: ON" or "THERMAL: OFF"
+        btnThermal.BackgroundColor3 = thermalOn and Color3.fromRGB(0, 150, 70) or Color3.fromRGB(80, 40, 140)
+    end
+end)
+
+pcall(function()
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "FPV DRONE v1.1",
+        Text = "Mode: " .. string.upper(platform) .. " | Panel: RightShift (PC)",
+        Duration = 6
+    })
+end)
