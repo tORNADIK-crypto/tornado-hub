@@ -1,146 +1,333 @@
-local ScreenGui = Instance.new("ScreenGui")
+local coreGui = game:GetService("CoreGui")
+for _, oldGui in ipairs(coreGui:GetChildren()) do
+    if oldGui.Name == "DoubleTpHub" or oldGui.Name:match("^DoubleTpMenu") then
+        pcall(function() oldGui:Destroy() end)
+    end
+end
+task.wait(0.1)
+
+local Hub = Instance.new("ScreenGui")
+Hub.Name = "DoubleTpHub"
+Hub.Parent = coreGui
+Hub.ResetOnSpawn = false
+
 local MainFrame = Instance.new("Frame")
-local DropoffButton = Instance.new("TextButton")
-local PickupButton = Instance.new("TextButton")
-local AutofarmButton = Instance.new("TextButton")
-local UIListLayout = Instance.new("UIListLayout")
-
--- Новые элементы для статистики
-local TotalEarnedLabel = Instance.new("TextLabel")
-local MaxEarnedLabel = Instance.new("TextLabel")
-local HourlyRateLabel = Instance.new("TextLabel")
-
-ScreenGui.Name = "DoubleTpMenu"
-ScreenGui.Parent = game:GetService("CoreGui")
-ScreenGui.ResetOnSpawn = false
-
 MainFrame.Name = "MainFrame"
-MainFrame.Parent = ScreenGui
-MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-MainFrame.Position = UDim2.new(0.05, 0, 0.4, 0)
-MainFrame.Size = UDim2.new(0, 190, 0, 240) -- Увеличили высоту под инфу
+MainFrame.Parent = Hub
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+MainFrame.Position = UDim2.new(0.3, 0, 0.3, 0)
+MainFrame.Size = UDim2.new(0, 360, 0, 240)
 MainFrame.Active = true
 MainFrame.Draggable = true
 
-local FrameCorner = Instance.new("UICorner")
-FrameCorner.CornerRadius = UDim.new(0, 8)
-FrameCorner.Parent = MainFrame
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 10)
+MainCorner.Parent = MainFrame
 
-UIListLayout.Parent = MainFrame
-UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-UIListLayout.VerticalAlignment = Enum.VerticalAlignment.Top
-UIListLayout.Padding = UDim.new(0, 6)
+local MainStroke = Instance.new("UIStroke")
+MainStroke.Thickness = 2
+MainStroke.Color = Color3.fromRGB(0, 150, 255)
+MainStroke.Parent = MainFrame
 
-local function createLabel(name, text, color, order)
-    local label = Instance.new("TextLabel")
-    label.Name = name
-    label.Parent = MainFrame
-    label.LayoutOrder = order
-    label.Size = UDim2.new(0, 170, 0, 18)
-    label.BackgroundTransparency = 1
-    label.Font = Enum.Font.SourceSans
-    label.Text = text
-    label.TextColor3 = color
-    label.TextSize = 14
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    return label
+local Sidebar = Instance.new("Frame")
+Sidebar.Name = "Sidebar"
+Sidebar.Parent = MainFrame
+Sidebar.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+Sidebar.Size = UDim2.new(0, 85, 1, 0)
+local SideCorner = Instance.new("UICorner") SideCorner.CornerRadius = UDim.new(0, 10) SideCorner.Parent = Sidebar
+
+local SideLayout = Instance.new("UIListLayout")
+SideLayout.Parent = Sidebar
+SideLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+SideLayout.Padding = UDim.new(0, 6)
+SideLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+
+_G.ContentFrame = Instance.new("Frame")
+_G.ContentFrame.Name = "ContentFrame"
+_G.ContentFrame.Parent = MainFrame
+_G.ContentFrame.BackgroundTransparency = 1
+_G.ContentFrame.Position = UDim2.new(0, 95, 0, 10)
+_G.ContentFrame.Size = UDim2.new(1, -105, 1, -20)
+
+_G.FarmPage = Instance.new("Frame")
+_G.ShopPage = Instance.new("Frame")
+_G.FunPage = Instance.new("Frame")
+
+local function setupPage(page, name)
+    page.Name = name.."Page"
+    page.Parent = _G.ContentFrame
+    page.Size = UDim2.new(1, 0, 1, 0)
+    page.BackgroundTransparency = 1
+    page.Visible = false
+    local layout = Instance.new("UIListLayout")
+    layout.Parent = page
+    layout.Padding = UDim.new(0, 5)
+end
+setupPage(_G.FarmPage, "Farm")
+setupPage(_G.ShopPage, "Shop")
+setupPage(_G.FunPage, "Fun")
+_G.FarmPage.Visible = true
+
+local function showPage(targetPage)
+    _G.FarmPage.Visible = false
+    _G.ShopPage.Visible = false
+    _G.FunPage.Visible = false
+    targetPage.Visible = true
 end
 
--- КНОПКИ
-DropoffButton.Name = "DropoffButton"
-DropoffButton.Parent = MainFrame
-DropoffButton.LayoutOrder = 1
-DropoffButton.BackgroundColor3 = Color3.fromRGB(255, 0, 50)
-DropoffButton.Size = UDim2.new(0, 170, 0, 35)
-DropoffButton.Font = Enum.Font.SourceSansBold
-DropoffButton.Text = "ТП В DROPOFF"
-DropoffButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-DropoffButton.TextSize = 14
-local ButtonCorner1 = Instance.new("UICorner") ButtonCorner1.CornerRadius = UDim.new(0, 6) ButtonCorner1.Parent = DropoffButton
-
-PickupButton.Name = "PickupButton"
-PickupButton.Parent = MainFrame
-PickupButton.LayoutOrder = 2
-PickupButton.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
-PickupButton.Size = UDim2.new(0, 170, 0, 35)
-PickupButton.Font = Enum.Font.SourceSansBold
-PickupButton.Text = "ТП В PICKUP"
-PickupButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-PickupButton.TextSize = 14
-local ButtonCorner2 = Instance.new("UICorner") ButtonCorner2.CornerRadius = UDim.new(0, 6) ButtonCorner2.Parent = PickupButton
-
-AutofarmButton.Name = "AutofarmButton"
-AutofarmButton.Parent = MainFrame
-AutofarmButton.LayoutOrder = 3
-AutofarmButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-AutofarmButton.Size = UDim2.new(0, 170, 0, 35)
-AutofarmButton.Font = Enum.Font.SourceSansBold
-AutofarmButton.Text = "АВТО ФАРМ: ВЫКЛ"
-AutofarmButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-AutofarmButton.TextSize = 14
-local ButtonCorner3 = Instance.new("UICorner") ButtonCorner3.CornerRadius = UDim.new(0, 6) ButtonCorner3.Parent = AutofarmButton
-
--- Создание строк статистики
-TotalEarnedLabel = createLabel("TotalEarned", "Заработано: $0", Color3.fromRGB(255, 255, 255), 4)
-MaxEarnedLabel = createLabel("MaxEarned", "Макс. за заказ: $0", Color3.fromRGB(255, 200, 50), 5)
-HourlyRateLabel = createLabel("HourlyRate", "В час: ~$0/h", Color3.fromRGB(50, 255, 100), 6)
-
--- Логика денег
+local function createTabBtn(text, order, targetPage)
+    local btn = Instance.new("TextButton")
+    btn.Parent = Sidebar
+    btn.Size = UDim2.new(0, 75, 0, 30)
+    btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    btn.Font = Enum.Font.SourceSansBold
+    btn.Text = text
+    btn.TextColor3 = Color3.fromRGB(220, 220, 220)
+    btn.TextSize = 12
+    local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0, 5) c.Parent = btn
+    btn.MouseButton1Click:Connect(function() showPage(targetPage) end)
+end
+createTabBtn("FARM", 1, _G.FarmPage)
+createTabBtn("МАГАЗИН", 2, _G.ShopPage)
+createTabBtn("ФУНКЦИИ", 3, _G.FunPage)
 local players = game:GetService("Players")
 local localPlayer = players.LocalPlayer
-local leaderstats = localPlayer:WaitForChild("leaderstats", 10)
--- Авто-поиск валюты (Money, Cash, Dollars и т.д.)
-local moneyValue = leaderstats and (leaderstats:FindFirstChild("Money") or leaderstats:FindFirstChild("Cash") or leaderstats:FindFirstChild("Dollars") or leaderstats:FindFirstChildWhichIsA("ValueBase"))
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local camera = workspace.CurrentCamera
 
-local totalEarned = 0
-local maxSingleEarned = 0
-local startTime = os.time()
-local lastMoney = moneyValue and moneyValue.Value or 0
+local function createBtn(parent, text, color)
+    local btn = Instance.new("TextButton")
+    btn.Parent = parent
+    btn.Size = UDim2.new(1, -5, 0, 26)
+    btn.BackgroundColor3 = color
+    btn.Font = Enum.Font.SourceSansBold
+    btn.Text = text
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextSize = 13
+    local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0, 4) c.Parent = btn
+    return btn
+end
 
-if moneyValue then
-    moneyValue.Changed:Connect(function(newVal)
-        if newVal > lastMoney then
-            local gained = newVal - lastMoney
-            totalEarned = totalEarned + gained
-            if gained > maxSingleEarned and gained <= 100 then -- ограничение, чтобы не считало донаты/коды
-                maxSingleEarned = gained
-            end
-            TotalEarnedLabel.Text = "Заработано: $" .. totalEarned
-            MaxEarnedLabel.Text = "Макс. за заказ: $" .. maxSingleEarned
+local function createLabel(parent, text, color)
+    local lbl = Instance.new("TextLabel")
+    lbl.Parent = parent
+    lbl.Size = UDim2.new(1, -5, 0, 16)
+    lbl.BackgroundTransparency = 1
+    lbl.Font = Enum.Font.SourceSans
+    lbl.Text = text
+    lbl.TextColor3 = color
+    lbl.TextSize = 13
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    return lbl
+end
+
+-- FARM PAGE ELEMENTS
+_G.DropoffButton = createBtn(_G.FarmPage, "ТП В DROPOFF", Color3.fromRGB(220, 30, 60))
+_G.PickupButton = createBtn(_G.FarmPage, "ТП В PICKUP", Color3.fromRGB(0, 130, 220))
+_G.AutofarmButton = createBtn(_G.FarmPage, "АВТО ФАРМ: ВЫКЛ", Color3.fromRGB(50, 50, 50))
+
+_G.TotalEarnedLabel = createLabel(_G.FarmPage, "Заработано: $0", Color3.fromRGB(255, 255, 255))
+_G.MaxEarnedLabel = createLabel(_G.FarmPage, "Макс. за заказ: $0", Color3.fromRGB(255, 200, 50))
+_G.HourlyRateLabel = createLabel(_G.FarmPage, "В час: ~$0/h", Color3.fromRGB(50, 255, 120))
+_G.CostAllLabel = createLabel(_G.FarmPage, "До полной скупочки магазина: $2450", Color3.fromRGB(255, 100, 255))
+
+-- SHOP PAGE ELEMENTS
+_G.TpShopButton = createBtn(_G.ShopPage, "ТП К МАГАЗИНУ (ЦЕНТР)", Color3.fromRGB(0, 160, 100))
+
+local ShopScroll = Instance.new("ScrollingFrame")
+ShopScroll.Parent = _G.ShopPage
+ShopScroll.Size = UDim2.new(1, -5, 0, 150)
+ShopScroll.BackgroundTransparency = 1
+ShopScroll.CanvasSize = UDim2.new(0, 0, 0, 260)
+ShopScroll.ScrollBarThickness = 3
+local ShopLayout = Instance.new("UIListLayout") ShopLayout.Parent = ShopScroll; ShopLayout.Padding = UDim.new(0, 4)
+
+-- FUN PAGE ELEMENTS
+local EspBtn = createBtn(_G.FunPage, "ФИОЛЕТОВЫЙ ESP ИГРОКОВ: ВЫКЛ", Color3.fromRGB(50, 50, 50))
+local FlyBtn = createBtn(_G.FunPage, "FLY ПОЛЕТ: ВЫКЛ", Color3.fromRGB(50, 50, 50))
+local NoclipBtn = createBtn(_G.FunPage, "NOCLIP (СКВОЗЬ СТЕНЫ): ВЫКЛ", Color3.fromRGB(50, 50, 50))
+
+local function shopTeleport(targetPos)
+    local character = localPlayer.Character
+    local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+    if rootPart then
+        localPlayer:RequestStreamAroundAsync(targetPos)
+        local tween = TweenService:Create(rootPart, TweenInfo.new(0.02, Enum.EasingStyle.Linear), {CFrame = CFrame.new(targetPos)})
+        tween:Play()
+        tween.Completed:Wait()
+    end
+end
+
+-- Функция сварки фиолетового жилета к торсу
+local function weldVestToPlayer(sourceModel)
+    local char = localPlayer.Character
+    if not char then return end
+    local torso = char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso")
+    if not torso then return end
+
+    local clone = sourceModel:Clone()
+    clone.Parent = char
+    for _, part in ipairs(clone:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = false
+            part.Anchored = false
+            part.CFrame = torso.CFrame
+            local weld = Instance.new("WeldConstraint")
+            weld.Part0 = torso
+            weld.Part1 = part
+            weld.Parent = part
         end
-        lastMoney = newVal
+    end
+end
+
+local function addShopItem(displayName, searchName, priceText, mode)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, -5, 0, 24)
+    frame.BackgroundTransparency = 1
+    frame.Parent = ShopScroll
+    
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(0, 140, 1, 0)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = displayName.." ["..priceText.."]"
+    lbl.TextColor3 = (mode == "weld") and Color3.fromRGB(255, 180, 0) or Color3.fromRGB(200, 200, 200)
+    lbl.Font = Enum.Font.SourceSans
+    lbl.TextSize = 12
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.Parent = frame
+    
+    local buy = Instance.new("TextButton")
+    buy.Size = UDim2.new(0, 90, 1, -2)
+    buy.Position = UDim2.new(0, 145, 0, 1)
+    buy.Font = Enum.Font.SourceSansBold
+    buy.TextSize = 11
+    buy.TextColor3 = Color3.fromRGB(255, 255, 255)
+    buy.Parent = frame
+    
+    if mode == "weld" then
+        buy.BackgroundColor3 = Color3.fromRGB(210, 110, 0)
+        buy.Text = "ОДЕТЬ (ФЕЙК)"
+    else
+        buy.BackgroundColor3 = Color3.fromRGB(0, 120, 200)
+        buy.Text = "ТП К ШМОТКЕ"
+    end
+    
+    buy.MouseButton1Click:Connect(function()
+        local shopPurchases = workspace:FindFirstChild("ShopPurchases")
+        local itemObj = shopPurchases and shopPurchases:FindFirstChild(searchName, true)
+        
+        if mode == "weld" and itemObj then
+            weldVestToPlayer(itemObj)
+        elseif mode == "tp" then
+            if itemObj then
+                local targetPart = itemObj:IsA("BasePart") and itemObj or itemObj:FindFirstChildWhichIsA("BasePart", true)
+                if targetPart then shopTeleport(targetPart.Position + Vector3.new(0, 2, 2)) end
+            else
+                -- Если камера или спидометр лежат в корне папки ShopPurchases
+                local directObj = shopPurchases and shopPurchases:FindFirstChild(searchName)
+                if directObj and directObj:IsA("BasePart") then
+                    shopTeleport(directObj.Position + Vector3.new(0, 2, 2))
+                end
+            end
+        end
     end)
 end
 
--- Поток обновления дохода в час (раз в 3 секунды)
-task.spawn(function()
-    while true do
-        task.wait(3)
-        local elapsed = os.time() - startTime
-        if elapsed > 5 and totalEarned > 0 then
-            local rate = math.floor((totalEarned / elapsed) * 3600)
-            HourlyRateLabel.Text = "В час: ~$" .. rate .. "/h"
+-- НАСТРОЙКА КНОПОК ПО СВОЙСТВАМ (Фиолетовый жилет - weld, остальные - tp)
+addShopItem("Purple Vest", "Vest_purple", "39 RB", "weld")
+addShopItem("Military Gloves", "MilitaryGloves", "49 RB", "tp")
+addShopItem("Yellow Vest", "Vest_yellow", "300 $", "tp")
+addShopItem("Orange Vest", "Vest_orange", "300 $", "tp")
+addShopItem("Lime Vest", "Vest_lime", "300 $", "tp")
+addShopItem("App Camera", "Camera", "300 $", "tp")
+addShopItem("App Speedometer", "Speedometer", "500 $", "tp")
+addShopItem("Headlamp", "Headlamp", "350 $", "tp")
+
+-- NOCLIP / FLY / ESP MECHANICS
+local NoclipEnabled = false
+NoclipBtn.MouseButton1Click:Connect(function()
+    NoclipEnabled = not NoclipEnabled
+    NoclipBtn.BackgroundColor3 = NoclipEnabled and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(50, 50, 50)
+    NoclipBtn.Text = NoclipEnabled and "NOCLIP (СКВОЗЬ СТЕНЫ): ВКЛ" or "NOCLIP (СКВОЗЬ СТЕНЫ): ВЫКЛ"
+end)
+RunService.Stepped:Connect(function()
+    if NoclipEnabled and localPlayer.Character then
+        for _, part in ipairs(localPlayer.Character:GetDescendants()) do
+            if part:IsA("BasePart") then part.CanCollide = false end
         end
     end
 end)
 
--- Переменные логики автофарма
-_G.AutofarmEnabled = false
+local FlyEnabled = false
+local flySpeed = 50
+FlyBtn.MouseButton1Click:Connect(function()
+    FlyEnabled = not FlyEnabled
+    FlyBtn.BackgroundColor3 = FlyEnabled and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(50, 50, 50)
+    FlyBtn.Text = FlyEnabled and "FLY ПОЛЕТ: ВКЛ" or "FLY ПОЛЕТ: ВЫКЛ"
+    local root = localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+    if FlyEnabled then
+        local bv = Instance.new("BodyVelocity")
+        bv.Name = "FlyVelocity"
+        bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+        bv.Velocity = Vector3.zero
+        bv.Parent = root
+        task.spawn(function()
+            while FlyEnabled and root and root:FindFirstChild("FlyVelocity") do
+                local hum = localPlayer.Character:FindFirstChildOfClass("Humanoid")
+                root.FlyVelocity.Velocity = (hum and hum.MoveDirection.Magnitude > 0) and camera.CFrame.LookVector * flySpeed or Vector3.new(0, 0.1, 0)
+                task.wait()
+            end
+            if root:FindFirstChild("FlyVelocity") then root.FlyVelocity:Destroy() end
+        end)
+    else
+        if root:FindFirstChild("FlyVelocity") then root.FlyVelocity:Destroy() end
+    end
+end)
+
+local EspEnabled = false
+local currentHighlights = {}
+EspBtn.MouseButton1Click:Connect(function()
+    EspEnabled = not EspEnabled
+    EspBtn.BackgroundColor3 = EspEnabled and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(50, 50, 50)
+    EspBtn.Text = EspEnabled and "ФИОЛЕТОВЫЙ ESP ИГРОКОВ: ВКЛ" or "ФИОЛЕТОВЫЙ ESP ИГРОКОВ: ВЫКЛ"
+    if not EspEnabled then
+        for _, hl in ipairs(currentHighlights) do pcall(function() hl:Destroy() end) end
+        table.clear(currentHighlights)
+    else
+        task.spawn(function()
+            while EspEnabled do
+                for _, p in ipairs(players:GetPlayers()) do
+                    if p ~= localPlayer and p.Character then
+                        if not p.Character:FindFirstChild("PurpleESP") then
+                            local hl = Instance.new("Highlight")
+                            hl.Name = "PurpleESP"
+                            hl.FillColor = Color3.fromRGB(140, 0, 255)
+                            hl.FillTransparency = 0.4
+                            hl.OutlineColor = Color3.fromRGB(190, 0, 255)
+                            hl.OutlineTransparency = 0
+                            hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                            hl.Adornee = p.Character
+                            hl.Parent = p.Character
+                            table.insert(currentHighlights, hl)
+                        end
+                    end
+                end
+                task.wait(1.5)
+            end
+        end)
+    end
+end)
+local players = game:GetService("Players")
+local localPlayer = players.LocalPlayer
 local VirtualInputManager = game:GetService("VirtualInputManager")
+local TweenService = game:GetService("TweenService")
 local camera = workspace.CurrentCamera
+
+_G.AutofarmEnabled = false
 local savedPickupCFrame = nil
 local savedDropoffCFrame = nil
-
--- АНТИ-AFK
-if not _G.AntiAFKConnected then
-    _G.AntiAFKConnected = true
-    localPlayer.Idled:Connect(function()
-        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
-        task.wait(0.03)
-        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
-    end)
-end
 
 local function forceRotateCamera180()
     camera.CameraType = Enum.CameraType.Scriptable
@@ -164,10 +351,12 @@ end
 local function instantTeleport(targetCFrame)
     local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
     local rootPart = character:WaitForChild("HumanoidRootPart", 5)
-    if rootPart then
-        localPlayer:RequestStreamAroundAsync(targetCFrame.Position)
-        rootPart.CFrame = targetCFrame + Vector3.new(0, 3, 0)
-    end
+    if not rootPart then return end
+    local targetPos = targetCFrame.Position + Vector3.new(0, 2, 0)
+    localPlayer:RequestStreamAroundAsync(targetPos)
+    local tween = TweenService:Create(rootPart, TweenInfo.new(0.02, Enum.EasingStyle.Linear), {CFrame = CFrame.new(targetPos)})
+    tween:Play()
+    tween.Completed:Wait()
 end
 
 local function findDropoff()
@@ -182,57 +371,90 @@ end
 
 local function findPickup()
     local pickupFolder = workspace:FindFirstChild("Pickup")
-    if pickupFolder then
-        local part = pickupFolder:FindFirstChildWhichIsA("BasePart", true) or (pickupFolder:IsA("BasePart") and pickupFolder)
-        if part then return part end
-    end
+    if pickupFolder then return pickupFolder:FindFirstChildWhichIsA("BasePart", true) or (pickupFolder:IsA("BasePart") and pickupFolder) end
     for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj.Name == "Pickup" then
-            local part = obj:FindFirstChildWhichIsA("BasePart", true) or (obj:IsA("BasePart") and obj)
-            if part then return part end
-        end
+        if obj.Name == "Pickup" then return obj:FindFirstChildWhichIsA("BasePart", true) or (obj:IsA("BasePart") and obj) end
     end
     return nil
 end
 
-DropoffButton.MouseButton1Click:Connect(function()
-    local targetPart = findDropoff()
-    if targetPart then savedDropoffCFrame = targetPart.CFrame; instantTeleport(savedDropoffCFrame)
-    elseif savedDropoffCFrame then instantTeleport(savedDropoffCFrame) end
+-- Полный перечень оставшихся вещей (300+300+300+300+500+350 = 2450 монет)
+local totalShopCoinsCost = 2450
+local leaderstats = localPlayer:WaitForChild("leaderstats", 10)
+local moneyValue = leaderstats and (leaderstats:FindFirstChild("Money") or leaderstats:FindFirstChild("Cash") or leaderstats:FindFirstChild("Dollars") or leaderstats:FindFirstChildWhichIsA("ValueBase"))
+
+local totalEarned = 0
+local maxSingleEarned = 0
+local startTime = os.time()
+local lastMoney = moneyValue and moneyValue.Value or 0
+
+local function refreshCost(val)
+    local needed = totalShopCoinsCost - val
+    if needed < 0 then needed = 0 end
+    if _G.CostAllLabel then _G.CostAllLabel.Text = "До полной скупочки магазина: $"..needed end
+end
+if moneyValue then refreshCost(moneyValue.Value) end
+
+if moneyValue then
+    moneyValue.Changed:Connect(function(newVal)
+        refreshCost(newVal)
+        if newVal > lastMoney then
+            local gained = newVal - lastMoney
+            totalEarned = totalEarned + gained
+            if gained > maxSingleEarned and gained <= 5000 then maxSingleEarned = gained end
+            if _G.TotalEarnedLabel then _G.TotalEarnedLabel.Text = "Заработано: $" .. totalEarned end
+            if _G.MaxEarnedLabel then _G.MaxEarnedLabel.Text = "Макс. за заказ: $" .. maxSingleEarned end
+        end
+        lastMoney = newVal
+    end)
+end
+
+-- Оригинальный поток прибыли за час
+local hourlyCalculationTime = os.time()
+task.spawn(function()
+    while true do
+        task.wait(3)
+        local elapsed = os.time() - hourlyCalculationTime
+        if elapsed > 5 and totalEarned > 0 and _G.HourlyRateLabel then
+            local rate = math.floor((totalEarned / elapsed) * 3600)
+            _G.HourlyRateLabel.Text = "В час: ~$" .. rate .. "/h"
+        end
+    end
 end)
 
-PickupButton.MouseButton1Click:Connect(function()
-    local targetPart = findPickup()
-    if targetPart then savedPickupCFrame = targetPart.CFrame; instantTeleport(savedPickupCFrame)
-    elseif savedPickupCFrame then instantTeleport(savedPickupCFrame) end
+_G.DropoffButton.MouseButton1Click:Connect(function()
+    local t = findDropoff()
+    if t then savedDropoffCFrame = t.CFrame; instantTeleport(savedDropoffCFrame) end
 end)
 
--- ЦИКЛ ФАРМА
-AutofarmButton.MouseButton1Click:Connect(function()
+_G.PickupButton.MouseButton1Click:Connect(function()
+    local t = findPickup()
+    if t then savedPickupCFrame = t.CFrame; instantTeleport(savedPickupCFrame) end
+end)
+
+_G.TpShopButton.MouseButton1Click:Connect(function()
+    local store = workspace:FindFirstChild("ShopPurchases", true) or workspace:FindFirstChild("ConvenienceStore", true)
+    local part = store and store:FindFirstChildWhichIsA("BasePart", true)
+    if part then instantTeleport(part.CFrame) end
+end)
+
+_G.AutofarmButton.MouseButton1Click:Connect(function()
     _G.AutofarmEnabled = not _G.AutofarmEnabled
-    
     if _G.AutofarmEnabled then
-        AutofarmButton.Text = "АВТО ФАРМ: ВКЛ"
-        AutofarmButton.BackgroundColor3 = Color3.fromRGB(0, 180, 0)
+        _G.AutofarmButton.Text = "АВТО ФАРМ: ВКЛ"
+        _G.AutofarmButton.BackgroundColor3 = Color3.fromRGB(0, 180, 0)
         
         task.spawn(function()
             while _G.AutofarmEnabled do
                 if not savedPickupCFrame or not savedDropoffCFrame then
-                    local pPart = findPickup()
-                    local dPart = findDropoff()
-                    if pPart then savedPickupCFrame = pPart.CFrame end
-                    if dPart then savedDropoffCFrame = dPart.CFrame end
+                    local p = findPickup() local d = findDropoff()
+                    if p then savedPickupCFrame = p.CFrame end
+                    if d then savedDropoffCFrame = d.CFrame end
                 end
-                
-                if not savedPickupCFrame or not savedDropoffCFrame then
-                    AutofarmButton.Text = "Поиск точек..."
-                    task.wait(0.5)
-                    continue
-                end
+                if not savedPickupCFrame or not savedDropoffCFrame then task.wait(0.3) continue end
                 
                 local char = localPlayer.Character or localPlayer.CharacterAdded:Wait()
                 local humanoid = char:WaitForChild("Humanoid", 5)
-                char:WaitForChild("HumanoidRootPart", 5)
                 
                 instantTeleport(savedPickupCFrame)
                 task.wait(0.2)
@@ -244,6 +466,8 @@ AutofarmButton.MouseButton1Click:Connect(function()
                 task.wait(0.25)
                 
                 if not _G.AutofarmEnabled then break end
+                task.wait(1.01 + (math.random(0, 2) / 100))
+                if not _G.AutofarmEnabled then break end
                 
                 instantTeleport(savedDropoffCFrame)
                 task.wait(0.35)
@@ -254,15 +478,18 @@ AutofarmButton.MouseButton1Click:Connect(function()
                 if not _G.AutofarmEnabled then break end
                 
                 if humanoid then
+                    camera.CameraType = Enum.CameraType.Custom
+                    camera.CameraSubject = humanoid
+                    task.wait(0.01)
                     humanoid.Health = 0
                 end
-                
                 localPlayer.CharacterAdded:Wait()
+                task.wait(0.05)
             end
         end)
     else
         _G.AutofarmEnabled = false
-        AutofarmButton.Text = "АВТО ФАРМ: ВЫКЛ"
-        AutofarmButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        _G.AutofarmButton.Text = "АВТО ФАРМ: ВЫКЛ"
+        _G.AutofarmButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     end
 end)
