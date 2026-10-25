@@ -5,6 +5,11 @@ local PickupButton = Instance.new("TextButton")
 local AutofarmButton = Instance.new("TextButton")
 local UIListLayout = Instance.new("UIListLayout")
 
+-- Новые элементы для статистики
+local TotalEarnedLabel = Instance.new("TextLabel")
+local MaxEarnedLabel = Instance.new("TextLabel")
+local HourlyRateLabel = Instance.new("TextLabel")
+
 ScreenGui.Name = "DoubleTpMenu"
 ScreenGui.Parent = game:GetService("CoreGui")
 ScreenGui.ResetOnSpawn = false
@@ -13,7 +18,7 @@ MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
 MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 MainFrame.Position = UDim2.new(0.05, 0, 0.4, 0)
-MainFrame.Size = UDim2.new(0, 180, 0, 170) 
+MainFrame.Size = UDim2.new(0, 190, 0, 240) -- Увеличили высоту под инфу
 MainFrame.Active = true
 MainFrame.Draggable = true
 
@@ -24,99 +29,138 @@ FrameCorner.Parent = MainFrame
 UIListLayout.Parent = MainFrame
 UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-UIListLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-UIListLayout.Padding = UDim.new(0, 8)
+UIListLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+UIListLayout.Padding = UDim.new(0, 6)
 
--- КНОПКА 1: DROPOFF
+local function createLabel(name, text, color, order)
+    local label = Instance.new("TextLabel")
+    label.Name = name
+    label.Parent = MainFrame
+    label.LayoutOrder = order
+    label.Size = UDim2.new(0, 170, 0, 18)
+    label.BackgroundTransparency = 1
+    label.Font = Enum.Font.SourceSans
+    label.Text = text
+    label.TextColor3 = color
+    label.TextSize = 14
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    return label
+end
+
+-- КНОПКИ
 DropoffButton.Name = "DropoffButton"
 DropoffButton.Parent = MainFrame
 DropoffButton.LayoutOrder = 1
 DropoffButton.BackgroundColor3 = Color3.fromRGB(255, 0, 50)
-DropoffButton.Size = UDim2.new(0, 160, 0, 40)
+DropoffButton.Size = UDim2.new(0, 170, 0, 35)
 DropoffButton.Font = Enum.Font.SourceSansBold
 DropoffButton.Text = "ТП В DROPOFF"
 DropoffButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-DropoffButton.TextSize = 15.000
+DropoffButton.TextSize = 14
+local ButtonCorner1 = Instance.new("UICorner") ButtonCorner1.CornerRadius = UDim.new(0, 6) ButtonCorner1.Parent = DropoffButton
 
-local ButtonCorner1 = Instance.new("UICorner")
-ButtonCorner1.CornerRadius = UDim.new(0, 6)
-ButtonCorner1.Parent = DropoffButton
-
--- КНОПКА 2: PICKUP
 PickupButton.Name = "PickupButton"
 PickupButton.Parent = MainFrame
 PickupButton.LayoutOrder = 2
 PickupButton.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
-PickupButton.Size = UDim2.new(0, 160, 0, 40)
+PickupButton.Size = UDim2.new(0, 170, 0, 35)
 PickupButton.Font = Enum.Font.SourceSansBold
 PickupButton.Text = "ТП В PICKUP"
 PickupButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-PickupButton.TextSize = 15.000
+PickupButton.TextSize = 14
+local ButtonCorner2 = Instance.new("UICorner") ButtonCorner2.CornerRadius = UDim.new(0, 6) ButtonCorner2.Parent = PickupButton
 
-local ButtonCorner2 = Instance.new("UICorner")
-ButtonCorner2.CornerRadius = UDim.new(0, 6)
-ButtonCorner2.Parent = PickupButton
-
--- КНОПКА 3: АВТОФАРМ
 AutofarmButton.Name = "AutofarmButton"
 AutofarmButton.Parent = MainFrame
 AutofarmButton.LayoutOrder = 3
 AutofarmButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-AutofarmButton.Size = UDim2.new(0, 160, 0, 40)
+AutofarmButton.Size = UDim2.new(0, 170, 0, 35)
 AutofarmButton.Font = Enum.Font.SourceSansBold
 AutofarmButton.Text = "АВТО ФАРМ: ВЫКЛ"
 AutofarmButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-AutofarmButton.TextSize = 15.000
+AutofarmButton.TextSize = 14
+local ButtonCorner3 = Instance.new("UICorner") ButtonCorner3.CornerRadius = UDim.new(0, 6) ButtonCorner3.Parent = AutofarmButton
 
-local ButtonCorner3 = Instance.new("UICorner")
-ButtonCorner3.CornerRadius = UDim.new(0, 6)
-ButtonCorner3.Parent = AutofarmButton
+-- Создание строк статистики
+TotalEarnedLabel = createLabel("TotalEarned", "Заработано: $0", Color3.fromRGB(255, 255, 255), 4)
+MaxEarnedLabel = createLabel("MaxEarned", "Макс. за заказ: $0", Color3.fromRGB(255, 200, 50), 5)
+HourlyRateLabel = createLabel("HourlyRate", "В час: ~$0/h", Color3.fromRGB(50, 255, 100), 6)
 
--- Переменные логики
+-- Логика денег
+local players = game:GetService("Players")
+local localPlayer = players.LocalPlayer
+local leaderstats = localPlayer:WaitForChild("leaderstats", 10)
+-- Авто-поиск валюты (Money, Cash, Dollars и т.д.)
+local moneyValue = leaderstats and (leaderstats:FindFirstChild("Money") or leaderstats:FindFirstChild("Cash") or leaderstats:FindFirstChild("Dollars") or leaderstats:FindFirstChildWhichIsA("ValueBase"))
+
+local totalEarned = 0
+local maxSingleEarned = 0
+local startTime = os.time()
+local lastMoney = moneyValue and moneyValue.Value or 0
+
+if moneyValue then
+    moneyValue.Changed:Connect(function(newVal)
+        if newVal > lastMoney then
+            local gained = newVal - lastMoney
+            totalEarned = totalEarned + gained
+            if gained > maxSingleEarned and gained <= 100 then -- ограничение, чтобы не считало донаты/коды
+                maxSingleEarned = gained
+            end
+            TotalEarnedLabel.Text = "Заработано: $" .. totalEarned
+            MaxEarnedLabel.Text = "Макс. за заказ: $" .. maxSingleEarned
+        end
+        lastMoney = newVal
+    end)
+end
+
+-- Поток обновления дохода в час (раз в 3 секунды)
+task.spawn(function()
+    while true do
+        task.wait(3)
+        local elapsed = os.time() - startTime
+        if elapsed > 5 and totalEarned > 0 then
+            local rate = math.floor((totalEarned / elapsed) * 3600)
+            HourlyRateLabel.Text = "В час: ~$" .. rate .. "/h"
+        end
+    end
+end)
+
+-- Переменные логики автофарма
 _G.AutofarmEnabled = false
 local VirtualInputManager = game:GetService("VirtualInputManager")
 local camera = workspace.CurrentCamera
-local players = game:GetService("Players")
-local localPlayer = players.LocalPlayer
-
 local savedPickupCFrame = nil
 local savedDropoffCFrame = nil
 
--- ВСТРОЕННЫЙ АНТИ-AFK (Чтобы не кикало через 20 минут)
+-- АНТИ-AFK
 if not _G.AntiAFKConnected then
     _G.AntiAFKConnected = true
     localPlayer.Idled:Connect(function()
         VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
-        task.wait(0.05)
+        task.wait(0.03)
         VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
     end)
 end
 
--- УСКОРЕННЫЙ РАЗВОРOT КАМЕРЫ (0.3 секунды вместо 1.0)
 local function forceRotateCamera180()
     camera.CameraType = Enum.CameraType.Scriptable
     task.wait(0.01)
-    
-    -- 3 быстрых шага по 60 градусов
     for i = 1, 3 do
         camera.CFrame = camera.CFrame * CFrame.Angles(0, math.rad(60), 0)
-        task.wait(0.1)
+        task.wait(0.05)
     end
-    
     camera.CameraType = Enum.CameraType.Custom
 end
 
--- Тройное прожатие E
 local function pressEThreeTimes()
     for i = 1, 3 do
         VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
-        task.wait(0.05)
+        task.wait(0.04)
         VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
-        task.wait(0.05)
+        task.wait(0.04)
     end
 end
 
--- Мгновенный телепорт
 local function instantTeleport(targetCFrame)
     local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
     local rootPart = character:WaitForChild("HumanoidRootPart", 5)
@@ -126,7 +170,6 @@ local function instantTeleport(targetCFrame)
     end
 end
 
--- Поиск объектов
 local function findDropoff()
     for _, obj in ipairs(workspace:GetDescendants()) do
         if obj.Name == "DropoffPoints" then
@@ -152,28 +195,19 @@ local function findPickup()
     return nil
 end
 
--- Обычные кнопки
 DropoffButton.MouseButton1Click:Connect(function()
     local targetPart = findDropoff()
-    if targetPart then
-        savedDropoffCFrame = targetPart.CFrame
-        instantTeleport(savedDropoffCFrame)
-    elseif savedDropoffCFrame then
-        instantTeleport(savedDropoffCFrame)
-    end
+    if targetPart then savedDropoffCFrame = targetPart.CFrame; instantTeleport(savedDropoffCFrame)
+    elseif savedDropoffCFrame then instantTeleport(savedDropoffCFrame) end
 end)
 
 PickupButton.MouseButton1Click:Connect(function()
     local targetPart = findPickup()
-    if targetPart then
-        savedPickupCFrame = targetPart.CFrame
-        instantTeleport(savedPickupCFrame)
-    elseif savedPickupCFrame then
-        instantTeleport(savedPickupCFrame)
-    end
+    if targetPart then savedPickupCFrame = targetPart.CFrame; instantTeleport(savedPickupCFrame)
+    elseif savedPickupCFrame then instantTeleport(savedPickupCFrame) end
 end)
 
--- НАСТРОЕННЫЙ ЦИКЛ С ПРИНУДИТЕЛЬНЫМ ПОВОРОТОМ (ОПТИМИЗИРОВАННЫЙ)
+-- ЦИКЛ ФАРМА
 AutofarmButton.MouseButton1Click:Connect(function()
     _G.AutofarmEnabled = not _G.AutofarmEnabled
     
@@ -183,7 +217,6 @@ AutofarmButton.MouseButton1Click:Connect(function()
         
         task.spawn(function()
             while _G.AutofarmEnabled do
-                -- Динамический поиск позиций, если они потерялись из памяти
                 if not savedPickupCFrame or not savedDropoffCFrame then
                     local pPart = findPickup()
                     local dPart = findDropoff()
@@ -193,43 +226,38 @@ AutofarmButton.MouseButton1Click:Connect(function()
                 
                 if not savedPickupCFrame or not savedDropoffCFrame then
                     AutofarmButton.Text = "Поиск точек..."
-                    task.wait(1)
-                    continue -- Вместо выключения пробуем найти точки на следующем круге
+                    task.wait(0.5)
+                    continue
                 end
                 
                 local char = localPlayer.Character or localPlayer.CharacterAdded:Wait()
                 local humanoid = char:WaitForChild("Humanoid", 5)
                 char:WaitForChild("HumanoidRootPart", 5)
-                task.wait(0.1)
                 
-                -- ШАГ 1: ТП в PICKUP (Быстрее)
                 instantTeleport(savedPickupCFrame)
-                task.wait(0.4) -- Оптимальное время на прогрузку
+                task.wait(0.2)
                 
                 forceRotateCamera180() 
-                task.wait(0.1)
+                task.wait(0.05)
                 
                 pressEThreeTimes()
-                task.wait(0.4) -- Ждём коробку
+                task.wait(0.25)
                 
                 if not _G.AutofarmEnabled then break end
                 
-                -- ШАГ 2: ТП в DROPOFF (Быстрее)
                 instantTeleport(savedDropoffCFrame)
-                task.wait(0.6) -- Сокращено с 2.0 секунд до безопасного минимума
+                task.wait(0.35)
                 
                 pressEThreeTimes()
-                task.wait(0.3) 
+                task.wait(0.15)
                 
                 if not _G.AutofarmEnabled then break end
                 
-                -- ШАГ 3: Мгновенный Ресет
                 if humanoid then
                     humanoid.Health = 0
                 end
                 
                 localPlayer.CharacterAdded:Wait()
-                task.wait(0.1) -- Крошечная пауза перед новым кругом
             end
         end)
     else
