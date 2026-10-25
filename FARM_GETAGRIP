@@ -76,42 +76,54 @@ ButtonCorner3.Parent = AutofarmButton
 _G.AutofarmEnabled = false
 local VirtualInputManager = game:GetService("VirtualInputManager")
 local camera = workspace.CurrentCamera
+local players = game:GetService("Players")
+local localPlayer = players.LocalPlayer
 
 local savedPickupCFrame = nil
 local savedDropoffCFrame = nil
 
--- Функция принудительного разворота камеры на 180° ровно за 1 секунду
+-- ВСТРОЕННЫЙ АНТИ-AFK (Чтобы не кикало через 20 минут)
+if not _G.AntiAFKConnected then
+    _G.AntiAFKConnected = true
+    localPlayer.Idled:Connect(function()
+        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
+        task.wait(0.05)
+        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
+    end)
+end
+
+-- УСКОРЕННЫЙ РАЗВОРOT КАМЕРЫ (0.3 секунды вместо 1.0)
 local function forceRotateCamera180()
     camera.CameraType = Enum.CameraType.Scriptable
-    task.wait(0.02)
+    task.wait(0.01)
     
-    -- Делаем 5 шагов поворота по 0.2 секунды (итого ровно 1.0 секунда)
-    for i = 1, 5 do
-        camera.CFrame = camera.CFrame * CFrame.Angles(0, math.rad(36), 0)
-        task.wait(0.2)
+    -- 3 быстрых шага по 60 градусов
+    for i = 1, 3 do
+        camera.CFrame = camera.CFrame * CFrame.Angles(0, math.rad(60), 0)
+        task.wait(0.1)
     end
     
-    camera.CameraType = Enum.CameraType.Custom -- Возвращаем управление игроку
+    camera.CameraType = Enum.CameraType.Custom
 end
 
 -- Тройное прожатие E
 local function pressEThreeTimes()
     for i = 1, 3 do
         VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
-        task.wait(0.06)
+        task.wait(0.05)
         VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
-        task.wait(0.06)
+        task.wait(0.05)
     end
 end
 
 -- Мгновенный телепорт
 local function instantTeleport(targetCFrame)
-    local player = game:GetService("Players").LocalPlayer
-    local character = player.Character or player.CharacterAdded:Wait()
-    local rootPart = character:WaitForChild("HumanoidRootPart")
-    
-    player:RequestStreamAroundAsync(targetCFrame.Position)
-    rootPart.CFrame = targetCFrame + Vector3.new(0, 3, 0)
+    local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
+    local rootPart = character:WaitForChild("HumanoidRootPart", 5)
+    if rootPart then
+        localPlayer:RequestStreamAroundAsync(targetCFrame.Position)
+        rootPart.CFrame = targetCFrame + Vector3.new(0, 3, 0)
+    end
 end
 
 -- Поиск объектов
@@ -161,7 +173,7 @@ PickupButton.MouseButton1Click:Connect(function()
     end
 end)
 
--- НАСТРОЕННЫЙ ЦИКЛ С ПРИНУДИТЕЛЬНЫМ ПОВОРОТОМ
+-- НАСТРОЕННЫЙ ЦИКЛ С ПРИНУДИТЕЛЬНЫМ ПОВОРОТОМ (ОПТИМИЗИРОВАННЫЙ)
 AutofarmButton.MouseButton1Click:Connect(function()
     _G.AutofarmEnabled = not _G.AutofarmEnabled
     
@@ -170,9 +182,8 @@ AutofarmButton.MouseButton1Click:Connect(function()
         AutofarmButton.BackgroundColor3 = Color3.fromRGB(0, 180, 0)
         
         task.spawn(function()
-            local player = game:GetService("Players").LocalPlayer
-            
             while _G.AutofarmEnabled do
+                -- Динамический поиск позиций, если они потерялись из памяти
                 if not savedPickupCFrame or not savedDropoffCFrame then
                     local pPart = findPickup()
                     local dPart = findDropoff()
@@ -181,48 +192,44 @@ AutofarmButton.MouseButton1Click:Connect(function()
                 end
                 
                 if not savedPickupCFrame or not savedDropoffCFrame then
-                    AutofarmButton.Text = "Кликни ТП кнопки 1 раз!"
-                    _G.AutofarmEnabled = false
-                    AutofarmButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-                    task.wait(2)
-                    AutofarmButton.Text = "АВТО ФАРМ: ВЫКЛ"
-                    break
+                    AutofarmButton.Text = "Поиск точек..."
+                    task.wait(1)
+                    continue -- Вместо выключения пробуем найти точки на следующем круге
                 end
                 
-                local char = player.Character or player.CharacterAdded:Wait()
+                local char = localPlayer.Character or localPlayer.CharacterAdded:Wait()
+                local humanoid = char:WaitForChild("Humanoid", 5)
                 char:WaitForChild("HumanoidRootPart", 5)
-                task.wait(0.2)
+                task.wait(0.1)
                 
-                -- ШАГ 1: ТП в PICKUP
+                -- ШАГ 1: ТП в PICKUP (Быстрее)
                 instantTeleport(savedPickupCFrame)
-                task.wait(1.0) -- Небольшое ожидание стабилизации
+                task.wait(0.4) -- Оптимальное время на прогрузку
                 
-                forceRotateCamera180() -- Камера переходит в Scriptable и плавно крутится 1 секунду
-                task.wait(0.2)
+                forceRotateCamera180() 
+                task.wait(0.1)
                 
                 pressEThreeTimes()
-                task.wait(0.5) -- Ждём, чтобы коробка точно оказалась в руках
+                task.wait(0.4) -- Ждём коробку
                 
                 if not _G.AutofarmEnabled then break end
                 
-                -- ШАГ 2: ТП в DROPOFF
+                -- ШАГ 2: ТП в DROPOFF (Быстрее)
                 instantTeleport(savedDropoffCFrame)
-                task.wait(2.0) -- Оставляем 2 секунды на безопасную сдачу заказа
+                task.wait(0.6) -- Сокращено с 2.0 секунд до безопасного минимума
                 
                 pressEThreeTimes()
-                task.wait(0.4) 
+                task.wait(0.3) 
                 
                 if not _G.AutofarmEnabled then break end
                 
-                -- ШАГ 3: Ресет
-                if char then
-                    local humanoid = char:FindFirstChildOfClass("Humanoid")
-                    if humanoid then
-                        humanoid.Health = 0
-                    end
+                -- ШАГ 3: Мгновенный Ресет
+                if humanoid then
+                    humanoid.Health = 0
                 end
                 
-                player.CharacterAdded:Wait()
+                localPlayer.CharacterAdded:Wait()
+                task.wait(0.1) -- Крошечная пауза перед новым кругом
             end
         end)
     else
