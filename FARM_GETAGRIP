@@ -438,6 +438,29 @@ _G.TpShopButton.MouseButton1Click:Connect(function()
     if part then instantTeleport(part.CFrame) end
 end)
 
+-- АВТОМАТИЧЕСКИЙ ОБХОД ЗАЩИТЫ АФК (ANTI-AFK BYPASS)
+-- Работает в фоне всегда, когда включен автофарм, каждые 60 секунд имитирует прыжок
+task.spawn(function()
+    while true do
+        task.wait(60) -- Проверка каждую минуту
+        if _G.AutofarmEnabled then
+            pcall(function()
+                local char = localPlayer.Character
+                local hum = char and char:FindFirstChildOfClass("Humanoid")
+                local root = char and char:FindFirstChild("HumanoidRootPart")
+                if hum and root and hum.Health > 0 then
+                    -- Безопасный прыжок без нарушения позиции телепорта
+                    hum.Jump = true
+                    task.wait(0.2)
+                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
+                    task.wait(0.05)
+                    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
+                end
+            end)
+        end
+    end
+end)
+
 _G.AutofarmButton.MouseButton1Click:Connect(function()
     _G.AutofarmEnabled = not _G.AutofarmEnabled
     if _G.AutofarmEnabled then
@@ -453,8 +476,18 @@ _G.AutofarmButton.MouseButton1Click:Connect(function()
                 end
                 if not savedPickupCFrame or not savedDropoffCFrame then task.wait(0.3) continue end
                 
-                local char = localPlayer.Character or localPlayer.CharacterAdded:Wait()
+                -- Жесткая проверка существования персонажа перед действием
+                local char = localPlayer.Character
+                if not char or not char:FindFirstChild("HumanoidRootPart") then 
+                    task.wait(0.1) 
+                    continue 
+                end
+                
                 local humanoid = char:WaitForChild("Humanoid", 5)
+                if not humanoid or humanoid.Health <= 0 then 
+                    task.wait(0.1) 
+                    continue 
+                end
                 
                 instantTeleport(savedPickupCFrame)
                 task.wait(0.2)
@@ -469,6 +502,9 @@ _G.AutofarmButton.MouseButton1Click:Connect(function()
                 task.wait(1.01 + (math.random(0, 2) / 100))
                 if not _G.AutofarmEnabled then break end
                 
+                -- Повторная проверка перед вторым телепортом (защита от падения скрипта)
+                if not localPlayer.Character or not localPlayer.Character:FindFirstChild("HumanoidRootPart") then continue end
+                
                 instantTeleport(savedDropoffCFrame)
                 task.wait(0.35)
                 
@@ -477,14 +513,19 @@ _G.AutofarmButton.MouseButton1Click:Connect(function()
                 
                 if not _G.AutofarmEnabled then break end
                 
-                if humanoid then
+                -- Безопасный сброс персонажа с ожиданием полной очистки
+                if humanoid and humanoid.Health > 0 then
                     camera.CameraType = Enum.CameraType.Custom
                     camera.CameraSubject = humanoid
                     task.wait(0.01)
                     humanoid.Health = 0
                 end
+                
+                -- Улучшенное ожидание нового персонажа (фикс зависания через 30 минут)
                 localPlayer.CharacterAdded:Wait()
-                task.wait(0.05)
+                local newChar = localPlayer.Character or localPlayer.CharacterAdded:Wait()
+                newChar:WaitForChild("HumanoidRootPart", 10)
+                task.wait(0.1)
             end
         end)
     else
