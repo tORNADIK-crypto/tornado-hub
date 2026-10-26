@@ -1,0 +1,112 @@
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+local KontraGui = _G.KontraGui
+local KontraFrame = KontraGui and KontraGui:FindFirstChild("MainFrame")
+
+-- Глобальные функции для работы в связке с твоим Хабом
+_G.checkKontraVisibility = function(targetPart, model)
+    local myChar = LocalPlayer.Character or workspace:FindFirstChild(LocalPlayer.Name, true)
+    if not myChar or not myChar:FindFirstChild("HumanoidRootPart") then return false end
+    local ray = Ray.new(Camera.CFrame.Position, (targetPart.Position - Camera.CFrame.Position))
+    local hitPart = workspace:FindPartOnRayWithIgnoreList(ray, {myChar, model, Camera, workspace.Terrain})
+    if hitPart and hitPart:IsDescendantOf(workspace) and not hitPart:IsDescendantOf(model) and hitPart.CanCollide == true then
+        return false
+    end
+    return true
+end
+
+_G.getKontraTeamType = function(model)
+    if model:FindFirstChild("Leaderboard") and (model.Leaderboard:FindFirstChild("FriendlyIndicator") or model.Leaderboard:FindFirstChild("TeamColor")) then
+        return "Friendly"
+    end
+    local radar = LocalPlayer:FindFirstChild("PlayerGui") and LocalPlayer.PlayerGui:FindFirstChild("Radar")
+    if radar and radar:FindFirstChild(model.Name) then return "Friendly" end
+    local myChar = LocalPlayer.Character or workspace:FindFirstChild(LocalPlayer.Name, true)
+    if myChar and myChar.Parent and model.Parent == myChar.Parent and model.Parent.Name ~= "Characters" then
+        return "Friendly"
+    end
+    return "Enemy"
+end
+
+_G.getOrCreateKontraBox = function(name, teamType)
+    local boxName = "Box_" .. name
+    local box = KontraGui:FindFirstChild(boxName)
+    
+    if not box then
+        box = Instance.new("Frame", KontraGui) 
+        box.Name = boxName 
+        box.BackgroundTransparency = 0.65 
+        box.BorderColor3 = Color3.fromRGB(255, 255, 255) 
+        box.BorderSizePixel = 1
+        
+        local label = Instance.new("TextLabel", box) 
+        label.Size = UDim2.new(1, 0, 0, 15) 
+        label.Position = UDim2.new(0, 0, 0, -18) 
+        label.BackgroundTransparency = 1 
+        label.TextColor3 = Color3.fromRGB(255, 255, 255) 
+        label.Font = Enum.Font.SourceSansBold 
+        label.TextSize = 11
+    end
+    
+    if box and box:FindFirstChildOfClass("TextLabel") then
+        box:FindFirstChildOfClass("TextLabel").Text = (teamType == "Friendly") and "СОЮЗНИК" or "ВРАГ"
+    end
+    return box
+end
+
+-- БЕЗОПАСНЫЙ ЦИКЛ ОБНОВЛЕНИЯ КАДРОВ ЧЕРЕЗ SPAWN (ДЛЯ ОБХОДА ДЕТЕКТОВ KRAMPUS)
+task.spawn(function()
+    while true do
+        task.wait(0.1) -- Контролируемый интервал опроса памяти игры
+        
+        if KontraGui and KontraGui.Enabled and _G.KONTRAA_ESP_ENABLED then
+            -- Очищаем старые рамки во избежание шлейфов на экране
+            for _, child in pairs(KontraGui:GetChildren()) do
+                if child:IsA("Frame") and child ~= KontraFrame then child.Visible = false end
+            end
+
+            local models = {}
+            local entities = ReplicatedStorage:FindFirstChild("GameClient") and ReplicatedStorage.GameClient:FindFirstChild("Entities")
+            if entities then
+                for _, e in pairs(entities:GetDescendants()) do
+                    if e:IsA("Model") and e.Name ~= LocalPlayer.Name then table.insert(models, e) end
+                end
+            end
+            local chars = workspace:FindFirstChild("Characters") or workspace:FindFirstChild("Players")
+            if chars then
+                for _, c in pairs(chars:GetChildren()) do
+                    if c:IsA("Model") and c.Name ~= LocalPlayer.Name then table.insert(models, c) end
+                end
+            end
+
+            -- Отрисовка рамок по кастомным Mesh-моделям
+            for _, model in pairs(models) do
+                local root = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("Head") or model:FindFirstChildOfClass("MeshPart")
+                if root then
+                    -- Наше смещение вверх на 3.5 единицы, чтобы рамки сидели четко на теле
+                    local fixedPos = root.Position + Vector3.new(0, 3.5, 0)
+                    local screenPos, onScreen = Camera:WorldToViewportPoint(fixedPos)
+                    if onScreen then
+                        local teamType = _G.getKontraTeamType(model)
+                        local box = _G.getOrCreateKontraBox(model.Name, teamType)
+                        local sizeY = math.clamp(2300 / screenPos.Z, 30, 500)
+                        local sizeX = sizeY * 0.55
+                        
+                        if teamType == "Friendly" then
+                            box.BackgroundColor3 = Color3.fromRGB(0, 120, 255) -- Синие союзники
+                        else
+                            -- Умный выбор цвета по лазерному рейкасту видимости
+                            box.BackgroundColor3 = _G.checkKontraVisibility(root, model) and Color3.fromRGB(255, 30, 30) or Color3.fromRGB(30, 200, 30)
+                        end
+                        box.Size = UDim2.fromOffset(sizeX, sizeY)
+                        box.Position = UDim2.fromOffset(screenPos.X - sizeX / 2, screenPos.Y - sizeY / 2)
+                        box.Visible = true
+                    end
+                end
+            end
+        end
+    end
+end)
