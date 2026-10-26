@@ -1,3 +1,8 @@
+-- =====================================================================
+-- TWKS PURPLE MULTIHACK: ЧАСТЬ 1 ИЗ 3 (БАЗА ЧИТА, АИМЛОК И WALLBANG)
+-- КРЕДИТЫ: BY CHO_NAX4 | TIKTOK: 6TORNADIKS7
+-- =====================================================================
+
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
@@ -5,33 +10,35 @@ local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
-local ESP_COLOR = Color3.fromRGB(157, 0, 255)
+-- ТВОИ КОНФИГИ ЦВЕТОВ И НАСТРОЕК
+_G.ESP_COLOR = Color3.fromRGB(157, 0, 255)
 local DRONE_COLOR = Color3.fromRGB(0, 255, 255)
-local TEXT_SIZE = 13
+_G.TEXT_SIZE = 13
 local TOGGLE_KEY = Enum.KeyCode.Insert
 
-local ESP_ENABLED = true
-local SHOW_BOX = true
-local SHOW_SKELETON = true
-local SHOW_TRACER = true
-local SHOW_NAME = true
-local SHOW_HEALTH = true
-local SHOW_DRONES = true 
-local TARGET_SPEED = 16
+_G.ESP_ENABLED = true
+_G.SHOW_BOX = true
+_G.SHOW_SKELETON = true
+_G.SHOW_TRACER = true
+_G.SHOW_NAME = true
+_G.SHOW_HEALTH = true
+_G.SHOW_DRONES = true 
+_G.TARGET_SPEED = 16
 
-local INF_JUMP_ENABLED = true
-local TARGET_JUMP_POWER = 50 
-local AIMLOCK_ENABLED = true
-local WALLBANG_ENABLED = false
+_G.INF_JUMP_ENABLED = true
+_G.TARGET_JUMP_POWER = 50 
+_G.AIMLOCK_ENABLED = true
+_G.WALLBANG_ENABLED = false
 local AIM_FOV = 300 
 local AIM_SMOOTHNESS = 0.15 
 
-local Cache = {}
-local DroneCache = {}
-local ActiveDrones = {}
+_G.Cache = {}
+_G.DroneCache = {}
+_G.ActiveDrones = {}
 
+-- ФУНКЦИЯ АИМЛОКА: ИЩЕТ БЛИЖАЙШУЮ ЦЕЛЬ К ЦЕНТРУ ЭКРАНА (ИГРОКОВ ИЛИ ДРОНОВ)
 local function getClosestTarget()
-    if not AIMLOCK_ENABLED then return nil end
+    if not _G.AIMLOCK_ENABLED then return nil end
     local closestTarget = nil
     local shortestDistance = AIM_FOV
     local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
@@ -53,8 +60,8 @@ local function getClosestTarget()
         end
     end
     
-    for _, drone in pairs(ActiveDrones) do
-        local dData = DroneCache[drone]
+    for _, drone in pairs(_G.ActiveDrones) do
+        local dData = _G.DroneCache[drone]
         if dData and dData.Part and dData.Part.Parent then
             local pos, onScreen = Camera:WorldToViewportPoint(dData.Part.Position)
             if onScreen then
@@ -69,6 +76,7 @@ local function getClosestTarget()
     return closestTarget
 end
 
+-- ЦИКЛ СКОРОСТИ БЕГА И НАВОДКИ ПРИ ЗАЖАТОМ ПКМ
 RunService.Heartbeat:Connect(function()
     pcall(function()
         local char = LocalPlayer.Character
@@ -78,12 +86,12 @@ RunService.Heartbeat:Connect(function()
         if root and hum and hum.MoveDirection.Magnitude > 0 then
             local moveDir = hum.MoveDirection
             local currentVel = root.AssemblyLinearVelocity
-            if TARGET_SPEED > 16 then
-                root.AssemblyLinearVelocity = Vector3.new(moveDir.X * TARGET_SPEED, currentVel.Y, moveDir.Z * TARGET_SPEED)
+            if _G.TARGET_SPEED > 16 then
+                root.AssemblyLinearVelocity = Vector3.new(moveDir.X * _G.TARGET_SPEED, currentVel.Y, moveDir.Z * _G.TARGET_SPEED)
             end
         end
         
-        if AIMLOCK_ENABLED and UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
+        if _G.AIMLOCK_ENABLED and UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
             local target = getClosestTarget()
             if target then
                 local targetCFrame = CFrame.new(Camera.CFrame.Position, target.Position)
@@ -92,15 +100,15 @@ RunService.Heartbeat:Connect(function()
         end
     end)
 end)
--- ОПТИМИЗИРОВАННЫЙ ПРОСТРЕЛ БЕЗ ГЛОБАЛЬНЫХ ЦИКЛОВ КАРТЫ
+
+-- ОПТИМИЗИРОВАННЫЙ ПРОСТРЕЛ СТЕН (ОТКЛЮЧЕНИЕ СТОЛКНОВЕНИЙ У ДРОНОВ)
 local modifiedParts = {}
 local lastWallbangState = false
 
 RunService.Stepped:Connect(function()
-    if WALLBANG_ENABLED then
+    if _G.WALLBANG_ENABLED then
         lastWallbangState = true
         local char = LocalPlayer.Character
-        -- Ловим только то, что находится в папке Drone в Workspace
         local droneFolder = workspace:FindFirstChild("Drone")
         if droneFolder then
             for _, drone in ipairs(droneFolder:GetChildren()) do
@@ -124,30 +132,46 @@ RunService.Stepped:Connect(function()
     end
 end)
 
+-- Шарим системные константы в глобалку для следующих частей
+_G.DRONE_COLOR_VAL = DRONE_COLOR
+_G.TOGGLE_KEY_VAL = TOGGLE_KEY
+print("[CHO_NAX4 MULTIHACK]: Часть 1 успешно запущена.")
+-- =====================================================================
+-- TWKS PURPLE MULTIHACK: ЧАСТЬ 2 ИЗ 3 (МЕНЮ И КНОПКИ УПРАВЛЕНИЯ)
+-- КРЕДИТЫ: BY CHO_NAX4 | TIKTOK: 6TORNADIKS7
+-- =====================================================================
+
+local CoreGui = game:GetService("CoreGui")
+local UserInputService = game:GetService("UserInputService")
+local ESP_COLOR = _G.ESP_COLOR
+local TOGGLE_KEY = _G.TOGGLE_KEY_VAL
+
+-- СБОР ФУНКЦИЙ ИЗ ПЕРВОЙ ЧАСТИ
 UserInputService.JumpRequest:Connect(function()
-    if INF_JUMP_ENABLED then
+    if _G.INF_JUMP_ENABLED then
         pcall(function()
-            local char = LocalPlayer.Character
+            local char = game:GetService("Players").LocalPlayer.Character
             local hum = char and char:FindFirstChildOfClass("Humanoid")
             local root = char and char:FindFirstChild("HumanoidRootPart")
             
             if hum and root then
                 hum:ChangeState(Enum.HumanoidStateType.Jumping)
-                if TARGET_JUMP_POWER > 50 then
-                    root.AssemblyLinearVelocity = Vector3.new(root.AssemblyLinearVelocity.X, TARGET_JUMP_POWER, root.AssemblyLinearVelocity.Z)
+                if _G.TARGET_JUMP_POWER > 50 then
+                    root.AssemblyLinearVelocity = Vector3.new(root.AssemblyLinearVelocity.X, _G.TARGET_JUMP_POWER, root.AssemblyLinearVelocity.Z)
                 end
             end
         end)
     end
 end)
 
+-- СОЗДАНИЕ ИНТЕРФЕЙСА ПАНЕЛИ
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "TwksEspMenu"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = CoreGui
 
 _G.MainFrame = Instance.new("Frame")
-_G.MainFrame.Size = UDim2.new(0, 220, 0, 495)
+_G.MainFrame.Size = UDim2.new(0, 220, 0, 520) -- Высота с учетом копирайта
 _G.MainFrame.Position = UDim2.new(0.05, 0, 0.2, 0)
 _G.MainFrame.BackgroundColor3 = Color3.fromRGB(20, 15, 30)
 _G.MainFrame.BorderColor3 = ESP_COLOR
@@ -157,13 +181,26 @@ _G.MainFrame.Draggable = true
 _G.MainFrame.Parent = ScreenGui
 
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, 0, 0, 35)
-Title.BackgroundColor3 = Color3.fromRGB(30, 20, 45)
+Title.Size = UDim2.new(1, 0, 0, 25)
+Title.Position = UDim2.new(0, 0, 0, 2)
+Title.BackgroundTransparency = 1
 Title.Text = "✦ TWKS PURPLE MULTIHACK ✦"
 Title.TextColor3 = ESP_COLOR
 Title.TextSize = 14
 Title.Font = Enum.Font.SourceSansBold
 Title.Parent = _G.MainFrame
+
+-- ТВОЙ АВТОРСКИЙ КОПИРАЙТ
+local TwksCredits = Instance.new("TextLabel")
+TwksCredits.Size = UDim2.new(1, 0, 0, 15)
+TwksCredits.Position = UDim2.new(0, 0, 0, 24)
+TwksCredits.BackgroundTransparency = 1
+TwksCredits.Text = "by CHO_NAX4 | TT: 6TORNADIKS7"
+TwksCredits.TextColor3 = Color3.fromRGB(255, 255, 255)
+TwksCredits.TextSize = 11
+TwksCredits.Font = Enum.Font.SourceSansItalic
+TwksCredits.Parent = _G.MainFrame
+
 local function createToggle(text, pos, default, callback)
     local Btn = Instance.new("TextButton")
     Btn.Size = UDim2.new(0, 180, 0, 30)
@@ -186,20 +223,21 @@ local function createToggle(text, pos, default, callback)
     return Btn
 end
 
-createToggle("Мастер Тумблер", 45, ESP_ENABLED, function(v) ESP_ENABLED = v end)
-createToggle("Квадраты (Box)", 80, SHOW_BOX, function(v) SHOW_BOX = v end)
-createToggle("Скелеты (Skeleton)", 115, SHOW_SKELETON, function(v) SHOW_SKELETON = v end)
-createToggle("Трейсера (Tracers)", 150, SHOW_TRACER, function(v) SHOW_TRACER = v end)
-createToggle("Никнеймы (Names)", 185, SHOW_NAME, function(v) SHOW_NAME = v end)
-createToggle("Полоска ХП (Health)", 220, SHOW_HEALTH, function(v) SHOW_HEALTH = v end)
-createToggle("Дроны (Drone ESP)", 255, SHOW_DRONES, function(v) SHOW_DRONES = v end)
-createToggle("Беск. Прыжок", 290, INF_JUMP_ENABLED, function(v) INF_JUMP_ENABLED = v end)
-createToggle("Smart Aim (ПКМ)", 325, AIMLOCK_ENABLED, function(v) AIMLOCK_ENABLED = v end)
-createToggle("Прострел Стен", 360, false, function(v) WALLBANG_ENABLED = v end)
+-- Распределение кнопок с правильным смещением
+createToggle("Мастер Тумблер", 60, _G.ESP_ENABLED, function(v) _G.ESP_ENABLED = v end)
+createToggle("Квадраты (Box)", 95, _G.SHOW_BOX, function(v) _G.SHOW_BOX = v end)
+createToggle("Скелеты (Skeleton)", 130, _G.SHOW_SKELETON, function(v) _G.SHOW_SKELETON = v end)
+createToggle("Трейсера (Tracers)", 165, _G.SHOW_TRACER, function(v) _G.SHOW_TRACER = v end)
+createToggle("Никнеймы (Names)", 200, _G.SHOW_NAME, function(v) _G.SHOW_NAME = v end)
+createToggle("Полоска ХП (Health)", 235, _G.SHOW_HEALTH, function(v) _G.SHOW_HEALTH = v end)
+createToggle("Дроны (Drone ESP)", 270, _G.SHOW_DRONES, function(v) _G.SHOW_DRONES = v end)
+createToggle("Беск. Прыжок", 305, _G.INF_JUMP_ENABLED, function(v) _G.INF_JUMP_ENABLED = v end)
+createToggle("Smart Aim (ПКМ)", 340, _G.AIMLOCK_ENABLED, function(v) _G.AIMLOCK_ENABLED = v end)
+createToggle("Прострел Стен", 375, false, function(v) _G.WALLBANG_ENABLED = v end)
 
 local JumpPowerBtn = Instance.new("TextButton")
 JumpPowerBtn.Size = UDim2.new(0, 180, 0, 30)
-JumpPowerBtn.Position = UDim2.new(0, 20, 0, 395)
+JumpPowerBtn.Position = UDim2.new(0, 20, 0, 410)
 JumpPowerBtn.BackgroundColor3 = Color3.fromRGB(45, 20, 70)
 JumpPowerBtn.Text = "Сила прыжка: [Дефолт]"
 JumpPowerBtn.TextColor3 = ESP_COLOR
@@ -212,15 +250,15 @@ local jumpIdx = 1
 JumpPowerBtn.MouseButton1Click:Connect(function()
     jumpIdx = jumpIdx + 1
     if jumpIdx > #jumpPowers then jumpIdx = 1 end
-    TARGET_JUMP_POWER = jumpPowers[jumpIdx]
-    JumpPowerBtn.Text = "Сила прыжка: [" .. (TARGET_JUMP_POWER == 50 and "Дефолт" or tostring(TARGET_JUMP_POWER)) .. "]"
+    _G.TARGET_JUMP_POWER = jumpPowers[jumpIdx]
+    JumpPowerBtn.Text = "Сила прыжка: [" .. (_G.TARGET_JUMP_POWER == 50 and "Дефолт" or tostring(_G.TARGET_JUMP_POWER)) .. "]"
 end)
 
 local SpeedBtn = Instance.new("TextButton")
 SpeedBtn.Size = UDim2.new(0, 180, 0, 30)
-SpeedBtn.Position = UDim2.new(0, 20, 0, 430)
+SpeedBtn.Position = UDim2.new(0, 20, 0, 445)
 SpeedBtn.BackgroundColor3 = Color3.fromRGB(45, 20, 70)
-SpeedBtn.Text = "Скорость бега:"
+SpeedBtn.Text = "Скорость бега: [Дефолт]"
 SpeedBtn.TextColor3 = ESP_COLOR
 SpeedBtn.Font = Enum.Font.SourceSans
 SpeedBtn.TextSize = 14
@@ -231,8 +269,8 @@ local speedIdx = 1
 SpeedBtn.MouseButton1Click:Connect(function()
     speedIdx = speedIdx + 1
     if speedIdx > #speeds then speedIdx = 1 end
-    TARGET_SPEED = speeds[speedIdx]
-    SpeedBtn.Text = "Скорость бега: [" .. tostring(TARGET_SPEED) .. "]"
+    _G.TARGET_SPEED = speeds[speedIdx]
+    SpeedBtn.Text = "Скорость бега: [" .. tostring(_G.TARGET_SPEED) .. "]"
 end)
 
 UserInputService.InputBegan:Connect(function(input, gpe)
@@ -240,33 +278,59 @@ UserInputService.InputBegan:Connect(function(input, gpe)
         _G.MainFrame.Visible = not _G.MainFrame.Visible
     end
 end)
-local function addDroneCache(drone)
-    if DroneCache[drone] then return end
-    local mainPart = drone:FindFirstChild("MAIN") or drone:FindFirstChildOfClass("Part") or drone:FindFirstChildOfClass("MeshPart")
-    if mainPart then
-        DroneCache[drone] = {
-            Part = mainPart,
-            Box = createDraw("Square", {Color = DRONE_COLOR, Thickness = 1.5, Filled = false, Visible = false}),
-            Tracer = createDraw("Line", {Color = DRONE_COLOR, Thickness = 1.2, Visible = false}),
-            Tag = createDraw("Text", {Color = DRONE_COLOR, Size = TEXT_SIZE, Center = true, Visible = false})
-        }
-    end
-end
+
+print("[CHO_NAX4 MULTIHACK]: Часть 2 успешно запущена.")
+-- =====================================================================
+-- TWKS PURPLE MULTIHACK: ЧАСТЬ 3 ИЗ 3 (РЕГИСТРАЦИЯ ДРОНОВ И РЕНДЕР ESP)
+-- КРЕДИТЫ: BY CHO_NAX4 | TIKTOK: 6TORNADIKS7
+-- =====================================================================
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+local DRONE_COLOR = _G.DRONE_COLOR_VAL
+local TEXT_SIZE = _G.TEXT_SIZE
 
 local function removeDroneCache(drone)
-    local data = DroneCache[drone] 
+    local data = _G.DroneCache[drone] 
     if data then 
         pcall(function() data.Box:Remove() data.Tracer:Remove() data.Tag:Remove() end) 
-        DroneCache[drone] = nil 
+        _G.DroneCache[drone] = nil 
     end
 end
 
 local function checkAndRegisterDrone(child)
     if child.Name == "FPVDrone" then
         task.defer(function()
-            addDroneCache(child)
-            if DroneCache[child] and not table.find(ActiveDrones, child) then 
-                table.insert(ActiveDrones, child) 
+            if not _G.DroneCache[child] then
+                local mainPart = child:FindFirstChild("MAIN") or child:FindFirstChildOfClass("Part") or child:FindFirstChildOfClass("MeshPart")
+                if mainPart then
+                    _G.DroneCache[child] = {
+                        Part = mainPart,
+                        Box = Drawing.new("Square"),
+                        Tracer = Drawing.new("Line"),
+                        Tag = Drawing.new("Text")
+                    }
+                    _G.DroneCache[child].Box.Color = DRONE_COLOR
+                    _G.DroneCache[child].Box.Thickness = 1.5
+                    _G.DroneCache[child].Box.Filled = false
+                    _G.DroneCache[child].Box.Visible = false
+                    
+                    _G.DroneCache[child].Tracer.Color = DRONE_COLOR
+                    _G.DroneCache[child].Tracer.Thickness = 1.2
+                    _G.DroneCache[child].Tracer.Visible = false
+                    
+                    _G.DroneCache[child].Tag.Color = DRONE_COLOR
+                    _G.DroneCache[child].Tag.Size = TEXT_SIZE
+                    _G.DroneCache[child].Tag.Center = true
+                    _G.DroneCache[child].Tag.Visible = false
+                end
+            end
+            if _G.DroneCache[child] and not table.find(_G.ActiveDrones, child) then 
+                table.insert(_G.ActiveDrones, child) 
+                print("[CHO_NAX4 HACK]: Новый дрон успешно взят на мушку.")
             end
         end)
     end
@@ -275,8 +339,8 @@ end
 workspace.ChildAdded:Connect(checkAndRegisterDrone)
 workspace.ChildRemoved:Connect(function(child)
     if child.Name == "FPVDrone" then 
-        local idx = table.find(ActiveDrones, child) 
-        if idx then table.remove(ActiveDrones, idx) end 
+        local idx = table.find(_G.ActiveDrones, child) 
+        if idx then table.remove(_G.ActiveDrones, idx) end 
         removeDroneCache(child) 
     end
 end)
@@ -288,38 +352,37 @@ RunService.RenderStepped:Connect(function()
     local screenCenter = Vector2.new(viewportSize.X / 2, viewportSize.Y)
     
     for _, plr in pairs(Players:GetPlayers()) do
-        if plr ~= LocalPlayer then
-            addPlayerCache(plr)
-            local data = Cache[plr] 
+        if plr ~= LocalPlayer and _G.Cache[plr] then
+            local data = _G.Cache[plr] 
             local char = plr.Character 
             local root = char and char:FindFirstChild("HumanoidRootPart") 
             local hum = char and char:FindFirstChildOfClass("Humanoid")
             
-            if ESP_ENABLED and root and hum and hum.Health > 0 then
+            if _G.ESP_ENABLED and root and hum and hum.Health > 0 then
                 local pos, onScreen = Camera:WorldToViewportPoint(root.Position)
                 if onScreen then
                     local sizeX = math.clamp(2000 / pos.Z, 10, 300) 
                     local sizeY = math.clamp(3500 / pos.Z, 15, 500)
                     
-                    if SHOW_BOX then 
+                    if _G.SHOW_BOX then 
                         data.Box.Size = Vector2.new(sizeX, sizeY) 
                         data.Box.Position = Vector2.new(pos.X - sizeX/2, pos.Y - sizeY/2) 
                         data.Box.Visible = true 
                     else data.Box.Visible = false end
                     
-                    if SHOW_TRACER then 
+                    if _G.SHOW_TRACER then 
                         data.Tracer.From = screenCenter 
                         data.Tracer.To = Vector2.new(pos.X, pos.Y + sizeY/2) 
                         data.Tracer.Visible = true 
                     else data.Tracer.Visible = false end
                     
-                    if SHOW_NAME then 
-                        data.Name.Text = plr.Name 
+                    if _G.SHOW_NAME then 
+                        data.Name.Text = plr.Name .. " [by CHO_NAX4]"
                         data.Name.Position = Vector2.new(pos.X, pos.Y - sizeY/2 - 16) 
                         data.Name.Visible = true 
                     else data.Name.Visible = false end
                     
-                    if SHOW_HEALTH then
+                    if _G.SHOW_HEALTH then
                         local hpPercent = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
                         data.HealthBarOutline.Size = Vector2.new(4, sizeY) 
                         data.HealthBarOutline.Position = Vector2.new(pos.X - sizeX/2 - 6, pos.Y - sizeY/2) 
@@ -332,7 +395,7 @@ RunService.RenderStepped:Connect(function()
                         data.HealthBarOutline.Visible = false data.HealthBar.Visible = false 
                     end
                     
-                    if SHOW_SKELETON then
+                    if _G.SHOW_SKELETON then
                         local bIndex = 1
                         local function drawBone(p1, p2)
                             local part1 = char:FindFirstChild(p1) 
@@ -377,23 +440,35 @@ RunService.RenderStepped:Connect(function()
         end
     end
     
-    for i = #ActiveDrones, 1, -1 do
-        local obj = ActiveDrones[i] 
-        local dData = DroneCache[obj]
+    for i = #_G.ActiveDrones, 1, -1 do
+        local obj = _G.ActiveDrones[i] 
+        local dData = _G.DroneCache[obj]
         if dData then
-            if ESP_ENABLED and SHOW_DRONES and dData.Part and dData.Part.Parent then
+            if _G.ESP_ENABLED and _G.SHOW_DRONES and dData.Part and dData.Part.Parent then
                 local pos, onScreen = Camera:WorldToViewportPoint(dData.Part.Position)
                 if onScreen then
                     local size = math.clamp(1200 / pos.Z, 5, 80)
-                    if SHOW_BOX then dData.Box.Size = Vector2.new(size, size) dData.Box.Position = Vector2.new(pos.X - size/2, pos.Y - size/2) dData.Box.Visible = true else dData.Box.Visible = false end
-                    if SHOW_TRACER then dData.Tracer.From = screenCenter dData.Tracer.To = Vector2.new(pos.X, pos.Y + size/2) dData.Tracer.Visible = true else dData.Tracer.Visible = false end
-                    dData.Tag.Text = string.format("[Дрон | %dм]", math.floor(pos.Z)) 
+                    if _G.SHOW_BOX then dData.Box.Size = Vector2.new(size, size) dData.Box.Position = Vector2.new(pos.X - size/2, pos.Y - size/2) dData.Box.Visible = true else dData.Box.Visible = false end
+                    if _G.SHOW_TRACER then dData.Tracer.From = screenCenter dData.Tracer.To = Vector2.new(pos.X, pos.Y + size/2) dData.Tracer.Visible = true else dData.Tracer.Visible = false end
+                    dData.Tag.Text = string.format("[Дрон CHO_NAX4 | %dм]", math.floor(pos.Z)) 
                     dData.Tag.Position = Vector2.new(pos.X, pos.Y - size/2 - 14) 
                     dData.Tag.Visible = true
                 else dData.Box.Visible = false dData.Tracer.Visible = false dData.Tag.Visible = false end
             else dData.Box.Visible = false dData.Tracer.Visible = false dData.Tag.Visible = false end
-        else table.remove(ActiveDrones, i) end
+        else table.remove(_G.ActiveDrones, i) end
     end
 end)
 
-Players.PlayerRemoving:Connect(removePlayerCache)
+Players.PlayerRemoving:Connect(function(plr)
+    if _G.Cache[plr] then
+        pcall(function()
+            _G.Cache[plr].Box:Remove()
+            _G.Cache[plr].Tracer:Remove()
+            _G.Cache[plr].Name:Remove()
+                    _G.Cache[plr].HealthBar:Remove()
+_G.Cache[plr].HealthBarOutline:Remove()
+for _, b in pairs(_G.Cache[plr].Bones) do b:Remove() end
+end)
+_G.Cache[plr] = nil
+end
+end)
