@@ -1,0 +1,204 @@
+-- Полная очистка старых панелей и ESP перед стартом
+local coreGui = game:GetService("CoreGui")
+local oldGuis = {"CandyCollectorGui", "CandyESP"}
+for _, name in ipairs(oldGuis) do
+    local found = coreGui:FindFirstChild(name)
+    if found then pcall(function() found:Destroy() end) end
+end
+task.wait(0.1)
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+
+-- Переменные для Брукхейвена
+local autoCollecting = false
+local espActive = false
+local visitedCandies = {}
+local noclipOn = false
+local candyFolder = workspace:FindFirstChild("CandyCornHunt") and workspace.CandyCornHunt:FindFirstChild("Week1")
+
+local EspFolder = Instance.new("Folder")
+EspFolder.Name = "CandyESP"
+EspFolder.Parent = coreGui
+
+-- =====================================================================
+-- СОЗДАНИЕ ИНТЕРФЕЙСА МЕНЮ (НА ЧИСТОМ КОДЕ)
+-- =====================================================================
+local BrookhavenGui = Instance.new("ScreenGui")
+BrookhavenGui.Name = "CandyCollectorGui"
+BrookhavenGui.Parent = coreGui
+BrookhavenGui.ResetOnSpawn = false
+
+local CandyFrame = Instance.new("Frame", BrookhavenGui)
+CandyFrame.Name = "MainFrame"
+CandyFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
+CandyFrame.Position = UDim2.new(0.05, 0, 0.4, 0)
+CandyFrame.Size = UDim2.new(0, 220, 0, 235)
+CandyFrame.Active = true
+CandyFrame.Draggable = true
+Instance.new("UICorner", CandyFrame).CornerRadius = UDim.new(0, 10)
+
+local CandyTitle = Instance.new("TextLabel", CandyFrame)
+CandyTitle.Name = "Title"
+CandyTitle.BackgroundTransparency = 1
+CandyTitle.Size = UDim2.new(1, 0, 0, 40)
+CandyTitle.Font = Enum.Font.SourceSansBold
+CandyTitle.Text = "🎃 Candy Collector v3"
+CandyTitle.TextColor3 = Color3.fromRGB(255, 140, 0)
+CandyTitle.TextSize = 20
+
+local ToggleBtn = Instance.new("TextButton", CandyFrame)
+local TpBtn = Instance.new("TextButton", CandyFrame)
+local BrookhavenEspBtn = Instance.new("TextButton", CandyFrame)
+local ResetBtn = Instance.new("TextButton", CandyFrame)
+
+local function configCandyBtn(btn, text, pos, bg)
+    btn.BackgroundColor3 = bg
+    btn.Position = pos
+    btn.Size = UDim2.new(1, -20, 0, 35)
+    btn.Font = Enum.Font.SourceSans
+    btn.Text = text
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextSize = 16
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+end
+configCandyBtn(ToggleBtn, "Авто-сбор: ВЫКЛ", UDim2.new(0, 10, 0, 45), Color3.fromRGB(50, 50, 55))
+configCandyBtn(TpBtn, "Полет к следующей (1 раз)", UDim2.new(0, 10, 0, 90), Color3.fromRGB(50, 50, 55))
+configCandyBtn(BrookhavenEspBtn, "Подсветка (ESP): ВЫКЛ", UDim2.new(0, 10, 0, 135), Color3.fromRGB(50, 50, 55))
+configCandyBtn(ResetBtn, "Очистить лог конфет", UDim2.new(0, 10, 0, 185), Color3.fromRGB(70, 35, 35))
+ResetBtn.TextColor3 = Color3.fromRGB(255, 150, 150)
+
+-- =====================================================================
+-- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ СБОРА
+-- =====================================================================
+local function jitterMovement()
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if hrp then
+        hrp.CFrame = hrp.CFrame * CFrame.new(0, 0, 2) task.wait(0.15)
+        hrp.CFrame = hrp.CFrame * CFrame.new(0, 0, -4) task.wait(0.15)
+        hrp.CFrame = hrp.CFrame * CFrame.new(0, 0, 2)
+    end
+end
+
+local function updateESP()
+    EspFolder:ClearAllChildren()
+    if not espActive or not candyFolder then return end
+    for _, candy in pairs(candyFolder:GetChildren()) do
+        if (candy:IsA("BasePart") or candy:IsA("MeshPart")) and not visitedCandies[candy.Name] then
+            local box = Instance.new("BoxHandleAdornment", EspFolder)
+            box.Size = candy.Size + Vector3.new(0.5, 0.5, 0.5)
+            box.AlwaysOnTop = true box.ZIndex = 5 box.Color3 = Color3.fromRGB(255, 120, 0)
+            box.Adornee = candy box.Transparency = 0.4
+
+            local bGui = Instance.new("BillboardGui", EspFolder)
+            bGui.Size = UDim2.new(0, 100, 0, 30) bGui.AlwaysOnTop = true bGui.Adornee = candy bGui.StudsOffset = Vector3.new(0, 3, 0)
+            local label = Instance.new("TextLabel", bGui)
+            label.Size = UDim2.new(1, 0, 1, 0) label.BackgroundTransparency = 1 label.Text = candy.Name
+            label.TextColor3 = Color3.fromRGB(255, 255, 255) label.TextStrokeTransparency = 0 label.TextSize = 12
+            label.Font = Enum.Font.SourceSansBold
+        end
+    end
+end
+
+local function getNextCandy()
+    if not candyFolder then return nil end
+    for _, candy in pairs(candyFolder:GetChildren()) do
+        if candy:IsA("BasePart") or candy:IsA("MeshPart") or candy:IsA("Model") then
+            if not visitedCandies[candy.Name] then return candy end
+        end
+    end
+    return nil
+end
+
+local function flyToCFrame(targetCFrame)
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return false end
+    local duration = (hrp.Position - targetCFrame.Position).Magnitude / 120
+    local tween = TweenService:Create(hrp, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
+    tween:Play() tween.Completed:Wait()
+    return true
+end
+
+local function collectCandy(candy)
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if hrp and candy and candy.Parent then
+        local targetCFrame = candy:IsA("Model") and (candy:GetPrimaryPartCFrame() or candy:FindFirstChildWhichIsA("BasePart").CFrame) or candy.CFrame
+        if targetCFrame then
+            noclipOn = false flyToCFrame(targetCFrame + Vector3.new(0, 1.5, 0)) task.wait(0.2)
+            jitterMovement()
+            local startTime = tick()
+            local collected = false
+            while tick() - startTime < 2 do
+                if not candy or not candy.Parent then collected = true break end
+                task.wait(0.1)
+            end
+            if not collected and candy and candy.Parent then
+                noclipOn = true hrp.CFrame = targetCFrame jitterMovement() task.wait(0.5) noclipOn = false
+            end
+            visitedCandies[candy.Name] = true
+            if espActive then updateESP() end
+        end
+    end
+end
+
+-- =====================================================================
+-- СВЯЗКА КНОПОК И ЦИКЛЫ ОБХОДОВ
+-- =====================================================================
+ToggleBtn.MouseButton1Click:Connect(function()
+    autoCollecting = not autoCollecting
+    if autoCollecting then
+        ToggleBtn.Text = "Авто-сбор: ВКЛ" ToggleBtn.BackgroundColor3 = Color3.fromRGB(34, 139, 34)
+        task.spawn(function()
+            while autoCollecting do
+                local candy = getNextCandy()
+                if candy then collectCandy(candy) else table.clear(visitedCandies) if espActive then updateESP() end end
+                task.wait(0.5)
+            end
+        end)
+    else
+        ToggleBtn.Text = "Авто-сбор: ВЫКЛ" ToggleBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 55) noclipOn = false
+    end
+end)
+
+TpBtn.MouseButton1Click:Connect(function() if not autoCollecting then local candy = getNextCandy() if candy then collectCandy(candy) end end end)
+
+BrookhavenEspBtn.MouseButton1Click:Connect(function()
+    espActive = not espActive
+    BrookhavenEspBtn.Text = espActive and "Подсветка (ESP): ВКЛ" or "Подсветка (ESP): ВЫКЛ"
+    BrookhavenEspBtn.BackgroundColor3 = espActive and Color3.fromRGB(255, 140, 0) or Color3.fromRGB(50, 50, 55)
+    if espActive then updateESP() else EspFolder:ClearAllChildren() end
+end)
+
+ResetBtn.MouseButton1Click:Connect(function()
+    table.clear(visitedCandies) if espActive then updateESP() end
+    local oldText = ResetBtn.Text ResetBtn.Text = "Очищено!" task.wait(1.5) ResetBtn.Text = oldText
+end)
+
+if candyFolder then candyFolder.ChildRemoved:Connect(function() if espActive then updateESP() end end) end
+
+-- Системные обходы (Постоянный ноклип при ТП и сброс сидения на стульях)
+RunService.Stepped:Connect(function()
+    if noclipOn and LocalPlayer.Character then
+        for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+            if part:IsA("BasePart") then part.CanCollide = false end
+        end
+    end
+end)
+
+task.spawn(function()
+    while true do
+        local char = LocalPlayer.Character
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        if hum and hum.Sit then
+            hum.Sit = false
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            if hrp then hrp.CFrame = hrp.CFrame + Vector3.new(0, 2, 0) end
+        end
+        task.wait(0.1)
+    end
+end)
