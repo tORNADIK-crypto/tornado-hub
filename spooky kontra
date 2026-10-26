@@ -1,13 +1,74 @@
+-- =====================================================================
+-- ПОЛНОСТЬЮ АВТОНОМНЫЙ SMART ESP ДЛЯ STICKERS! KONTRAA (С МЕНЮ)
+-- =====================================================================
+
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
-local KontraGui = _G.KontraGui
-local KontraFrame = KontraGui and KontraGui:FindFirstChild("MainFrame")
+local CoreGui = game:GetService("CoreGui")
 
--- Глобальные функции для работы в связке с твоим Хабом
-_G.checkKontraVisibility = function(targetPart, model)
+-- 1. ТОТАЛЬНАЯ ЛОКАЛЬНАЯ ОЧИСТКА ЭКРАНА ПЕРЕД СТАРТОМ
+if CoreGui:FindFirstChild("Kontra_Standalone_ESP_System") then
+    pcall(function() CoreGui.Kontra_Standalone_ESP_System:Destroy() end)
+end
+task.wait(0.05)
+
+-- Глобальная переменная для управления циклом
+_G.KONTRAA_STANDALONE_ENABLED = true
+
+-- 2. СОЗДАНИЕ СОБСТВЕННОГО НЕЗАВИСИМОГО ИНТЕРФЕЙСА
+local MyKontraGui = Instance.new("ScreenGui")
+MyKontraGui.Name = "Kontra_Standalone_ESP_System"
+MyKontraGui.Parent = CoreGui
+MyKontraGui.ResetOnSpawn = false
+
+local MenuFrame = Instance.new("Frame", MyKontraGui)
+MenuFrame.Name = "MainFrame"
+MenuFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+MenuFrame.Position = UDim2.new(0.05, 0, 0.2, 0)
+MenuFrame.Size = UDim2.new(0, 240, 0, 110)
+MenuFrame.Active = true
+MenuFrame.Draggable = true -- Двигается пальцем на мобилках и мышкой на ПК
+Instance.new("UICorner", MenuFrame).CornerRadius = UDim.new(0, 10)
+
+local Title = Instance.new("TextLabel", MenuFrame)
+Title.Size = UDim2.new(1, 0, 0, 35)
+Title.BackgroundColor3 = Color3.fromRGB(180, 40, 40) -- Красный стиль
+Title.Text = "KONTRAA SMART ESP"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.Font = Enum.Font.SourceSansBold
+Title.TextSize = 13
+Instance.new("UICorner", Title).CornerRadius = UDim.new(0, 10)
+
+local EspBtn = Instance.new("TextButton", MenuFrame)
+EspBtn.Size = UDim2.new(0.9, 0, 0, 45)
+EspBtn.Position = UDim2.new(0.05, 0, 0.45, 0)
+EspBtn.BackgroundColor3 = Color3.fromRGB(40, 100, 60)
+EspBtn.Text = "Умный ESP: ВКЛ"
+EspBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+EspBtn.Font = Enum.Font.SourceSansBold
+EspBtn.TextSize = 14
+Instance.new("UICorner", EspBtn).CornerRadius = UDim.new(0, 5)
+
+-- Клик по кнопке ВКЛ/ВЫКЛ внутри меню
+EspBtn.MouseButton1Click:Connect(function()
+    _G.KONTRAA_STANDALONE_ENABLED = not _G.KONTRAA_STANDALONE_ENABLED
+    EspBtn.Text = _G.KONTRAA_STANDALONE_ENABLED and "Умный ESP: ВКЛ" or "Умный ESP: ВЫКЛ"
+    EspBtn.BackgroundColor3 = _G.KONTRAA_STANDALONE_ENABLED and Color3.fromRGB(40, 100, 60) or Color3.fromRGB(55, 55, 60)
+    
+    if not _G.KONTRAA_STANDALONE_ENABLED then
+        for _, child in pairs(MyKontraGui:GetChildren()) do
+            if child:IsA("Frame") and child ~= MenuFrame then child.Visible = false end
+        end
+    end
+end)
+
+-- =====================================================================
+-- 3. ФУНКЦИИ ПРОВЕРКИ СТЕН И КОМАНД (ПОЛНОСТЬЮ АВТОНОМНЫЕ)
+-- =====================================================================
+local function checkKontraVisibility(targetPart, model)
     local myChar = LocalPlayer.Character or workspace:FindFirstChild(LocalPlayer.Name, true)
     if not myChar or not myChar:FindFirstChild("HumanoidRootPart") then return false end
     local ray = Ray.new(Camera.CFrame.Position, (targetPart.Position - Camera.CFrame.Position))
@@ -18,7 +79,7 @@ _G.checkKontraVisibility = function(targetPart, model)
     return true
 end
 
-_G.getKontraTeamType = function(model)
+local function getKontraTeamType(model)
     if model:FindFirstChild("Leaderboard") and (model.Leaderboard:FindFirstChild("FriendlyIndicator") or model.Leaderboard:FindFirstChild("TeamColor")) then
         return "Friendly"
     end
@@ -31,12 +92,12 @@ _G.getKontraTeamType = function(model)
     return "Enemy"
 end
 
-_G.getOrCreateKontraBox = function(name, teamType)
+local function getOrCreateKontraBox(name, teamType)
     local boxName = "Box_" .. name
-    local box = KontraGui:FindFirstChild(boxName)
+    local box = MyKontraGui:FindFirstChild(boxName)
     
     if not box then
-        box = Instance.new("Frame", KontraGui) 
+        box = Instance.new("Frame", MyKontraGui) 
         box.Name = boxName 
         box.BackgroundTransparency = 0.65 
         box.BorderColor3 = Color3.fromRGB(255, 255, 255) 
@@ -57,17 +118,20 @@ _G.getOrCreateKontraBox = function(name, teamType)
     return box
 end
 
--- БЕЗОПАСНЫЙ ЦИКЛ ОБНОВЛЕНИЯ КАДРОВ ЧЕРЕЗ SPAWN (ДЛЯ ОБХОДА ДЕТЕКТОВ KRAMPUS)
+-- =====================================================================
+-- 4. ПОТОК ОБНОВЛЕНИЯ С ЗАДЕРЖКОЙ (ОБХОД KRAMPUS БЕЗ ШЛЕЙФОВ)
+-- =====================================================================
 task.spawn(function()
     while true do
-        task.wait(0.1) -- Контролируемый интервал опроса памяти игры
+        task.wait(0.08) -- Безопасный интервал, чтобы не кикал античит
         
-        if KontraGui and KontraGui.Enabled and _G.KONTRAA_ESP_ENABLED then
-            -- Очищаем старые рамки во избежание шлейфов на экране
-            for _, child in pairs(KontraGui:GetChildren()) do
-                if child:IsA("Frame") and child ~= KontraFrame then child.Visible = false end
+        if MyKontraGui and MyKontraGui.Parent and _G.KONTRAA_STANDALONE_ENABLED then
+            -- Скрываем старые рамки перед прорисовкой кадра (борьба со шлейфами)
+            for _, child in pairs(MyKontraGui:GetChildren()) do
+                if child:IsA("Frame") and child ~= MenuFrame then child.Visible = false end
             end
 
+            -- Собираем скрытые модельки
             local models = {}
             local entities = ReplicatedStorage:FindFirstChild("GameClient") and ReplicatedStorage.GameClient:FindFirstChild("Entities")
             if entities then
@@ -82,25 +146,26 @@ task.spawn(function()
                 end
             end
 
-            -- Отрисовка рамок по кастомным Mesh-моделям
+            -- Отрисовка
             for _, model in pairs(models) do
                 local root = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("Head") or model:FindFirstChildOfClass("MeshPart")
                 if root then
-                    -- Наше смещение вверх на 3.5 единицы, чтобы рамки сидели четко на теле
                     local fixedPos = root.Position + Vector3.new(0, 3.5, 0)
                     local screenPos, onScreen = Camera:WorldToViewportPoint(fixedPos)
+                    
                     if onScreen then
-                        local teamType = _G.getKontraTeamType(model)
-                        local box = _G.getOrCreateKontraBox(model.Name, teamType)
+                        local teamType = getKontraTeamType(model)
+                        local box = getOrCreateKontraBox(model.Name, teamType)
                         local sizeY = math.clamp(2300 / screenPos.Z, 30, 500)
                         local sizeX = sizeY * 0.55
                         
                         if teamType == "Friendly" then
-                            box.BackgroundColor3 = Color3.fromRGB(0, 120, 255) -- Синие союзники
+                            box.BackgroundColor3 = Color3.fromRGB(0, 120, 255) -- Синий союзник
                         else
-                            -- Умный выбор цвета по лазерному рейкасту видимости
-                            box.BackgroundColor3 = _G.checkKontraVisibility(root, model) and Color3.fromRGB(255, 30, 30) or Color3.fromRGB(30, 200, 30)
+                            -- Проверка стен
+                            box.BackgroundColor3 = checkKontraVisibility(root, model) and Color3.fromRGB(255, 30, 30) or Color3.fromRGB(30, 200, 30)
                         end
+                        
                         box.Size = UDim2.fromOffset(sizeX, sizeY)
                         box.Position = UDim2.fromOffset(screenPos.X - sizeX / 2, screenPos.Y - sizeY / 2)
                         box.Visible = true
