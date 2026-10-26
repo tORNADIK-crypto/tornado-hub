@@ -1,12 +1,12 @@
 -- =====================================================================
--- TORNADO MULTI-HUB v4 (БЕЗ КОНТРЫ)
+-- TORNADO MULTI-HUB v4 (ПОЛНАЯ ВЕРСИЯ НА 4 ИГРЫ)
 -- КРЕДИТЫ: BY CHO_NAX4 | TIKTOK: 6TORNADIKS7
 -- =====================================================================
 
 local coreGui = game:GetService("CoreGui")
 
 -- Тотальная очистка всех старых панелей, оверлеев и хабов перед стартом
-local guisToDestroy = {"GameChooserHub", "DoubleTpHub", "CandyCollectorGui", "Kontra_Pure_ESP_Menu", "CandyESP", "TwksEspMenu"}
+local guisToDestroy = {"GameChooserHub", "DoubleTpHub", "CandyCollectorGui", "Kontra_Standalone_ESP_System", "CandyESP", "TwksEspMenu"}
 for _, guiName in ipairs(guisToDestroy) do
     local oldGui = coreGui:FindFirstChild(guiName)
     if oldGui then pcall(function() oldGui:Destroy() end) end
@@ -25,8 +25,8 @@ ChooserGui.ResetOnSpawn = false
 local ChooserFrame = Instance.new("Frame", ChooserGui)
 ChooserFrame.Name = "ChooserFrame"
 ChooserFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-ChooserFrame.Position = UDim2.new(0.4, 0, 0.35, 0)
-ChooserFrame.Size = UDim2.new(0, 290, 0, 215) -- Идеальный компактный размер под 3 кнопки
+ChooserFrame.Position = UDim2.new(0.4, 0, 0.3, 0)
+ChooserFrame.Size = UDim2.new(0, 290, 0, 260) -- Увеличили размер под 4 большие кнопки
 ChooserFrame.Active = true
 ChooserFrame.Draggable = true
 Instance.new("UICorner", ChooserFrame).CornerRadius = UDim.new(0, 10)
@@ -73,21 +73,27 @@ local function createHubButton(text, pos, bg, callback)
 end
 
 -- КНОПКА 1: GET A GRIP (Твой мощный автономный автофарм)
-createHubButton("GET A GRIP (АВТОФАРМ)", UDim2.new(0, 15, 0, 55), Color3.fromRGB(0, 130, 220), function()
+createHubButton("GET A GRIP (АВТОФАРМ)", UDim2.new(0, 15, 0, 50), Color3.fromRGB(0, 130, 220), function()
     ChooserGui:Destroy()
-    loadstring(game:HttpGet("https://githubusercontent.com"))()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/tORNADIK-crypto/tornado-hub/refs/heads/main/FARM_GETAGRIP"))()
 end)
 
 -- КНОПКА 2: BROOKHAVEN (Твой личный сборщик ивентовых конфет)
-createHubButton("BROOKHAVEN (CANDY COLLECTOR)", UDim2.new(0, 15, 0, 105), Color3.fromRGB(255, 140, 0), function()
+createHubButton("BROOKHAVEN (CANDY COLLECTOR)", UDim2.new(0, 15, 0, 100), Color3.fromRGB(255, 140, 0), function()
     ChooserGui:Destroy()
-    loadstring(game:HttpGet("https://githubusercontent.com"))()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/tORNADIK-crypto/tornado-hub/refs/heads/main/candy%20brookhaven"))()
 end)
 
--- КНОПКА 3: FPV DRONE BATTLEFIELD (Твой фиолетовый мультихак Drawing ESP/Aim)
-createHubButton("FPV DRONE BATTLEFIELD (TWKS)", UDim2.new(0, 15, 0, 155), Color3.fromRGB(130, 50, 180), function()
+-- КНОПКА 3: STICKERS! KONTRAA (Тот самый рабочий Смарт ESP с обходом)
+createHubButton("STICKERS! KONTRAA (SMART ESP)", UDim2.new(0, 15, 0, 150), Color3.fromRGB(180, 40, 40), function()
     ChooserGui:Destroy()
-    loadstring(game:HttpGet("https://githubusercontent.com"))()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/tORNADIK-crypto/tornado-hub/refs/heads/main/spooky%20kontra"))()
+end)
+
+-- КНОПКА 4: FPV DRONE BATTLEFIELD (Твой фиолетовый мультихак TWKS Drawing ESP/Aim)
+createHubButton("FPV DRONE BATTLEFIELD (TWKS)", UDim2.new(0, 15, 0, 200), Color3.fromRGB(130, 50, 180), function()
+    ChooserGui:Destroy()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/tORNADIK-crypto/tornado-hub/refs/heads/main/FPV%20DRONE%20BATTLEFIELD.lua"))()
 end)
 
 print("[TORNADO HUB]: Успешный запуск лаунчера от CHO_NAX4. Приятной игры!")
