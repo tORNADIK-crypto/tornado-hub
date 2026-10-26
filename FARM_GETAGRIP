@@ -1019,7 +1019,7 @@ local function getOrCreateKontraBox(name, teamType)
     local box = KontraGui:FindFirstChild(boxName)
     if not box then 
 -- =====================================================================
--- МУЛЬТИ-КЛИЕНТ: ЧАСТЬ 6 ИЗ 6 (ФИНАЛЬНЫЙ СИНХРОННЫЙ ЦИКЛ РЕНДЕРА)
+-- МУЛЬТИ-КЛИЕНТ: ЧАСТЬ 6 ИЗ 6 (БЕЗОПАСНЫЙ ЦИКЛ ДЛЯ АНТИЧИТА KRAMPUS)
 -- =====================================================================
 
         local KontraGui = _G.KontraGui
@@ -1046,51 +1046,56 @@ local function getOrCreateKontraBox(name, teamType)
     return box
 end
 
--- Подключение рендеринга рамок KONTRAA сквозь кастомные слои
-game:GetService("RunService").RenderStepped:Connect(function()
-    local KontraGui = _G.KontraGui
-    local KontraFrame = KontraGui and KontraGui:FindFirstChild("MainFrame")
-    if not KontraGui or not KontraGui.Enabled or not _G.KONTRAA_ESP_ENABLED then return end
+-- ЗАМЕНА НА БЕЗОПАСНЫЙ ЦИКЛ С ЗАДЕРЖКОЙ (ОБХОД KRAMPUS)
+task.spawn(function()
+    while true do
+        task.wait(0.1) -- Задержка в 100 миллисекунд. Спасает от автоматического кика!
+        
+        local KontraGui = _G.KontraGui
+        local KontraFrame = KontraGui and KontraGui:FindFirstChild("MainFrame")
+        
+        if KontraGui and KontraGui.Enabled and _G.KONTRAA_ESP_ENABLED then
+            -- Очищаем старые кадры, чтобы убрать шлейфы
+            for _, child in pairs(KontraGui:GetChildren()) do
+                if child:IsA("Frame") and child ~= KontraFrame then child.Visible = false end
+            end
 
-    -- Очищаем старые кадры, чтобы убрать шлейфы
-    for _, child in pairs(KontraGui:GetChildren()) do
-        if child:IsA("Frame") and child ~= KontraFrame then child.Visible = false end
-    end
-
-    local models = {}
-    local entities = game:GetService("ReplicatedStorage"):FindFirstChild("GameClient") and game:GetService("ReplicatedStorage").GameClient:FindFirstChild("Entities")
-    if entities then
-        for _, e in pairs(entities:GetDescendants()) do
-            if e:IsA("Model") and e.Name ~= game:GetService("Players").LocalPlayer.Name then table.insert(models, e) end
-        end
-    end
-    local chars = workspace:FindFirstChild("Characters") or workspace:FindFirstChild("Players")
-    if chars then
-        for _, c in pairs(chars:GetChildren()) do
-            if c:IsA("Model") and c.Name ~= game:GetService("Players").LocalPlayer.Name then table.insert(models, c) end
-        end
-    end
-
-    local Camera = workspace.CurrentCamera
-    for _, model in pairs(models) do
-        local root = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("Head") or model:FindFirstChildOfClass("MeshPart")
-        if root then
-            local fixedPos = root.Position + Vector3.new(0, 3.5, 0)
-            local screenPos, onScreen = Camera:WorldToViewportPoint(fixedPos)
-            if onScreen then
-                local teamType = _G.getKontraTeamType(model)
-                local box = _G.getOrCreateKontraBox(model.Name, teamType)
-                local sizeY = math.clamp(2300 / screenPos.Z, 30, 500)
-                local sizeX = sizeY * 0.55
-                
-                if teamType == "Friendly" then
-                    box.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
-                else
-                    box.BackgroundColor3 = _G.checkKontraVisibility(root, model) and Color3.fromRGB(255, 30, 30) or Color3.fromRGB(30, 200, 30)
+            local models = {}
+            local entities = game:GetService("ReplicatedStorage"):FindFirstChild("GameClient") and game:GetService("ReplicatedStorage").GameClient:FindFirstChild("Entities")
+            if entities then
+                for _, e in pairs(entities:GetDescendants()) do
+                    if e:IsA("Model") and e.Name ~= game:GetService("Players").LocalPlayer.Name then table.insert(models, e) end
                 end
-                box.Size = UDim2.fromOffset(sizeX, sizeY)
-                box.Position = UDim2.fromOffset(screenPos.X - sizeX / 2, screenPos.Y - sizeY / 2)
-                box.Visible = true
+            end
+            local chars = workspace:FindFirstChild("Characters") or workspace:FindFirstChild("Players")
+            if chars then
+                for _, c in pairs(chars:GetChildren()) do
+                    if c:IsA("Model") and c.Name ~= game:GetService("Players").LocalPlayer.Name then table.insert(models, c) end
+                end
+            end
+
+            local Camera = workspace.CurrentCamera
+            for _, model in pairs(models) do
+                local root = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("Head") or model:FindFirstChildOfClass("MeshPart")
+                if root then
+                    local fixedPos = root.Position + Vector3.new(0, 3.5, 0)
+                    local screenPos, onScreen = Camera:WorldToViewportPoint(fixedPos)
+                    if onScreen then
+                        local teamType = _G.getKontraTeamType(model)
+                        local box = _G.getOrCreateKontraBox(model.Name, teamType)
+                        local sizeY = math.clamp(2300 / screenPos.Z, 30, 500)
+                        local sizeX = sizeY * 0.55
+                        
+                        if teamType == "Friendly" then
+                            box.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
+                        else
+                            box.BackgroundColor3 = _G.checkKontraVisibility(root, model) and Color3.fromRGB(255, 30, 30) or Color3.fromRGB(30, 200, 30)
+                        end
+                        box.Size = UDim2.fromOffset(sizeX, sizeY)
+                        box.Position = UDim2.fromOffset(screenPos.X - sizeX / 2, screenPos.Y - sizeY / 2)
+                        box.Visible = true
+                    end
+                end
             end
         end
     end
