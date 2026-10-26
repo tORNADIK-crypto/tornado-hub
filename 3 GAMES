@@ -1,0 +1,93 @@
+-- =====================================================================
+-- TORNADO MULTI-HUB v4 (БЕЗ КОНТРЫ)
+-- КРЕДИТЫ: BY CHO_NAX4 | TIKTOK: 6TORNADIKS7
+-- =====================================================================
+
+local coreGui = game:GetService("CoreGui")
+
+-- Тотальная очистка всех старых панелей, оверлеев и хабов перед стартом
+local guisToDestroy = {"GameChooserHub", "DoubleTpHub", "CandyCollectorGui", "Kontra_Pure_ESP_Menu", "CandyESP", "TwksEspMenu"}
+for _, guiName in ipairs(guisToDestroy) do
+    local oldGui = coreGui:FindFirstChild(guiName)
+    if oldGui then pcall(function() oldGui:Destroy() end) end
+end
+for _, oldGui in ipairs(coreGui:GetChildren()) do
+    if oldGui.Name:match("^DoubleTpMenu") then pcall(function() oldGui:Destroy() end) end
+end
+task.wait(0.1)
+
+-- СОЗДАНИЕ ГЛАВНОГО ОКНА МЕНЕДЖЕРА
+local ChooserGui = Instance.new("ScreenGui")
+ChooserGui.Name = "GameChooserHub"
+ChooserGui.Parent = coreGui
+ChooserGui.ResetOnSpawn = false
+
+local ChooserFrame = Instance.new("Frame", ChooserGui)
+ChooserFrame.Name = "ChooserFrame"
+ChooserFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+ChooserFrame.Position = UDim2.new(0.4, 0, 0.35, 0)
+ChooserFrame.Size = UDim2.new(0, 290, 0, 215) -- Идеальный компактный размер под 3 кнопки
+ChooserFrame.Active = true
+ChooserFrame.Draggable = true
+Instance.new("UICorner", ChooserFrame).CornerRadius = UDim.new(0, 10)
+
+local ChooserStroke = Instance.new("UIStroke", ChooserFrame)
+ChooserStroke.Thickness = 2
+ChooserStroke.Color = Color3.fromRGB(0, 150, 255)
+
+local ChooserTitle = Instance.new("TextLabel", ChooserFrame)
+ChooserTitle.Size = UDim2.new(1, 0, 0, 25)
+ChooserTitle.Position = UDim2.new(0, 0, 0, 5)
+ChooserTitle.BackgroundTransparency = 1
+ChooserTitle.Font = Enum.Font.SourceSansBold
+ChooserTitle.Text = "TORNADO MULTI-HUB v4"
+ChooserTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+ChooserTitle.TextSize = 16
+
+-- ТВОЙ БРЕНДОВЫЙ КОПИРАЙТ В ЛАУНЧЕРЕ
+local HubCredits = Instance.new("TextLabel", ChooserFrame)
+HubCredits.Size = UDim2.new(1, 0, 0, 15)
+HubCredits.Position = UDim2.new(0, 0, 0, 28)
+HubCredits.BackgroundTransparency = 1
+HubCredits.Text = "by CHO_NAX4 | TT: 6TORNADIKS7"
+HubCredits.TextColor3 = Color3.fromRGB(0, 150, 255)
+HubCredits.TextSize = 11
+HubCredits.Font = Enum.Font.SourceSansItalic
+
+-- Функция для быстрого создания красивых кнопок в меню
+local function createHubButton(text, pos, bg, callback)
+    local btn = Instance.new("TextButton", ChooserFrame)
+    btn.Size = UDim2.new(1, -30, 0, 40)
+    btn.Position = pos
+    btn.BackgroundColor3 = bg
+    btn.Font = Enum.Font.SourceSansBold
+    btn.Text = text
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextSize = 13
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+    
+    btn.MouseButton1Click:Connect(function()
+        pcall(callback)
+    end)
+    return btn
+end
+
+-- КНОПКА 1: GET A GRIP (Твой мощный автономный автофарм)
+createHubButton("GET A GRIP (АВТОФАРМ)", UDim2.new(0, 15, 0, 55), Color3.fromRGB(0, 130, 220), function()
+    ChooserGui:Destroy()
+    loadstring(game:HttpGet("https://githubusercontent.com"))()
+end)
+
+-- КНОПКА 2: BROOKHAVEN (Твой личный сборщик ивентовых конфет)
+createHubButton("BROOKHAVEN (CANDY COLLECTOR)", UDim2.new(0, 15, 0, 105), Color3.fromRGB(255, 140, 0), function()
+    ChooserGui:Destroy()
+    loadstring(game:HttpGet("https://githubusercontent.com"))()
+end)
+
+-- КНОПКА 3: FPV DRONE BATTLEFIELD (Твой фиолетовый мультихак Drawing ESP/Aim)
+createHubButton("FPV DRONE BATTLEFIELD (TWKS)", UDim2.new(0, 15, 0, 155), Color3.fromRGB(130, 50, 180), function()
+    ChooserGui:Destroy()
+    loadstring(game:HttpGet("https://githubusercontent.com"))()
+end)
+
+print("[TORNADO HUB]: Успешный запуск лаунчера от CHO_NAX4. Приятной игры!")
