@@ -1,97 +1,28 @@
 -- =====================================================================
--- МУЛЬТИ-КЛИЕНТ: ЧАСТЬ 1 ИЗ 5 (СТАРТОВЫЙ ХАБ И СТРУКТУРА ПАНЕЛЕЙ)
+-- ЧАСТЬ 1 ИЗ 4: ИНИЦИАЛИЗАЦИЯ И СТРУКТУРА МЕНЮ GET A GRIP
+-- КРЕДИТЫ: BY CHO_NAX4 | TIKTOK: 6TORNADIKS7
 -- =====================================================================
 
 local coreGui = game:GetService("CoreGui")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
-local Players = game:GetService("Players")
-local localPlayer = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
-local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
-local VirtualInputManager = game:GetService("VirtualInputManager")
 
--- Полная очистка всех старых панелей, ESP и оверлеев перед стартом
-local guisToDestroy = {"DoubleTpHub", "CandyCollectorGui", "GameChooserHub", "Kontra_Pure_ESP_Menu", "CandyESP"}
-for _, guiName in ipairs(guisToDestroy) do
-    local oldGui = coreGui:FindFirstChild(guiName)
-    if oldGui then pcall(function() oldGui:Destroy() end) end
-end
+-- Полная очистка всех старых панелей и ESP перед стартом
 for _, oldGui in ipairs(coreGui:GetChildren()) do
-    if oldGui.Name:match("^DoubleTpMenu") then pcall(function() oldGui:Destroy() end) end
+    if oldGui.Name == "DoubleTpHub" or oldGui.Name:match("^DoubleTpMenu") or oldGui.Name == "CandyCollectorGui" or oldGui.Name == "GameChooserHub" then
+        pcall(function() oldGui:Destroy() end)
+    end
 end
+local oldEsp = coreGui:FindFirstChild("CandyESP")
+if oldEsp then pcall(function() oldEsp:Destroy() end) end
 task.wait(0.1)
 
--- Глобальные переменные настроек
+-- Базовая задержка для Get A Grip под твою идеальную схему (45 секунд)
 _G.AntiCheatDelay = 45.01
-_G.KONTRAA_ESP_ENABLED = true
-_G.AutofarmEnabled = false
 
--- 1. СТАРТОВОЕ ОКНО ВЫБОРА ИГРЫ (ОБНОВЛЕННЫЙ МУЛЬТИ-ХАБ)
-local ChooserGui = Instance.new("ScreenGui")
-ChooserGui.Name = "GameChooserHub"
-ChooserGui.Parent = coreGui
-ChooserGui.ResetOnSpawn = false
-
-local ChooserFrame = Instance.new("Frame", ChooserGui)
-ChooserFrame.Name = "ChooserFrame"
-ChooserFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-ChooserFrame.Position = UDim2.new(0.4, 0, 0.35, 0)
-ChooserFrame.Size = UDim2.new(0, 280, 0, 210)
-ChooserFrame.Active = true
-ChooserFrame.Draggable = true
-Instance.new("UICorner", ChooserFrame).CornerRadius = UDim.new(0, 10)
-
-local ChooserStroke = Instance.new("UIStroke", ChooserFrame)
-ChooserStroke.Thickness = 2
-ChooserStroke.Color = Color3.fromRGB(0, 150, 255)
-
-local ChooserTitle = Instance.new("TextLabel", ChooserFrame)
-ChooserTitle.Size = UDim2.new(1, 0, 0, 40)
-ChooserTitle.BackgroundTransparency = 1
-ChooserTitle.Font = Enum.Font.SourceSansBold
-ChooserTitle.Text = "ВЫВЕДИТЕ СКРИПТ / ИГРУ"
-ChooserTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-ChooserTitle.TextSize = 16
-
-local BtnGetAGrip = Instance.new("TextButton", ChooserFrame)
-BtnGetAGrip.Size = UDim2.new(1, -30, 0, 40)
-BtnGetAGrip.Position = UDim2.new(0, 15, 0, 50)
-BtnGetAGrip.BackgroundColor3 = Color3.fromRGB(0, 130, 220)
-BtnGetAGrip.Font = Enum.Font.SourceSansBold
-BtnGetAGrip.Text = "GET A GRIP (АВТОФАРМ)"
-BtnGetAGrip.TextColor3 = Color3.fromRGB(255, 255, 255)
-BtnGetAGrip.TextSize = 14
-Instance.new("UICorner", BtnGetAGrip).CornerRadius = UDim.new(0, 6)
-
-local BtnBrookhaven = Instance.new("TextButton", ChooserFrame)
-BtnBrookhaven.Size = UDim2.new(1, -30, 0, 40)
-BtnBrookhaven.Position = UDim2.new(0, 15, 0, 100)
-BtnBrookhaven.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
-BtnBrookhaven.Font = Enum.Font.SourceSansBold
-BtnBrookhaven.Text = "BROOKHAVEN (КОНФЕТЫ)"
-BtnBrookhaven.TextColor3 = Color3.fromRGB(255, 255, 255)
-BtnBrookhaven.TextSize = 14
-Instance.new("UICorner", BtnBrookhaven).CornerRadius = UDim.new(0, 6)
-
-local BtnKontra = Instance.new("TextButton", ChooserFrame)
-BtnKontra.Size = UDim2.new(1, -30, 0, 40)
-BtnKontra.Position = UDim2.new(0, 15, 0, 150)
-BtnKontra.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
-BtnKontra.Font = Enum.Font.SourceSansBold
-BtnKontra.Text = "STICKERS! KONTRAA (ESP)"
-BtnKontra.TextColor3 = Color3.fromRGB(255, 255, 255)
-BtnKontra.TextSize = 14
-Instance.new("UICorner", BtnKontra).CornerRadius = UDim.new(0, 6)
-
-
--- 2. ПАНЕЛЬ ОКНА ДЛЯ GET A GRIP
+-- 1. СКЕЛЕТ МЕНЮ ДЛЯ GET A GRIP
 local Hub = Instance.new("ScreenGui")
 Hub.Name = "DoubleTpHub"
 Hub.Parent = coreGui
 Hub.ResetOnSpawn = false
-Hub.Enabled = false
 
 local MainFrame = Instance.new("Frame", Hub)
 MainFrame.Name = "MainFrame"
@@ -117,11 +48,22 @@ SideLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 SideLayout.Padding = UDim.new(0, 6)
 SideLayout.VerticalAlignment = Enum.VerticalAlignment.Top
 
+-- ТВОЙ ФИРМЕННЫЙ КРЕДИТ-ТЕКСТ В МЕНЮ
+local CreditsLabel = Instance.new("TextLabel", MainFrame)
+CreditsLabel.Size = UDim2.new(1, -100, 0, 25)
+CreditsLabel.Position = UDim2.new(0, 95, 0, 5)
+CreditsLabel.BackgroundTransparency = 1
+CreditsLabel.Font = Enum.Font.SourceSansItalic
+CreditsLabel.Text = "by CHO_NAX4 | TT: 6TORNADIKS7"
+CreditsLabel.TextColor3 = Color3.fromRGB(0, 150, 255)
+CreditsLabel.TextSize = 11
+CreditsLabel.TextXAlignment = Enum.TextXAlignment.Right
+
 _G.ContentFrame = Instance.new("Frame", MainFrame)
 _G.ContentFrame.Name = "ContentFrame"
 _G.ContentFrame.BackgroundTransparency = 1
-_G.ContentFrame.Position = UDim2.new(0, 95, 0, 10)
-_G.ContentFrame.Size = UDim2.new(1, -105, 1, -20)
+_G.ContentFrame.Position = UDim2.new(0, 95, 0, 25) -- Сместили вниз под кредиты
+_G.ContentFrame.Size = UDim2.new(1, -105, 1, -35)
 
 _G.FarmPage = Instance.new("Frame")
 _G.ShopPage = Instance.new("Frame")
@@ -163,92 +105,18 @@ createTabBtn("FARM", 1, _G.FarmPage)
 createTabBtn("МАГАЗИН", 2, _G.ShopPage)
 createTabBtn("ФУНКЦИИ", 3, _G.FunPage)
 
-
--- 3. ПАНЕЛЬ ОКНА ДЛЯ БРУКХЕЙВЕНА
-local BrookhavenGui = Instance.new("ScreenGui")
-BrookhavenGui.Name = "CandyCollectorGui"
-BrookhavenGui.Parent = coreGui
-BrookhavenGui.ResetOnSpawn = false
-BrookhavenGui.Enabled = false
-
-local CandyFrame = Instance.new("Frame", BrookhavenGui)
-CandyFrame.Name = "MainFrame"
-CandyFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
-CandyFrame.Position = UDim2.new(0.05, 0, 0.4, 0)
-CandyFrame.Size = UDim2.new(0, 220, 0, 235)
-CandyFrame.Active = true
-CandyFrame.Draggable = true
-Instance.new("UICorner", CandyFrame).CornerRadius = UDim.new(0, 10)
-
-local CandyTitle = Instance.new("TextLabel", CandyFrame)
-CandyTitle.Name = "Title"
-CandyTitle.BackgroundTransparency = 1
-CandyTitle.Size = UDim2.new(1, 0, 0, 40)
-CandyTitle.Font = Enum.Font.SourceSansBold
-CandyTitle.Text = "🎃 Candy Collector v3"
-CandyTitle.TextColor3 = Color3.fromRGB(255, 140, 0)
-CandyTitle.TextSize = 20
-
-
--- 4. ПАНЕЛЬ ОКНА ДЛЯ STICKERS! KONTRAA
-local KontraGui = Instance.new("ScreenGui")
-KontraGui.Name = "Kontra_Pure_ESP_Menu"
-KontraGui.Parent = coreGui
-KontraGui.ResetOnSpawn = false
-KontraGui.Enabled = false
-
-local KontraFrame = Instance.new("Frame", KontraGui)
-KontraFrame.Name = "MainFrame"
-KontraFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
-KontraFrame.Position = UDim2.new(0.05, 0, 0.2, 0)
-KontraFrame.Size = UDim2.new(0, 240, 0, 110)
-KontraFrame.Active = true
-KontraFrame.Draggable = true
-Instance.new("UICorner", KontraFrame).CornerRadius = UDim.new(0, 10)
-
-local KontraTitle = Instance.new("TextLabel", KontraFrame)
-KontraTitle.Size = UDim2.new(1, 0, 0, 35)
-KontraTitle.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
-KontraTitle.Text = "KONTRAA ESP CLIENT"
-KontraTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-KontraTitle.Font = Enum.Font.SourceSansBold
-KontraTitle.TextSize = 13
-
-local EspBtn = Instance.new("TextButton", KontraFrame)
-EspBtn.Size = UDim2.new(0.9, 0, 0, 45)
-EspBtn.Position = UDim2.new(0.05, 0, 0.45, 0)
-EspBtn.BackgroundColor3 = Color3.fromRGB(40, 100, 60)
-EspBtn.Text = "Умный ESP: ВКЛ"
-EspBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-EspBtn.Font = Enum.Font.SourceSansBold
-EspBtn.TextSize = 14
-Instance.new("UICorner", EspBtn).CornerRadius = UDim.new(0, 5)
-
--- Делим объекты по глобальным переменным для связки частей
-_G.BtnGetAGrip = BtnGetAGrip
-_G.BtnBrookhaven = BtnBrookhaven
-_G.BtnKontra = BtnKontra
-_G.ChooserGui = ChooserGui
-_G.Hub = Hub
-_G.BrookhavenGui = BrookhavenGui
-_G.KontraGui = KontraGui
-_G.CandyFrame = CandyFrame
-_G.KontraFrame = KontraFrame
-_G.EspBtn = EspBtn
+-- Передаем объекты в глобал для склейки
+_G.HubGuiObject = Hub
+print("[CHO_NAX4 HUB]: Скрипт успешно инициализирован. TikTok: @6TORNADIKS7")
 -- =====================================================================
--- МУЛЬТИ-КЛИЕНТ: ЧАСТЬ 2 ИЗ 5 (ГЕНЕРАЦИЯ ЭЛЕМЕНТОВ ИНТЕРФЕЙСА)
+-- ЧАСТЬ 2 ИЗ 4: СОЗДАНИЕ КНОПОК, ЛЕЙБЛОВ СТАТИСТИКИ И ИНПУТОВ
 -- =====================================================================
 
-local BtnGetAGrip = _G.BtnGetAGrip
-local BtnBrookhaven = _G.BtnBrookhaven
-local BtnKontra = _G.BtnKontra
-local ChooserGui = _G.ChooserGui
-local Hub = _G.Hub
-local BrookhavenGui = _G.BrookhavenGui
-local KontraGui = _G.KontraGui
-local CandyFrame = _G.CandyFrame
-local KontraFrame = _G.KontraFrame
-local EspBtn = _G.EspBtn
+local players = game:GetService("Players")
+local localPlayer = players.LocalPlayer
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local camera = workspace.CurrentCamera
 
 -- Вспомогательные функции генерации элементов UI (Get A Grip)
 local function createBtn(parent, text, color)
@@ -260,7 +128,7 @@ local function createBtn(parent, text, color)
     btn.Text = text
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     btn.TextSize = 13
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
+    local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0, 4) c.Parent = btn
     return btn
 end
 
@@ -282,7 +150,7 @@ _G.DropoffButton = createBtn(_G.FarmPage, "ТП В DROPOFF", Color3.fromRGB(220,
 _G.PickupButton = createBtn(_G.FarmPage, "ТП В PICKUP", Color3.fromRGB(0, 130, 220))
 _G.AutofarmButton = createBtn(_G.FarmPage, "АВТО ФАРМ: ВЫКЛ", Color3.fromRGB(50, 50, 50))
 
--- Поле ввода задержки для Get A Grip
+-- Поле ввода задержки для Get A Grip (под схему: Pickup -> Ждать 45 сек -> Сдать)
 local DelayInput = Instance.new("TextBox")
 DelayInput.Parent = _G.FarmPage
 DelayInput.Size = UDim2.new(1, -5, 0, 26)
@@ -291,7 +159,7 @@ DelayInput.TextColor3 = Color3.fromRGB(255, 255, 255)
 DelayInput.Text = "АНТИЧИТ: " .. _G.AntiCheatDelay .. " сек"
 DelayInput.Font = Enum.Font.SourceSansBold
 DelayInput.TextSize = 12
-Instance.new("UICorner", DelayInput).CornerRadius = UDim.new(0, 4)
+local DelayCorner = Instance.new("UICorner") DelayCorner.CornerRadius = UDim.new(0, 4) DelayCorner.Parent = DelayInput
 
 DelayInput.FocusLost:Connect(function(enterPressed)
     local num = tonumber(DelayInput.Text:match("[%d%.]+"))
@@ -299,7 +167,7 @@ DelayInput.FocusLost:Connect(function(enterPressed)
         _G.AntiCheatDelay = num
         DelayInput.Text = "АНТИЧИТ: " .. num .. " сек"
     else
-        DelayInput.Text = "АНТИЧИТ: " .. _G.AntiCheatDelay .. " BWK"
+        DelayInput.Text = "АНТИЧИТ: " .. _G.AntiCheatDelay .. " сек"
     end
 end)
 
@@ -320,306 +188,35 @@ ShopScroll.ScrollBarThickness = 3
 local ShopLayout = Instance.new("UIListLayout") ShopLayout.Parent = ShopScroll; ShopLayout.Padding = UDim.new(0, 4)
 
 -- ЭЛЕМЕНТЫ СТРАНИЦЫ FUN (GET A GRIP)
-local GagEspBtn = createBtn(_G.FunPage, "ФИОЛЕТОВЫЙ ESP ИГРОКОВ: ВЫКЛ", Color3.fromRGB(50, 50, 50))
+local EspBtn = createBtn(_G.FunPage, "ФИОЛЕТОВЫЙ ESP ИГРОКОВ: ВЫКЛ", Color3.fromRGB(50, 50, 50))
 local FlyBtn = createBtn(_G.FunPage, "FLY ПОЛЕТ: ВЫКЛ", Color3.fromRGB(50, 50, 50))
 local NoclipBtn = createBtn(_G.FunPage, "NOCLIP (СКВОЗЬ СТЕНЫ): ВЫКЛ", Color3.fromRGB(50, 50, 50))
 
-
--- КНОПКИ УПРАВЛЕНИЯ ДЛЯ BROOKHAVEN (CANDY COLLECTOR)
-local ToggleBtn = Instance.new("TextButton", CandyFrame)
-local TpBtn = Instance.new("TextButton", CandyFrame)
-local BrookhavenEspBtn = Instance.new("TextButton", CandyFrame)
-local ResetBtn = Instance.new("TextButton", CandyFrame)
-
-local function configCandyBtn(btn, name, text, pos, bg)
-    btn.Name = name
-    btn.BackgroundColor3 = bg
-    btn.Position = pos
-    btn.Size = UDim2.new(1, -20, 0, 35)
-    btn.Font = Enum.Font.SourceSans
-    btn.Text = text
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.TextSize = 16
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
-end
-configCandyBtn(ToggleBtn, "ToggleBtn", "Авто-сбор: ВЫКЛ", UDim2.new(0, 10, 0, 45), Color3.fromRGB(50, 50, 55))
-configCandyBtn(TpBtn, "TpBtn", "Полет к следующей (1 раз)", UDim2.new(0, 10, 0, 90), Color3.fromRGB(50, 50, 55))
-configCandyBtn(BrookhavenEspBtn, "EspBtn", "Подсветка (ESP): ВЫКЛ", UDim2.new(0, 10, 0, 135), Color3.fromRGB(50, 50, 55))
-configCandyBtn(ResetBtn, "ResetBtn", "Очистить лог конфет", UDim2.new(0, 10, 0, 185), Color3.fromRGB(70, 35, 35))
-ResetBtn.TextColor3 = Color3.fromRGB(255, 150, 150)
-
--- Глобальные ссылки для связки со следующими частями
-_G.ToggleBtn = ToggleBtn
-_G.TpBtn = TpBtn
-_G.BrookhavenEspBtn = BrookhavenEspBtn
-_G.ResetBtn = ResetBtn
-_G.GagEspBtn = GagEspBtn
-_G.FlyBtn = FlyBtn
-_G.NoclipBtn = NoclipBtn
+-- Передаем скроллбар и кнопки в глобал
 _G.ShopScroll = ShopScroll
-
--- Логика нажатий кнопок в стартовом Хабе выбора игр
-BtnGetAGrip.MouseButton1Click:Connect(function()
-    ChooserGui:Destroy()
-    Hub.Enabled = true
-end)
-
-BtnBrookhaven.MouseButton1Click:Connect(function()
-    ChooserGui:Destroy()
-    BrookhavenGui.Enabled = true
-end)
-
-BtnKontra.MouseButton1Click:Connect(function()
-    ChooserGui:Destroy()
-    KontraGui.Enabled = true
-end)
-
--- Переключатель в меню Контры
-EspBtn.MouseButton1Click:Connect(function()
-    _G.KONTRAA_ESP_ENABLED = not _G.KONTRAA_ESP_ENABLED
-    EspBtn.Text = _G.KONTRAA_ESP_ENABLED and "Умный ESP: ВКЛ" or "Умный ESP: ВЫКЛ"
-    EspBtn.BackgroundColor3 = _G.KONTRAA_ESP_ENABLED and Color3.fromRGB(40, 100, 60) or Color3.fromRGB(55, 55, 60)
-    
-    if not _G.KONTRAA_ESP_ENABLED then
-        for _, child in pairs(KontraGui:GetChildren()) do
-            if child:IsA("Frame") and child ~= KontraFrame then child.Visible = false end
-        end
-    end
-end)
+_G.EspBtnGag = EspBtn
+_G.FlyBtnGag = FlyBtn
+_G.NoclipBtnGag = NoclipBtn
 -- =====================================================================
--- МУЛЬТИ-КЛИЕНТ: ЧАСТЬ 3 ИЗ 5 (ЛОГИКА BROOKHAVEN CANDY COLLECTOR)
+-- ЧАСТЬ 3 ИЗ 4: ФУНКЦИИ МАГАЗИНА, FUN-МЕХАНИКИ И ЛОКАЛЬНЫЙ ESP ИГРОКОВ
 -- =====================================================================
 
-local ToggleBtn = _G.ToggleBtn
-local TpBtn = _G.TpBtn
-local BrookhavenEspBtn = _G.BrookhavenEspBtn
-local ResetBtn = _G.ResetBtn
+local ShopScroll = _G.ShopScroll
+local EspBtn = _G.EspBtnGag
+local FlyBtn = _G.FlyBtnGag
+local NoclipBtn = _G.NoclipBtnGag
 
-local autoCollecting = false
-local espActive = false
-local visitedCandies = {}
-local noclipOn = false
-local candyFolder = workspace:FindFirstChild("CandyCornHunt") and workspace.CandyCornHunt:FindFirstChild("Week1")
-
-local EspFolder = Instance.new("Folder")
-EspFolder.Name = "CandyESP"
-EspFolder.Parent = game:GetService("CoreGui")
-
--- Имитация движений вперед-назад на месте
-local function jitterMovement()
-    local char = game:GetService("Players").LocalPlayer.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if hrp then
-        hrp.CFrame = hrp.CFrame * CFrame.new(0, 0, 2)
-        task.wait(0.15)
-        hrp.CFrame = hrp.CFrame * CFrame.new(0, 0, -4)
-        task.wait(0.15)
-        hrp.CFrame = hrp.CFrame * CFrame.new(0, 0, 2)
-    end
-end
-
--- Обновление/создание ESP для Брукхейвена
-local function updateESP()
-    EspFolder:ClearAllChildren()
-    if not espActive or not candyFolder then return end
-
-    for _, candy in pairs(candyFolder:GetChildren()) do
-        if (candy:IsA("BasePart") or candy:IsA("MeshPart")) and not visitedCandies[candy.Name] then
-            local box = Instance.new("BoxHandleAdornment")
-            box.Size = candy.Size + Vector3.new(0.5, 0.5, 0.5)
-            box.AlwaysOnTop = true
-            box.ZIndex = 5
-            box.Color3 = Color3.fromRGB(255, 120, 0)
-            box.Adornee = candy
-            box.Transparency = 0.4
-            box.Parent = EspFolder
-
-            local billboard = Instance.new("BillboardGui")
-            billboard.Size = UDim2.new(0, 100, 0, 30)
-            billboard.AlwaysOnTop = true
-            billboard.Adornee = candy
-            billboard.StudsOffset = Vector3.new(0, 3, 0)
-            billboard.Parent = EspFolder
-
-            local label = Instance.new("TextLabel")
-            label.Size = UDim2.new(1, 0, 1, 0)
-            label.BackgroundTransparency = 1
-            label.Text = candy.Name
-            label.TextColor3 = Color3.fromRGB(255, 255, 255)
-            label.TextStrokeTransparency = 0
-            label.TextSize = 12
-            label.Font = Enum.Font.SourceSansBold
-            label.Parent = billboard
-        end
-    end
-end
-
--- Поиск следующей конфеты
-local function getNextCandy()
-    if not candyFolder then return nil end
-    for _, candy in pairs(candyFolder:GetChildren()) do
-        if candy:IsA("BasePart") or candy:IsA("MeshPart") or candy:IsA("Model") then
-            if not visitedCandies[candy.Name] then
-                return candy
-            end
-        end
-    end
-    return nil
-end
-
--- Плавный полет к конфете (Tween)
-local function flyToCFrame(targetCFrame)
-    local char = game:GetService("Players").LocalPlayer.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return false end
-
-    local distance = (hrp.Position - targetCFrame.Position).Magnitude
-    local speed = 120 -- Скорость полета
-    local duration = distance / speed
-
-    local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
-    local tween = game:GetService("TweenService"):Create(hrp, tweenInfo, {CFrame = targetCFrame})
-    
-    tween:Play()
-    tween.Completed:Wait()
-    return true
-end
-
--- Умная функция сбора конфет
-local function collectCandy(candy)
-    local char = game:GetService("Players").LocalPlayer.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    
-    if hrp and candy and candy.Parent then
-        local targetCFrame = candy:IsA("Model") and (candy:GetPrimaryPartCFrame() or candy:FindFirstChildWhichIsA("BasePart").CFrame) or candy.CFrame
-        
-        if targetCFrame then
-            _G.BrookhavenNoclip = false
-            flyToCFrame(targetCFrame + Vector3.new(0, 1.5, 0))
-            task.wait(0.2)
-            
-            jitterMovement()
-            
-            local startTime = tick()
-            local collected = false
-            while tick() - startTime < 2 do
-                if not candy or not candy.Parent then
-                    collected = true
-                    break
-                end
-                task.wait(0.1)
-            end
-            
-            if not collected and candy and candy.Parent then
-                _G.BrookhavenNoclip = true
-                hrp.CFrame = targetCFrame
-                jitterMovement()
-                task.wait(0.5)
-                _G.BrookhavenNoclip = false
-            end
-            
-            visitedCandies[candy.Name] = true
-            if espActive then updateESP() end
-        end
-    end
-end
-
--- Привязка кнопок Брукхейвена
-ToggleBtn.MouseButton1Click:Connect(function()
-    autoCollecting = not autoCollecting
-    if autoCollecting then
-        ToggleBtn.Text = "Авто-сбор: ВКЛ"
-        ToggleBtn.BackgroundColor3 = Color3.fromRGB(34, 139, 34)
-        task.spawn(function()
-            while autoCollecting do
-                local candy = getNextCandy()
-                if candy then
-                    collectCandy(candy)
-                else
-                    table.clear(visitedCandies)
-                    if espActive then updateESP() end
-                end
-                task.wait(0.5)
-            end
-        end)
-    else
-        ToggleBtn.Text = "Авто-сбор: ВЫКЛ"
-        ToggleBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
-        _G.BrookhavenNoclip = false
-    end
-end)
-
-TpBtn.MouseButton1Click:Connect(function()
-    if autoCollecting then return end
-    local candy = getNextCandy()
-    if candy then collectCandy(candy) end
-end)
-
-BrookhavenEspBtn.MouseButton1Click:Connect(function()
-    espActive = not espActive
-    if espActive then
-        BrookhavenEspBtn.Text = "Подсветка (ESP): ВКЛ"
-        BrookhavenEspBtn.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
-        updateESP()
-    else
-        BrookhavenEspBtn.Text = "Подсветка (ESP): ВЫКЛ"
-        BrookhavenEspBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
-        EspFolder:ClearAllChildren()
-    end
-end)
-
-ResetBtn.MouseButton1Click:Connect(function()
-    table.clear(visitedCandies)
-    if espActive then updateESP() end
-    local originalText = ResetBtn.Text
-    ResetBtn.Text = "Очищено!"
-    task.wait(1.5)
-    ResetBtn.Text = originalText
-end)
-
-if candyFolder then
-    candyFolder.ChildRemoved:Connect(function() if espActive then updateESP() end end)
-end
-
--- Вспомогательные циклы обхода для Брукхейвена (Ноклип и Анти-сит)
-game:GetService("RunService").Stepped:Connect(function()
-    if _G.BrookhavenNoclip and game:GetService("Players").LocalPlayer.Character then
-        for _, part in pairs(game:GetService("Players").LocalPlayer.Character:GetDescendants()) do
-            if part:IsA("BasePart") then part.CanCollide = false end
-        end
-    end
-end)
-
-task.spawn(function()
-    while true do
-        local char = game:GetService("Players").LocalPlayer.Character
-        local humanoid = char and char:FindFirstChildOfClass("Humanoid")
-        if humanoid and humanoid.Sit then
-            humanoid.Sit = false
-            local hrp = char:FindFirstChild("HumanoidRootPart")
-            if hrp then hrp.CFrame = hrp.CFrame + Vector3.new(0, 2, 0) end
-        end
-        task.wait(0.1)
-    end
-end)
--- =====================================================================
--- МУЛЬТИ-КЛИЕНТ: ЧАСТЬ 4 ИЗ 5 (МАГАЗИН И ФУНКЦИИ FUN ДЛЯ GET A GRIP)
--- =====================================================================
-
+local players = game:GetService("Players")
+local localPlayer = players.LocalPlayer
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
-local LocalPlayer = game:GetService("Players").LocalPlayer
-local Camera = workspace.CurrentCamera
-local ShopScroll = _G.ShopScroll
-local NoclipBtn = _G.NoclipBtn
-local FlyBtn = _G.FlyBtn
-local GagEspBtn = _G.GagEspBtn
+local camera = workspace.CurrentCamera
 
 local function shopTeleport(targetPos)
-    local character = LocalPlayer.Character
+    local character = localPlayer.Character
     local rootPart = character and character:FindFirstChild("HumanoidRootPart")
     if rootPart then
-        LocalPlayer:RequestStreamAroundAsync(targetPos)
+        localPlayer:RequestStreamAroundAsync(targetPos)
         local tween = TweenService:Create(rootPart, TweenInfo.new(0.02, Enum.EasingStyle.Linear), {CFrame = CFrame.new(targetPos)})
         tween:Play()
         tween.Completed:Wait()
@@ -627,9 +224,9 @@ local function shopTeleport(targetPos)
 end
 
 local function weldVestToPlayer(sourceModel)
-    local char = LocalPlayer.Character
+    local char = localPlayer.Character
     if not char then return end
-    local torso = char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso")
+    local torso = char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso")
     if not torso then return end
 
     local clone = sourceModel:Clone()
@@ -699,7 +296,6 @@ local function addShopItem(displayName, searchName, priceText, mode)
     end)
 end
 
--- Наполнение скролла шмотками
 addShopItem("Purple Vest", "Vest_purple", "39 RB", "weld")
 addShopItem("Military Gloves", "MilitaryGloves", "49 RB", "tp")
 addShopItem("Yellow Vest", "Vest_yellow", "300 $", "tp")
@@ -716,25 +312,23 @@ NoclipBtn.MouseButton1Click:Connect(function()
     NoclipBtn.BackgroundColor3 = GetAGripNoclip and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(50, 50, 50)
     NoclipBtn.Text = GetAGripNoclip and "NOCLIP (СКВОЗЬ СТЕНЫ): ВКЛ" or "NOCLIP (СКВОЗЬ СТЕНЫ): ВЫКЛ"
 end)
-
 RunService.Stepped:Connect(function()
-    if GetAGripNoclip and LocalPlayer.Character then
-        for _, part in ipairs(LocalPlayer.Character:GetDescendants()) do
+    if GetAGripNoclip and localPlayer.Character then
+        for _, part in ipairs(localPlayer.Character:GetDescendants()) do
             if part:IsA("BasePart") then part.CanCollide = false end
         end
     end
 end)
 
--- МЕХАНИКА FLY ПОЛЕТА (GET A GRIP)
+-- МЕХАНИКА FLY (GET A GRIP)
 local FlyEnabled = false
 local flySpeed = 50
 FlyBtn.MouseButton1Click:Connect(function()
     FlyEnabled = not FlyEnabled
     FlyBtn.BackgroundColor3 = FlyEnabled and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(50, 50, 50)
     FlyBtn.Text = FlyEnabled and "FLY ПОЛЕТ: ВКЛ" or "FLY ПОЛЕТ: ВЫКЛ"
-    local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    local root = localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart")
     if not root then return end
-    
     if FlyEnabled then
         local bv = Instance.new("BodyVelocity")
         bv.Name = "FlyVelocity"
@@ -743,8 +337,8 @@ FlyBtn.MouseButton1Click:Connect(function()
         bv.Parent = root
         task.spawn(function()
             while FlyEnabled and root and root:FindFirstChild("FlyVelocity") do
-                local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-                root.FlyVelocity.Velocity = (hum and hum.MoveDirection.Magnitude > 0) and Camera.CFrame.LookVector * flySpeed or Vector3.new(0, 0.1, 0)
+                local hum = localPlayer.Character:FindFirstChildOfClass("Humanoid")
+                root.FlyVelocity.Velocity = (hum and hum.MoveDirection.Magnitude > 0) and camera.CFrame.LookVector * flySpeed or Vector3.new(0, 0.1, 0)
                 task.wait()
             end
             if root:FindFirstChild("FlyVelocity") then root.FlyVelocity:Destroy() end
@@ -757,19 +351,18 @@ end)
 -- МЕХАНИКА ИГРОКОВ ESP (GET A GRIP)
 local GetAGripEsp = false
 local currentHighlights = {}
-GagEspBtn.MouseButton1Click:Connect(function()
+EspBtn.MouseButton1Click:Connect(function()
     GetAGripEsp = not GetAGripEsp
-    GagEspBtn.BackgroundColor3 = GetAGripEsp and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(50, 50, 50)
-    GagEspBtn.Text = GetAGripEsp and "ФИОЛЕТОВЫЙ ESP ИГРОКОВ: ВКЛ" or "ФИОЛЕТОВЫЙ ESP ИГРОКОВ: ВЫКЛ"
-    
+    EspBtn.BackgroundColor3 = GetAGripEsp and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(50, 50, 50)
+    EspBtn.Text = GetAGripEsp and "ФИОЛЕТОВЫЙ ESP ИГРОКОВ: ВКЛ" or "ФИОЛЕТОВЫЙ ESP ИГРОКОВ: ВЫКЛ"
     if not GetAGripEsp then
         for _, hl in ipairs(currentHighlights) do pcall(function() hl:Destroy() end) end
         table.clear(currentHighlights)
     else
         task.spawn(function()
             while GetAGripEsp do
-                for _, p in ipairs(game:GetService("Players"):GetPlayers()) do
-                    if p ~= LocalPlayer and p.Character then
+                for _, p in ipairs(players:GetPlayers()) do
+                    if p ~= localPlayer and p.Character then
                         if not p.Character:FindFirstChild("PurpleESP") then
                             local hl = Instance.new("Highlight")
                             hl.Name = "PurpleESP"
@@ -790,33 +383,28 @@ GagEspBtn.MouseButton1Click:Connect(function()
     end
 end)
 -- =====================================================================
--- МУЛЬТИ-КЛИЕНТ: ЧАСТЬ 5 ИЗ 5 (АВТОФАРМ GET A GRIP И SMART ESP KONTRAA)
+-- ЧАСТЬ 4 ИЗ 4: ДВИЖОК АВТОФАРМА, КАЛЬКУЛЯТОРЫ И СИСТЕМА РЕСПАВНА
 -- =====================================================================
 
+local players = game:GetService("Players")
+local localPlayer = players.LocalPlayer
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local camera = workspace.CurrentCamera
 local VirtualInputManager = game:GetService("VirtualInputManager")
-local KontraGui = _G.KontraGui
-local KontraFrame = _G.KontraFrame
 
--- ДВИЖОК АВТОФАРМА С ОБХОДОМ АНТИЧИТА НА 45 СЕК (GET A GRIP)
 local savedPickupCFrame = nil
 local savedDropoffCFrame = nil
-local totalEarned = 0
-local maxSingleEarned = 0
+_G.AutofarmEnabled = false
 
 local function forceRotateCamera180()
-    Camera.CameraType = Enum.CameraType.Scriptable
+    camera.CameraType = Enum.CameraType.Scriptable
     task.wait(0.01)
     for i = 1, 3 do
-        Camera.CFrame = Camera.CFrame * CFrame.Angles(0, math.rad(60), 0)
+        camera.CFrame = camera.CFrame * CFrame.Angles(0, math.rad(60), 0)
         task.wait(0.05)
     end
-    Camera.CameraType = Enum.CameraType.Custom
+    camera.CameraType = Enum.CameraType.Custom
 end
 
 local function pressEThreeTimes()
@@ -829,11 +417,11 @@ local function pressEThreeTimes()
 end
 
 local function instantTeleport(targetCFrame)
-    local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
     local rootPart = character:WaitForChild("HumanoidRootPart", 5)
     if not rootPart then return end
     local targetPos = targetCFrame.Position + Vector3.new(0, 2, 0)
-    LocalPlayer:RequestStreamAroundAsync(targetPos)
+    localPlayer:RequestStreamAroundAsync(targetPos)
     local tween = TweenService:Create(rootPart, TweenInfo.new(0.02, Enum.EasingStyle.Linear), {CFrame = CFrame.new(targetPos)})
     tween:Play()
     tween.Completed:Wait()
@@ -859,8 +447,11 @@ local function findPickup()
 end
 
 local totalShopCoinsCost = 2450
-local leaderstats = LocalPlayer:WaitForChild("leaderstats", 10)
+local leaderstats = localPlayer:WaitForChild("leaderstats", 10)
 local moneyValue = leaderstats and (leaderstats:FindFirstChild("Money") or leaderstats:FindFirstChild("Cash") or leaderstats:FindFirstChild("Dollars") or leaderstats:FindFirstChildWhichIsA("ValueBase"))
+
+local totalEarned = 0
+local maxSingleEarned = 0
 local lastMoney = moneyValue and moneyValue.Value or 0
 
 local function refreshCost(val)
@@ -868,6 +459,7 @@ local function refreshCost(val)
     if needed < 0 then needed = 0 end
     if _G.CostAllLabel then _G.CostAllLabel.Text = "До полной скупочки магазина: $"..needed end
 end
+if moneyValue then refreshCost(moneyValue.Value) end
 
 if moneyValue then 
     moneyValue.Changed:Connect(function(newVal)
@@ -899,23 +491,25 @@ _G.DropoffButton.MouseButton1Click:Connect(function()
     local t = findDropoff()
     if t then savedDropoffCFrame = t.CFrame; instantTeleport(savedDropoffCFrame) end
 end)
+
 _G.PickupButton.MouseButton1Click:Connect(function()
     local t = findPickup()
     if t then savedPickupCFrame = t.CFrame; instantTeleport(savedPickupCFrame) end
 end)
+
 _G.TpShopButton.MouseButton1Click:Connect(function()
     local store = workspace:FindFirstChild("ShopPurchases", true) or workspace:FindFirstChild("ConvenienceStore", true)
     local part = store and store:FindFirstChildWhichIsA("BasePart", true)
     if part then instantTeleport(part.CFrame) end
 end)
 
--- Спам прыжков от зависания
+-- Анти-зависание (прыжки раз в минуту)
 task.spawn(function()
     while true do
         task.wait(60)
         if _G.AutofarmEnabled then
             pcall(function()
-                local char = LocalPlayer.Character
+                local char = localPlayer.Character
                 local hum = char and char:FindFirstChildOfClass("Humanoid")
                 local root = char and char:FindFirstChild("HumanoidRootPart")
                 if hum and root and hum.Health > 0 then
@@ -930,6 +524,7 @@ task.spawn(function()
     end
 end)
 
+-- Главная логика циклического автофарма с респавном
 _G.AutofarmButton.MouseButton1Click:Connect(function()
     _G.AutofarmEnabled = not _G.AutofarmEnabled
     if _G.AutofarmEnabled then
@@ -943,11 +538,12 @@ _G.AutofarmButton.MouseButton1Click:Connect(function()
                     if d then savedDropoffCFrame = d.CFrame end
                 end
                 if not savedPickupCFrame or not savedDropoffCFrame then task.wait(0.3) continue end
-                local char = LocalPlayer.Character
+                local char = localPlayer.Character
                 if not char or not char:FindFirstChild("HumanoidRootPart") then task.wait(0.1) continue end
                 local humanoid = char:WaitForChild("Humanoid", 5)
                 if not humanoid then task.wait(0.1) continue end
                 
+                -- Шаг 1: ТП на Pickup и сбор груза
                 instantTeleport(savedPickupCFrame)
                 task.wait(0.2)
                 forceRotateCamera180()
@@ -956,10 +552,12 @@ _G.AutofarmButton.MouseButton1Click:Connect(function()
                 task.wait(0.25)
                 if not _G.AutofarmEnabled then break end
                 
+                -- Задержка античита из твоего инпута (45 сек)
                 task.wait(_G.AntiCheatDelay)
                 if not _G.AutofarmEnabled then break end
-                if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then continue end
+                if not localPlayer.Character or not localPlayer.Character:FindFirstChild("HumanoidRootPart") then continue end
                 
+                -- Шаг 2: ТП на Dropoff и сдача
                 instantTeleport(savedDropoffCFrame)
                 task.wait(0.35)
                 pressEThreeTimes()
@@ -967,15 +565,17 @@ _G.AutofarmButton.MouseButton1Click:Connect(function()
                 if not _G.AutofarmEnabled then break end
                 task.wait(0.1)
                 
+                -- Авто-сброс (килл) персонажа для обнуления хвостов
                 if humanoid and humanoid.Health > 0 then
-                    Camera.CameraType = Enum.CameraType.Custom
-                    Camera.CameraSubject = humanoid
+                    camera.CameraType = Enum.CameraType.Custom
+                    camera.CameraSubject = humanoid
                     task.wait(0.01)
                     humanoid.Health = 0
                 end
                 
-                LocalPlayer.CharacterAdded:Wait()
-                local newChar = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+                -- Ожидание респавна перед следующим заказом
+                localPlayer.CharacterAdded:Wait()
+                local newChar = localPlayer.Character or localPlayer.CharacterAdded:Wait()
                 newChar:WaitForChild("HumanoidRootPart", 10)
                 task.wait(0.1)
             end
@@ -984,119 +584,5 @@ _G.AutofarmButton.MouseButton1Click:Connect(function()
         _G.AutofarmEnabled = false
         _G.AutofarmButton.Text = "АВТО ФАРМ: ВЫКЛ"
         _G.AutofarmButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    end
-end)
-
--- =====================================================================
--- ЛОГИКА ОПТИМИЗИРОВАННОГО SMART TEAM ESP ДЛЯ KONTRAA
--- =====================================================================
-local function checkKontraVisibility(targetPart, model)
-    local myChar = LocalPlayer.Character or workspace:FindFirstChild(LocalPlayer.Name, true)
-    if not myChar or not myChar:FindFirstChild("HumanoidRootPart") then return false end
-    local ray = Ray.new(Camera.CFrame.Position, (targetPart.Position - Camera.CFrame.Position))
-    local hitPart = workspace:FindPartOnRayWithIgnoreList(ray, {myChar, model, Camera, workspace.Terrain})
-    if hitPart and hitPart:IsDescendantOf(workspace) and not hitPart:IsDescendantOf(model) and hitPart.CanCollide == true then
-        return false
-    end
-    return true
-end
-
-local function getKontraTeamType(model)
-    if model:FindFirstChild("Leaderboard") and (model.Leaderboard:FindFirstChild("FriendlyIndicator") or model.Leaderboard:FindFirstChild("TeamColor")) then
-        return "Friendly"
-    end
-    local radar = LocalPlayer:FindFirstChild("PlayerGui") and LocalPlayer.PlayerGui:FindFirstChild("Radar")
-    if radar and radar:FindFirstChild(model.Name) then return "Friendly" end
-    local myChar = LocalPlayer.Character or workspace:FindFirstChild(LocalPlayer.Name, true)
-    if myChar and myChar.Parent and model.Parent == myChar.Parent and model.Parent.Name ~= "Characters" then
-        return "Friendly"
-    end
-    return "Enemy"
-end
-
-local function getOrCreateKontraBox(name, teamType)
-    local boxName = "Box_" .. name
-    local box = KontraGui:FindFirstChild(boxName)
-    if not box then 
--- =====================================================================
--- МУЛЬТИ-КЛИЕНТ: ЧАСТЬ 6 ИЗ 6 (БЕЗОПАСНЫЙ ЦИКЛ ДЛЯ АНТИЧИТА KRAMPUS)
--- =====================================================================
-
-        local KontraGui = _G.KontraGui
-        local boxName = "Box_" .. name
-        local box = Instance.new("Frame", KontraGui) 
-        box.Name = boxName 
-        box.BackgroundTransparency = 0.65 
-        box.BorderColor3 = Color3.fromRGB(255, 255, 255) 
-        box.BorderSizePixel = 1
-        
-        local label = Instance.new("TextLabel", box) 
-        label.Size = UDim2.new(1, 0, 0, 15) 
-        label.Position = UDim2.new(0, 0, 0, -18) 
-        label.BackgroundTransparency = 1 
-        label.TextColor3 = Color3.fromRGB(255, 255, 255) 
-        label.Font = Enum.Font.SourceSansBold 
-        label.TextSize = 11
-    end
-    
-    local box = KontraGui:FindFirstChild("Box_" .. name)
-    if box and box:FindFirstChildOfClass("TextLabel") then
-        box:FindFirstChildOfClass("TextLabel").Text = (teamType == "Friendly") and "СОЮЗНИК" or "ВРАГ"
-    end
-    return box
-end
-
--- ЗАМЕНА НА БЕЗОПАСНЫЙ ЦИКЛ С ЗАДЕРЖКОЙ (ОБХОД KRAMPUS)
-task.spawn(function()
-    while true do
-        task.wait(0.1) -- Задержка в 100 миллисекунд. Спасает от автоматического кика!
-        
-        local KontraGui = _G.KontraGui
-        local KontraFrame = KontraGui and KontraGui:FindFirstChild("MainFrame")
-        
-        if KontraGui and KontraGui.Enabled and _G.KONTRAA_ESP_ENABLED then
-            -- Очищаем старые кадры, чтобы убрать шлейфы
-            for _, child in pairs(KontraGui:GetChildren()) do
-                if child:IsA("Frame") and child ~= KontraFrame then child.Visible = false end
-            end
-
-            local models = {}
-            local entities = game:GetService("ReplicatedStorage"):FindFirstChild("GameClient") and game:GetService("ReplicatedStorage").GameClient:FindFirstChild("Entities")
-            if entities then
-                for _, e in pairs(entities:GetDescendants()) do
-                    if e:IsA("Model") and e.Name ~= game:GetService("Players").LocalPlayer.Name then table.insert(models, e) end
-                end
-            end
-            local chars = workspace:FindFirstChild("Characters") or workspace:FindFirstChild("Players")
-            if chars then
-                for _, c in pairs(chars:GetChildren()) do
-                    if c:IsA("Model") and c.Name ~= game:GetService("Players").LocalPlayer.Name then table.insert(models, c) end
-                end
-            end
-
-            local Camera = workspace.CurrentCamera
-            for _, model in pairs(models) do
-                local root = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("Head") or model:FindFirstChildOfClass("MeshPart")
-                if root then
-                    local fixedPos = root.Position + Vector3.new(0, 3.5, 0)
-                    local screenPos, onScreen = Camera:WorldToViewportPoint(fixedPos)
-                    if onScreen then
-                        local teamType = _G.getKontraTeamType(model)
-                        local box = _G.getOrCreateKontraBox(model.Name, teamType)
-                        local sizeY = math.clamp(2300 / screenPos.Z, 30, 500)
-                        local sizeX = sizeY * 0.55
-                        
-                        if teamType == "Friendly" then
-                            box.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
-                        else
-                            box.BackgroundColor3 = _G.checkKontraVisibility(root, model) and Color3.fromRGB(255, 30, 30) or Color3.fromRGB(30, 200, 30)
-                        end
-                        box.Size = UDim2.fromOffset(sizeX, sizeY)
-                        box.Position = UDim2.fromOffset(screenPos.X - sizeX / 2, screenPos.Y - sizeY / 2)
-                        box.Visible = true
-                    end
-                end
-            end
-        end
     end
 end)
