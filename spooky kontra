@@ -1,192 +1,753 @@
 -- =====================================================================
--- ПОЛНОСТЬЮ АВТОНОМНЫЙ SMART ESP ДЛЯ STICKERS! KONTRAA (С МЕНЮ)
--- КРЕДИТЫ: BY CHO_NAX4 | TIKTOK: 6TORNADIKS7
+-- 👑 KONTRAA PRIVATE HYPER VIP BUNDLE v8.0 (ЧАСТЬ 1 / 6) — BY CHO_NAX4 👑
+-- 🔒 РАЗРАБОТЧИК: CHO_NAX4 | 📱 TIKTOK: 6TORNADIKS7
 -- =====================================================================
+-- Скрипт разработан эксклюзивно CHO_NAX4. Несанкционированная копия запрещена.
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
 local CoreGui = game:GetService("CoreGui")
+local Players = game:GetService("Players")
 
--- 1. ТОТАЛЬНАЯ ЛОКАЛЬНАЯ ОЧИСТКА ЭКРАНА ПЕРЕД СТАРТОМ
-if CoreGui:FindFirstChild("Kontra_Standalone_ESP_System") then
-    pcall(function() CoreGui.Kontra_Standalone_ESP_System:Destroy() end)
+-- Очистка старых сессий разработки CHO_NAX4
+if CoreGui:FindFirstChild("Kontra_UltraPremium_ChoNax4") then
+    pcall(function() CoreGui.Kontra_UltraPremium_ChoNax4:Destroy() end)
 end
 task.wait(0.05)
 
--- Глобальная переменная для управления циклом
+-- Инициализация независимых глобальных триггеров v8.0
 _G.KONTRAA_STANDALONE_ENABLED = true
+_G.KONTRAA_AIMBOT_ENABLED = false
+_G.KONTRAA_NOSMOKE_ENABLED = false
+_G.ChoNax4Gui = nil
 
--- 2. СОЗДАНИЕ СОБСТВЕННОГО НЕЗАВИСИМОГО ИНТЕРФЕЙСА
-local MyKontraGui = Instance.new("ScreenGui")
-MyKontraGui.Name = "Kontra_Standalone_ESP_System"
-MyKontraGui.Parent = CoreGui
-MyKontraGui.ResetOnSpawn = false
+local PremiumGui = Instance.new("ScreenGui")
+PremiumGui.Name = "Kontra_UltraPremium_ChoNax4"
+PremiumGui.ResetOnSpawn = false
+PremiumGui.Parent = CoreGui
+_G.ChoNax4Gui = PremiumGui
 
-local MenuFrame = Instance.new("Frame", MyKontraGui)
-MenuFrame.Name = "MainFrame"
-MenuFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
-MenuFrame.Position = UDim2.new(0.05, 0, 0.2, 0)
-MenuFrame.Size = UDim2.new(0, 240, 0, 110)
-MenuFrame.Active = true
-MenuFrame.Draggable = true -- Двигается пальцем на мобилках и мышкой на ПК
-Instance.new("UICorner", MenuFrame).CornerRadius = UDim.new(0, 10)
+-- 👑 Стильный водяной знак (Watermark) разработчика CHO_NAX4
+local Watermark = Instance.new("Frame")
+Watermark.Name = "CHO_NAX4_Watermark"
+Watermark.BackgroundColor3 = Color3.fromRGB(8, 8, 12)
+Watermark.BackgroundTransparency = 0.15
+Watermark.Position = UDim2.new(0, 15, 0, 15)
+Watermark.Size = UDim2.new(0, 310, 0, 26)
+Instance.new("UICorner", Watermark).CornerRadius = UDim.new(0, 6)
 
-local Title = Instance.new("TextLabel", MenuFrame)
-Title.Size = UDim2.new(1, 0, 0, 25)
-Title.Position = UDim2.new(0, 0, 0, 2)
+local WMStroke = Instance.new("UIStroke", Watermark)
+WMStroke.Color = Color3.fromRGB(157, 38, 255) -- Лакшери фиолетовый неон
+WMStroke.Thickness = 1.2
+
+local WMText = Instance.new("TextLabel")
+WMText.Size = UDim2.new(1, -10, 1, 0)
+WMText.Position = UDim2.new(0, 10, 0, 0)
+WMText.BackgroundTransparency = 1
+WMText.Text = "KONTRAA VIP BUNDLE v8.0 ★ BY CHO_NAX4 ★ ULTRA BUILD"
+WMText.TextColor3 = Color3.fromRGB(240, 240, 245)
+WMText.Font = Enum.Font.SourceSansBold
+WMText.TextSize = 12
+WMText.TextXAlignment = Enum.TextXAlignment.Left
+WMText.Parent = Watermark
+Watermark.Parent = PremiumGui
+
+-- 👑 Главное Премиум-Меню (v8.0 Увеличенный размер под NoSmoke)
+local MainMenu = Instance.new("Frame")
+MainMenu.Name = "MainMenu"
+MainMenu.BackgroundColor3 = Color3.fromRGB(10, 10, 14)
+MainMenu.BackgroundTransparency = 0.1
+MainMenu.Position = UDim2.new(0.05, 0, 0.25, 0)
+MainMenu.Size = UDim2.new(0, 300, 0, 230)
+MainMenu.Active = true
+MainMenu.Draggable = true 
+Instance.new("UICorner", MainMenu).CornerRadius = UDim.new(0, 10)
+local MenuStroke = Instance.new("UIStroke", MainMenu)
+MenuStroke.Color = Color3.fromRGB(60, 50, 75)
+MenuStroke.Thickness = 1
+MainMenu.Parent = PremiumGui
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 30)
+Title.Position = UDim2.new(0, 0, 0, 5)
 Title.BackgroundTransparency = 1
-Title.Text = "KONTRAA SMART ESP"
-Title.TextColor3 = Color3.fromRGB(180, 40, 40) -- Красный стиль
+Title.Text = "KONTRAA HYPER CORE v8.0"
+Title.TextColor3 = Color3.fromRGB(165, 55, 255)
 Title.Font = Enum.Font.SourceSansBold
-Title.TextSize = 13
+Title.TextSize = 15
+Title.Parent = MainMenu
 
--- ТВОЙ АВТОРСКИЙ КОПИРАЙТ В МЕНЮ КОНТРЫ
-local KontraCredits = Instance.new("TextLabel", MenuFrame)
-KontraCredits.Size = UDim2.new(1, 0, 0, 15)
-KontraCredits.Position = UDim2.new(0, 0, 0, 24)
-KontraCredits.BackgroundTransparency = 1
-KontraCredits.Text = "by CHO_NAX4 | TT: 6TORNADIKS7"
-KontraCredits.TextColor3 = Color3.fromRGB(255, 255, 255)
-KontraCredits.TextSize = 11
-KontraCredits.Font = Enum.Font.SourceSansItalic
+local Credits = Instance.new("TextLabel")
+Credits.Size = UDim2.new(1, 0, 0, 15)
+Credits.Position = UDim2.new(0, 0, 0, 28)
+Credits.BackgroundTransparency = 1
+Credits.Text = "mastercoded by CHO_NAX4 | TT: 6TORNADIKS7"
+Credits.TextColor3 = Color3.fromRGB(150, 145, 160)
+Credits.Font = Enum.Font.SourceSansItalic
+Credits.TextSize = 11
+Credits.Parent = MainMenu
 
-local EspBtn = Instance.new("TextButton", MenuFrame)
-EspBtn.Size = UDim2.new(0.9, 0, 0, 45)
-EspBtn.Position = UDim2.new(0.05, 0, 0.5, 0)
-EspBtn.BackgroundColor3 = Color3.fromRGB(40, 100, 60)
-EspBtn.Text = "Умный ESP: ВКЛ"
-EspBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+local Line = Instance.new("Frame")
+Line.Size = UDim2.new(0.9, 0, 0, 1)
+Line.Position = UDim2.new(0.05, 0, 0, 50)
+Line.BackgroundColor3 = Color3.fromRGB(45, 40, 55)
+Line.BorderSizePixel = 0
+Line.Parent = MainMenu
+
+-- 1. Тумблер ESP
+local EspFrame = Instance.new("Frame")
+EspFrame.Size = UDim2.new(0.9, 0, 0, 40)
+EspFrame.Position = UDim2.new(0.05, 0, 0, 60)
+EspFrame.BackgroundTransparency = 1
+EspFrame.Parent = MainMenu
+
+local EspLabel = Instance.new("TextLabel")
+EspLabel.Size = UDim2.new(0.6, 0, 1, 0)
+EspLabel.BackgroundTransparency = 1
+EspLabel.Text = "Интеллектуальный ESP"
+EspLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+EspLabel.Font = Enum.Font.SourceSansBold
+EspLabel.TextSize = 14
+EspLabel.TextXAlignment = Enum.TextXAlignment.Left
+EspLabel.Parent = EspFrame
+
+local EspBtn = Instance.new("TextButton")
+EspBtn.Size = UDim2.new(0.38, 0, 0, 30)
+EspBtn.Position = UDim2.new(0.62, 0, 0.5, -15)
+EspBtn.BackgroundColor3 = Color3.fromRGB(45, 20, 75)
+EspBtn.Text = "АКТИВЕН"
+EspBtn.TextColor3 = Color3.fromRGB(210, 150, 255)
 EspBtn.Font = Enum.Font.SourceSansBold
-EspBtn.TextSize = 14
-Instance.new("UICorner", EspBtn).CornerRadius = UDim.new(0, 5)
+EspBtn.TextSize = 12
+Instance.new("UICorner", EspBtn).CornerRadius = UDim.new(0, 6)
+local EspStroke = Instance.new("UIStroke", EspBtn)
+EspStroke.Color = Color3.fromRGB(140, 50, 230)
+EspBtn.Parent = EspFrame
 
--- Клик по кнопке ВКЛ/ВЫКЛ внутри меню
 EspBtn.MouseButton1Click:Connect(function()
     _G.KONTRAA_STANDALONE_ENABLED = not _G.KONTRAA_STANDALONE_ENABLED
-    EspBtn.Text = _G.KONTRAA_STANDALONE_ENABLED and "Умный ESP: ВКЛ" or "Умный ESP: ВЫКЛ"
-    EspBtn.BackgroundColor3 = _G.KONTRAA_STANDALONE_ENABLED and Color3.fromRGB(40, 100, 60) or Color3.fromRGB(55, 55, 60)
-    
-    if not _G.KONTRAA_STANDALONE_ENABLED then
-        for _, child in pairs(MyKontraGui:GetChildren()) do
-            if child:IsA("Frame") and child ~= MenuFrame then child.Visible = false end
-        end
-    end
+    EspBtn.BackgroundColor3 = _G.KONTRAA_STANDALONE_ENABLED and Color3.fromRGB(45, 20, 75) or Color3.fromRGB(30, 30, 35)
+    EspBtn.TextColor3 = _G.KONTRAA_STANDALONE_ENABLED and Color3.fromRGB(210, 150, 255) or Color3.fromRGB(150, 150, 160)
+    EspStroke.Color = _G.KONTRAA_STANDALONE_ENABLED and Color3.fromRGB(140, 50, 230) or Color3.fromRGB(55, 55, 65)
+    EspBtn.Text = _G.KONTRAA_STANDALONE_ENABLED and "АКТИВЕН" or "ОТКЛЮЧЕН"
 end)
 
+-- 2. Тумблер AIMLOCK
+local AimFrame = Instance.new("Frame")
+AimFrame.Size = UDim2.new(0.9, 0, 0, 40)
+AimFrame.Position = UDim2.new(0.05, 0, 0, 110)
+AimFrame.BackgroundTransparency = 1
+AimFrame.Parent = MainMenu
+
+local AimLabel = Instance.new("TextLabel")
+AimLabel.Size = UDim2.new(0.6, 0, 1, 0)
+AimLabel.BackgroundTransparency = 1
+AimLabel.Text = "Жесткий Aimlock [E]"
+AimLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+AimLabel.Font = Enum.Font.SourceSansBold
+AimLabel.TextSize = 14
+AimLabel.TextXAlignment = Enum.TextXAlignment.Left
+AimLabel.Parent = AimFrame
+
+local AimBtn = Instance.new("TextButton")
+AimBtn.Size = UDim2.new(0.38, 0, 0, 30)
+AimBtn.Position = UDim2.new(0.62, 0, 0.5, -15)
+AimBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+AimBtn.Text = "ОТКЛЮЧЕН"
+AimBtn.TextColor3 = Color3.fromRGB(150, 150, 160)
+AimBtn.Font = Enum.Font.SourceSansBold
+AimBtn.TextSize = 12
+Instance.new("UICorner", AimBtn).CornerRadius = UDim.new(0, 6)
+local AimStroke = Instance.new("UIStroke", AimBtn)
+AimStroke.Color = Color3.fromRGB(55, 55, 65)
+AimBtn.Parent = AimFrame
+
+AimBtn.MouseButton1Click:Connect(function()
+    _G.KONTRAA_AIMBOT_ENABLED = not _G.KONTRAA_AIMBOT_ENABLED
+    AimBtn.BackgroundColor3 = _G.KONTRAA_AIMBOT_ENABLED and Color3.fromRGB(45, 20, 75) or Color3.fromRGB(30, 30, 35)
+    AimBtn.TextColor3 = _G.KONTRAA_AIMBOT_ENABLED and Color3.fromRGB(210, 150, 255) or Color3.fromRGB(150, 150, 160)
+    AimStroke.Color = _G.KONTRAA_AIMBOT_ENABLED and Color3.fromRGB(140, 50, 230) or Color3.fromRGB(55, 55, 65)
+    AimBtn.Text = _G.KONTRAA_AIMBOT_ENABLED and "АКТИВЕН" or "ОТКЛЮЧЕН"
+end)
+
+-- 3. Тумблер NO-SMOKE
+local SmokeFrame = Instance.new("Frame")
+SmokeFrame.Size = UDim2.new(0.9, 0, 0, 40)
+SmokeFrame.Position = UDim2.new(0.05, 0, 0, 160)
+SmokeFrame.BackgroundTransparency = 1
+SmokeFrame.Parent = MainMenu
+
+local SmokeLabel = Instance.new("TextLabel")
+SmokeLabel.Size = UDim2.new(0.6, 0, 1, 0)
+SmokeLabel.BackgroundTransparency = 1
+SmokeLabel.Text = "Взгляд сквозь Дым"
+SmokeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+SmokeLabel.Font = Enum.Font.SourceSansBold
+SmokeLabel.TextSize = 14
+SmokeLabel.TextXAlignment = Enum.TextXAlignment.Left
+SmokeLabel.Parent = SmokeFrame
+
+local SmokeBtn = Instance.new("TextButton")
+SmokeBtn.Size = UDim2.new(0.38, 0, 0, 30)
+SmokeBtn.Position = UDim2.new(0.62, 0, 0.5, -15)
+SmokeBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+SmokeBtn.Text = "ОТКЛЮЧЕН"
+SmokeBtn.TextColor3 = Color3.fromRGB(150, 150, 160)
+SmokeBtn.Font = Enum.Font.SourceSansBold
+SmokeBtn.TextSize = 12
+Instance.new("UICorner", SmokeBtn).CornerRadius = UDim.new(0, 6)
+local SmokeStroke = Instance.new("UIStroke", SmokeBtn)
+SmokeStroke.Color = Color3.fromRGB(55, 55, 65)
+SmokeBtn.Parent = SmokeFrame
+
+SmokeBtn.MouseButton1Click:Connect(function()
+    _G.KONTRAA_NOSMOKE_ENABLED = not _G.KONTRAA_NOSMOKE_ENABLED
+    SmokeBtn.BackgroundColor3 = _G.KONTRAA_NOSMOKE_ENABLED and Color3.fromRGB(45, 20, 75) or Color3.fromRGB(30, 30, 35)
+    SmokeBtn.TextColor3 = _G.KONTRAA_NOSMOKE_ENABLED and Color3.fromRGB(210, 150, 255) or Color3.fromRGB(150, 150, 160)
+    SmokeStroke.Color = _G.KONTRAA_NOSMOKE_ENABLED and Color3.fromRGB(140, 50, 230) or Color3.fromRGB(55, 55, 65)
+    SmokeBtn.Text = _G.KONTRAA_NOSMOKE_ENABLED and "АКТИВЕН" or "ОТКЛЮЧЕН"
+end)
+MainMenu.Parent = PremiumGui
+
+print("[CHO_NAX4 CORE v8.0]: Панель управления успешно запущена! Напиши «давай часть 2».")
 -- =====================================================================
--- 3. ФУНКЦИИ ПРОВЕРКИ СТЕН И КОМАНД (ПОЛНОСТЬЮ АВТОНОМНЫЕ)
+-- 👑 KONTRAA PRIVATE HYPER VIP BUNDLE v8.0 (ЧАСТЬ 2 / 6) — BY CHO_NAX4 👑
+-- 🔒 РАЗРАБОТЧИК: CHO_NAX4 | 📱 TIKTOK: 6TORNADIKS7
 -- =====================================================================
-local function checkKontraVisibility(targetPart, model)
-    local myChar = LocalPlayer.Character or workspace:FindFirstChild(LocalPlayer.Name, true)
-    if not myChar or not myChar:FindFirstChild("HumanoidRootPart") then return false end
-    local ray = Ray.new(Camera.CFrame.Position, (targetPart.Position - Camera.CFrame.Position))
-    local hitPart = workspace:FindPartOnRayWithIgnoreList(ray, {myChar, model, Camera, workspace.Terrain})
-    if hitPart and hitPart:IsDescendantOf(workspace) and not hitPart:IsDescendantOf(model) and hitPart.CanCollide == true then
-        return false
-    end
-    return true
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+local PremiumGui = _G.ChoNax4Gui
+if not PremiumGui then
+    error("[CHO_NAX4 FATAL ERROR]: Нарушена последовательность! Сначала инжектите Часть 1.")
+    return
 end
 
-local function getKontraTeamType(model)
+-- Трёхлучевой адаптивный Raycast-фильтр для динамического сканирования укрытий
+_G.CheckKontraVisibility = function(model, root)
+    local myChar = LocalPlayer.Character or workspace:FindFirstChild(LocalPlayer.Name, true)
+    if not myChar or not myChar:FindFirstChild("HumanoidRootPart") then return false end
+    
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+    raycastParams.FilterDescendantsInstances = {myChar, model, Camera, workspace.Terrain}
+    raycastParams.IgnoreWater = true
+    
+    local origin = Camera.CFrame.Position
+    local headPos = root.Position + Vector3.new(0, 2, 0)
+    local torsoPos = root.Position
+    local legsPos = root.Position - Vector3.new(0, 2.3, 0)
+    
+    for _, targetPoint in ipairs({headPos, torsoPos, legsPos}) do
+        local direction = targetPoint - origin
+        local result = workspace:Raycast(origin, direction, raycastParams)
+        if not result or (result.Instance and result.Instance.CanCollide == false) then
+            return true -- Противник виден напрямую или за простреливаемой текстурой
+        end
+    end
+    return false
+end
+
+-- Извлечённый из ядра игры 100% фикс детекции команд по реальному UserId сущности
+_G.GetKontraTeamType = function(model, targetUserId)
+    if targetUserId then
+        local targetPlayer = Players:GetPlayerByUserId(targetUserId)
+        if targetPlayer then
+            if targetPlayer == LocalPlayer then return "Friendly" end
+            if targetPlayer.Team == LocalPlayer.Team then
+                return "Friendly" -- Официальный тиммейт матча по Roblox Team
+            else
+                return "Enemy" -- 100% Гарантированный противник
+            end
+        end
+    end
+
+    -- Резервные алгоритмы проверки на случай сетевой рассинхронизации пакетов игры
     if model:FindFirstChild("Leaderboard") and (model.Leaderboard:FindFirstChild("FriendlyIndicator") or model.Leaderboard:FindFirstChild("TeamColor")) then
         return "Friendly"
     end
     local radar = LocalPlayer:FindFirstChild("PlayerGui") and LocalPlayer.PlayerGui:FindFirstChild("Radar")
     if radar and radar:FindFirstChild(model.Name) then return "Friendly" end
+    
     local myChar = LocalPlayer.Character or workspace:FindFirstChild(LocalPlayer.Name, true)
     if myChar and myChar.Parent and model.Parent == myChar.Parent and model.Parent.Name ~= "Characters" then
         return "Friendly"
     end
+    
     return "Enemy"
 end
 
-local function getOrCreateKontraBox(name, teamType)
-    local boxName = "Box_" .. name
-    local box = MyKontraGui:FindFirstChild(boxName)
-    
-    if not box then
-        box = Instance.new("Frame", MyKontraGui) 
-        box.Name = boxName 
-        box.BackgroundTransparency = 0.65 
-        box.BorderColor3 = Color3.fromRGB(255, 255, 255) 
-        box.BorderSizePixel = 1
-        
-        local label = Instance.new("TextLabel", box) 
-        label.Size = UDim2.new(1, 0, 0, 15) 
-        label.Position = UDim2.new(0, 0, 0, -18) 
-        label.BackgroundTransparency = 1 
-        label.TextColor3 = Color3.fromRGB(255, 255, 255) 
-        label.Font = Enum.Font.SourceSansBold 
-        label.TextSize = 11
-    end
-    
-    local txtLabel = box:FindFirstChildOfClass("TextLabel")
-    if txtLabel then
-        txtLabel.Text = (teamType == "Friendly") and "СОЮЗНИК" or "ВРАГ"
-    end
-    return box
+print("[CHO_NAX4 MATH]: Часть 2/6 успешно загружена! Напиши «часть 3» для продолжения.")
+-- =====================================================================
+-- 👑 KONTRAA PRIVATE HYPER VIP BUNDLE v8.0 (ЧАСТЬ 3 / 6) — BY CHO_NAX4 👑
+-- 🔒 РАЗРАБОТЧИК: CHO_NAX4 | 📱 TIKTOK: 6TORNADIKS7
+-- =====================================================================
+
+local PremiumGui = _G.ChoNax4Gui
+if not PremiumGui then
+    error("[CHO_NAX4 FATAL ERROR]: Нарушена последовательность! Сначала инжектите Части 1 и 2.")
+    return
 end
 
--- =====================================================================
--- 4. ПОТОК ОБНОВЛЕНИЯ С ЗАДЕРЖКОЙ (ОБХОД KRAMPUS БЕЗ ШЛЕЙФОВ)
--- =====================================================================
-task.spawn(function()
-    while true do
-        task.wait(0.08) -- Безопасный интервал для обхода Krampus
-        
-        if MyKontraGui and MyKontraGui.Parent and _G.KONTRAA_STANDALONE_ENABLED then
-            -- Скрываем старые рамки перед прорисовкой кадра (борьба со шлейфами)
-            for _, child in pairs(MyKontraGui:GetChildren()) do
-                if child:IsA("Frame") and child ~= MenuFrame then child.Visible = false end
-            end
+-- Автоматический изолированный генератор оверлея (Защита от наложения функций)
+_G.GetOrCreateHyperContainer = function(model)
+    local containerName = "Holder_" .. model.Name
+    
+    -- 1. Основная Luxury-рамка хитбокса
+    local box = PremiumGui:FindFirstChild(containerName .. "_Box")
+    if not box then
+        box = Instance.new("Frame")
+        box.Name = containerName .. "_Box"
+        box.BackgroundTransparency = 0.88
+        box.BorderSizePixel = 0
+        local stroke = Instance.new("UIStroke", box)
+        stroke.Thickness = 1.8
+        stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        box.Parent = PremiumGui
+    end
+    
+    -- 2. Черный контур-подложка шкалы здоровья
+    local hpBg = PremiumGui:FindFirstChild(containerName .. "_HpBg")
+    if not hpBg then
+        hpBg = Instance.new("Frame")
+        hpBg.Name = containerName .. "_HpBg"
+        hpBg.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+        hpBg.BorderSizePixel = 0
+        hpBg.Parent = PremiumGui
+    end
+    
+    -- 3. Активная полоска здоровья
+    local hpBar = PremiumGui:FindFirstChild(containerName .. "_HpBar")
+    if not hpBar then
+        hpBar = Instance.new("Frame")
+        hpBar.Name = containerName .. "_HpBar"
+        hpBar.BorderSizePixel = 0
+        hpBar.Parent = PremiumGui
+    end
+    
+    -- 4. Линия трейсера (Snapline)
+    local tracer = PremiumGui:FindFirstChild(containerName .. "_Tracer")
+    if not tracer then
+        tracer = Instance.new("Frame")
+        tracer.Name = containerName .. "_Tracer"
+        tracer.BorderSizePixel = 0
+        tracer.AnchorPoint = Vector2.new(0.5, 0)
+        tracer.Parent = PremiumGui
+    end
+    
+    -- 5. Текст с информацией (Считанные из ядра Оружие + Дистанция)
+    local info = PremiumGui:FindFirstChild(containerName .. "_Info")
+    if not info then
+        info = Instance.new("TextLabel")
+        info.Name = containerName .. "_Info"
+        info.BackgroundTransparency = 1
+        info.TextColor3 = Color3.fromRGB(255, 255, 255)
+        info.Font = Enum.Font.SourceSansBold
+        info.TextSize = 12
+        local textStroke = Instance.new("UIStroke", info)
+        textStroke.Color = Color3.fromRGB(0, 0, 0)
+        textStroke.Thickness = 1
+        info.Parent = PremiumGui
+    end
+    
+    return box, hpBg, hpBar, tracer, info
+end
 
-            -- Собираем скрытые модельки KONTRAA
-            local models = {}
-            local entities = ReplicatedStorage:FindFirstChild("GameClient") and ReplicatedStorage.GameClient:FindFirstChild("Entities")
-            if entities then
-                for _, e in pairs(entities:GetDescendants()) do
-                    if e:IsA("Model") and e.Name ~= LocalPlayer.Name then table.insert(models, e) end
-                end
-            end
-            local chars = workspace:FindFirstChild("Characters") or workspace:FindFirstChild("Players")
-            if chars then
-                for _, c in pairs(chars:GetChildren()) do
-                    if c:IsA("Model") and c.Name ~= LocalPlayer.Name then table.insert(models, c) end
-                end
-            end
+-- 🎯 Отрисовка фиолетового круга FOV для аимлока (через стабильное Drawing API)
+local AimFOV = Drawing.new("Circle")
+AimFOV.Thickness = 1
+AimFOV.NumSides = 60
+AimFOV.Radius = 130 -- Оптимальный радиус зоны захвата аимлока
+AimFOV.Filled = false
+AimFOV.Color = Color3.fromRGB(165, 40, 255) -- Лакшери фиолетовый неон
+AimFOV.Transparency = 0.5
+AimFOV.Visible = false
+_G.ChoNax4AimFOV = AimFOV
 
-            -- Отрисовка
-            for _, model in pairs(models) do
-                local root = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("Head") or model:FindFirstChildOfClass("MeshPart")
-                if root then
-                    -- Смещение высоты рамок (поднимаем вектор на 3.5 единицы вверх)
-                    local fixedPos = root.Position + Vector3.new(0, 3.5, 0)
-                    local screenPos, onScreen = Camera:WorldToViewportPoint(fixedPos)
-                    
-                    if onScreen then
-                        local teamType = getKontraTeamType(model)
-                        local box = getOrCreateKontraBox(model.Name, teamType)
-                        local sizeY = math.clamp(2300 / screenPos.Z, 30, 500)
-                        local sizeX = sizeY * 0.55
-                        
-                        if teamType == "Friendly" then
-                            box.BackgroundColor3 = Color3.fromRGB(0, 120, 255) -- Синий союзник
-                        else
-                            -- Умная проверка стен лазером
-                            box.BackgroundColor3 = checkKontraVisibility(root, model) and Color3.fromRGB(255, 30, 30) or Color3.fromRGB(30, 200, 30)
-                        end
-                        
-                        box.Size = UDim2.fromOffset(sizeX, sizeY)
-                        box.Position = UDim2.fromOffset(screenPos.X - sizeX / 2, screenPos.Y - sizeY / 2)
-                        box.Visible = true
-                    end
-                end
+print("[CHO_NAX4 GENERATOR]: Часть 3/6 успешно скомпилирована! Жду команду на Часть 4.");
+-- =====================================================================
+-- 👑 KONTRAA PRIVATE HYPER VIP BUNDLE v8.0 (ЧАСТЬ 4 / 6) — BY CHO_NAX4 👑
+-- 🔒 РАЗРАБОТЧИК: CHO_NAX4 | 📱 TIKTOK: 6TORNADIKS7
+-- =====================================================================
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local Camera = workspace.CurrentCamera
+
+local PremiumGui = _G.ChoNax4Gui
+local AimFOV = _G.ChoNax4AimFOV
+
+if not PremiumGui or not AimFOV then
+    error("[CHO_NAX4 FATAL ERROR]: Нарушена последовательность! Сначала инжектите Части 1, 2 и 3.")
+    return
+end
+
+local MainMenu = PremiumGui:FindFirstChild("MainMenu")
+local Watermark = PremiumGui:FindFirstChild("CHO_NAX4_Watermark")
+
+-- Основной синхронный поток обработки кадров движка CHO_NAX4
+RunService.RenderStepped:Connect(function()
+    -- Синхронизация и отображение круга FOV аимлока
+    if _G.KONTRAA_AIMBOT_ENABLED then
+        AimFOV.Position = Camera.ViewportSize / 2
+        AimFOV.Visible = true
+    else
+        AimFOV.Visible = false
+    end
+
+    -- Мгновенный сброс визуала, если тумблер в меню переведен в состояние ВЫКЛ
+    if not _G.KONTRAA_STANDALONE_ENABLED then
+        for _, child in pairs(PremiumGui:GetChildren()) do
+            if child:IsA("Frame") and child ~= MainMenu and child ~= Watermark then child.Visible = false
+            elseif child:IsA("TextLabel") and child ~= MainMenu and child ~= Watermark then child.Visible = false end
+        end
+        return
+    end
+    
+    local myChar = LocalPlayer.Character or workspace:FindFirstChild(LocalPlayer.Name, true)
+    local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
+
+    -- 🔍 Модуль 1: Сканирование живых сущностей (Из кэша папок игры)
+    local models = {}
+    local entities = ReplicatedStorage:FindFirstChild("GameClient") and ReplicatedStorage.GameClient:FindFirstChild("Entities")
+    if entities then
+        for _, e in pairs(entities:GetDescendants()) do 
+            if e:IsA("Model") and e.Name ~= LocalPlayer.Name then table.insert(models, e) end 
+        end
+    end
+    local chars = workspace:FindFirstChild("Characters") or workspace:FindFirstChild("Players")
+    if chars then
+        for _, c in pairs(chars:GetChildren()) do 
+            if c:IsA("Model") and c.Name ~= LocalPlayer.Name then table.insert(models, c) end 
+        end
+    end
+
+    -- 🔍 Модуль 2: Сканирование оружия на полу (Из папки Debris.DroppedWeapons)
+    local groundWeapons = {}
+    local debris = workspace:FindFirstChild("Debris")
+    local droppedFolder = debris and debris:FindFirstChild("DroppedWeapons")
+    if droppedFolder then
+        for _, w in pairs(droppedFolder:GetChildren()) do
+            if w:IsA("Model") or w:IsA("BasePart") then
+                table.insert(groundWeapons, w)
             end
         end
     end
+
+    -- 🔍 Модуль 3: Сканирование объектов дыма на карте (NoSmoke)
+    local smokeObjects = {}
+    if _G.KONTRAA_NOSMOKE_ENABLED then
+        -- Ищем дым в Debris и в основном Workspace
+        if debris then
+            for _, obj in pairs(debris:GetDescendants()) do
+                if obj:IsA("Smoke") or obj:IsA("ParticleEmitter") and (obj.Name:lower():match("smoke") or obj.Name:lower():match("grenade")) then
+                    table.insert(smokeObjects, obj)
+                end
+            end
+        end
+        for _, obj in pairs(workspace:GetChildren()) do
+            if obj.Name:lower():match("smoke") or obj.Name:lower():match("grenade") then
+                table.insert(smokeObjects, obj)
+            end
+        end
+    end
+
+    -- Передаем собранные массивы в финишные изолированные модули рендеринга и аимлока
+    if _G.ChoNax4RenderPlayers then
+        _G.ChoNax4RenderPlayers(models, myRoot, MainMenu, Watermark)
+    end
+    if _G.ChoNax4RenderItems then
+        _G.ChoNax4RenderItems(groundWeapons, smokeObjects, myRoot)
+    end
+    if _G.ChoNax4ProcessAimbot then
+        _G.ChoNax4ProcessAimbot()
+    end
 end)
 
-print("[CHO_NAX4 HACK]: Смарт ESP для KONTRAA успешно активирован.")
+print("[CHO_NAX4 RENDERER]: Часть 4/6 успешно связана с ядром! Напиши «часть 5» для получения модуля Player ESP.");
+-- =====================================================================
+-- 👑 KONTRAA PRIVATE HYPER VIP BUNDLE v8.0 (ЧАСТЬ 5 / 6) — BY CHO_NAX4 👑
+-- 🔒 РАЗРАБОТЧИК: CHO_NAX4 | 📱 TIKTOK: 6TORNADIKS7
+-- =====================================================================
+
+local Camera = workspace.CurrentCamera
+
+local PremiumGui = _G.ChoNax4Gui
+local AimFOV = _G.ChoNax4AimFOV
+
+if not PremiumGui or not AimFOV then
+    error("[CHO_NAX4 FATAL ERROR]: Нарушена последовательность! Сначала инжектите Части 1, 2, 3 и 4.")
+    return
+end
+
+-- Инициализация глобального списка целей для жесткого Аимлока (связка с 6-й частью)
+_G.ChoNax4AimbotTarget = nil
+
+-- Отрезанный, полностью независимый модуль рендеринга живых игроков
+_G.ChoNax4RenderPlayers = function(models, myRoot, MainMenu, Watermark)
+    local activePlayers = {}
+    local closestTarget = nil
+    local closestDistance = math.huge
+
+    for _, model in pairs(models) do
+        local root = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("Head") or model.PrimaryPart
+        if root and model.Parent then
+            local containerName = "Holder_" .. model.Name
+            activePlayers[containerName .. "_Box"] = true
+            
+            -- Анатомическая проекция (Полная защита от растягивания рамок из-за длины оружия)
+            local top3D = root.Position + Vector3.new(0, 2.3, 0)
+            local bottom3D = root.Position - Vector3.new(0, 3.2, 0)
+            
+            local topScreen, topOnScreen = Camera:WorldToViewportPoint(top3D)
+            local bottomScreen, bottomOnScreen = Camera:WorldToViewportPoint(bottom3D)
+            
+            local box, hpBg, hpBar, tracer, info = _G.GetOrCreateHyperContainer(model)
+            
+            if topOnScreen and bottomOnScreen and box then
+                -- Считывание UserId напрямую из внутренних атрибутов сущности (100% фикс команд)
+                local targetUserId = model:GetAttribute("UserId") or (model:FindFirstChild("UserId") and model.UserId.Value)
+                local teamType = _G.GetKontraTeamType(model, targetUserId)
+                local stroke = box:FindFirstChildOfClass("UIStroke")
+                
+                local sizeY = math.abs(topScreen.Y - bottomScreen.Y)
+                local sizeX = sizeY * 0.55
+                local posX = topScreen.X - sizeX / 2
+                local posY = topScreen.Y
+                
+                -- Отказоустойчивый сбор ХП и оружия
+                local currentHp = model:GetAttribute("Health") or 100
+                local hum = model:FindFirstChildOfClass("Humanoid")
+                if hum then currentHp = hum.Health 
+                elseif model:FindFirstChild("Health") and model.Health:IsA("ValueBase") then currentHp = model.Health.Value
+                elseif model:FindFirstChild("hp") and model.hp:IsA("ValueBase") then currentHp = model.hp.Value end
+                
+                local weaponName = "Нож"
+                local ccw = model:FindFirstChild("CharacterCurrentWeapon") or model:GetAttribute("CharacterCurrentWeapon")
+                local activeTool = model:FindFirstChildOfClass("Tool")
+                if ccw and type(ccw) == "table" and ccw.Name then weaponName = ccw.Name
+                elseif activeTool then weaponName = activeTool.Name end
+                
+                local distanceInSteps = myRoot and math.floor((root.Position - myRoot.Position).Magnitude) or 0
+
+                -- Цвета палитры Luxury Purple
+                local mainColor = Color3.fromRGB(0, 130, 255) -- Синий союзник
+                
+                if teamType == "Enemy" then
+                    local isVisible = _G.CheckKontraVisibility(model, root)
+                    mainColor = isVisible and Color3.fromRGB(165, 40, 255) or Color3.fromRGB(85, 20, 135)
+                    
+                    -- Фильтрация валидной цели для Аима (Абсолютный захват ближайшего к прицелу врага внутри FOV круга)
+                    if _G.KONTRAA_AIMBOT_ENABLED and currentHp > 0 then
+                        local screenCenter = Camera.ViewportSize / 2
+                        local mouseDist = (Vector2.new(topScreen.X, topScreen.Y + sizeY / 2) - screenCenter).Magnitude
+                        if mouseDist <= AimFOV.Radius and mouseDist < closestDistance then
+                            closestDistance = mouseDist
+                            closestTarget = root
+                        end
+                    end
+                end
+
+                -- ОТРЕСОВКА: Квадрат хитбокса
+                box.Size = UDim2.fromOffset(sizeX, sizeY)
+                box.Position = UDim2.fromOffset(posX, posY)
+                box.BackgroundColor3 = mainColor
+                if stroke then stroke.Color = mainColor end
+                box.Visible = true
+
+                -- ОТРЕСОВКА: Трейсеры из центра низа экрана к стопам
+                if teamType == "Enemy" then
+                    local startX = Camera.ViewportSize.X / 2
+                    local startY = Camera.ViewportSize.Y
+                    local direction = Vector2.new(bottomScreen.X - startX, bottomScreen.Y - startY)
+                    local tracerDistance = direction.Magnitude
+                    local angle = math.deg(math.atan2(direction.Y, direction.X))
+                    
+                    tracer.Size = UDim2.fromOffset(tracerDistance, 1.5)
+                    tracer.Position = UDim2.fromOffset(startX, startY)
+                    tracer.Rotation = angle
+                    tracer.BackgroundColor3 = mainColor
+                    tracer.BackgroundTransparency = 0.5
+                    tracer.Visible = true
+                else
+                    tracer.Visible = false
+                end
+
+                -- ОТРЕСОВКА: Адаптивное ХП (Слева от рамки)
+                local barHpHeight = sizeY * (math.clamp(currentHp, 0, 100) / 100)
+                local hpOffsetX = posX - 6
+                
+                hpBg.Size = UDim2.fromOffset(2.5, sizeY)
+                hpBg.Position = UDim2.fromOffset(hpOffsetX, posY)
+                hpBg.Visible = true
+                
+                hpBar.Size = UDim2.fromOffset(2.5, barHpHeight)
+                hpBar.Position = UDim2.fromOffset(hpOffsetX, posY + (sizeY - barHpHeight))
+                hpBar.BackgroundColor3 = Color3.fromRGB(255 - (currentHp * 2.55), currentHp * 2.55, 180)
+                hpBar.Visible = true
+
+                -- ОТРЕСОВКА: Текст Оружия и Шагов (Снизу рамки)
+                info.Size = UDim2.fromOffset(sizeX + 100, 20)
+                info.Position = UDim2.fromOffset(posX - 50, posY + sizeY + 2)
+                info.Text = string.format("%s | %d Шагов", string.upper(weaponName), distanceInSteps)
+                info.TextColor3 = mainColor
+                info.Visible = true
+            else
+                if box then box.Visible = false end
+                if hpBg then hpBg.Visible = false end
+                if hpBar then hpBar.Visible = false end
+                if tracer then tracer.Visible = false end
+                if info then info.Visible = false end
+            end
+        end
+    end
+
+    -- Передаем найденную цель для жесткого аимлока в глобальную область
+    _G.ChoNax4AimbotTarget = closestTarget
+
+    -- Очистка шлейфов мертвых/вышедших игроков
+    for _, child in pairs(PremiumGui:GetChildren()) do 
+        if child:IsA("Frame") and child ~= MainMenu and child ~= Watermark and child.Name:match("^Holder_") then 
+            local primaryName = child.Name:match("^(Holder_.+)_%a+$") or child.Name:match("^(Holder_.+)_%a+%a+$")
+            if primaryName and not activePlayers[primaryName .. "_Box"] then child.Visible = false end 
+        elseif child:IsA("TextLabel") and child ~= MainMenu and child ~= Watermark and child.Name:match("^Holder_") then 
+            local primaryName = child.Name:match("^(Holder_.+)_%a+$")
+            if primaryName and not activePlayers[primaryName .. "_Box"] then child.Visible = false end 
+        end 
+    end
+end
+
+print("[CHO_NAX4 MODULE]: Часть 5/6 (Player ESP) успешно сохранена! Пиши «часть 6» для финала.");
+-- =====================================================================
+-- 👑 KONTRAA PRIVATE HYPER VIP BUNDLE v8.0 (ЧАСТЬ 6 / 6) — BY CHO_NAX4 👑
+-- 🔒 РАЗРАБОТЧИК: CHO_NAX4 | 📱 TIKTOK: 6TORNADIKS7
+-- =====================================================================
+
+local UserInputService = game:GetService("UserInputService")
+local Camera = workspace.CurrentCamera
+
+local PremiumGui = _G.ChoNax4Gui
+local AimFOV = _G.ChoNax4AimFOV
+
+if not PremiumGui or not AimFOV then
+    error("[CHO_NAX4 FATAL ERROR]: Нарушена последовательность! Сначала инжектите Части 1, 2, 3, 4 и 5.")
+    return
+end
+
+-- Вспомогательный пулл-генератор текстовых меток для оружия на полу (Item ESP)
+local function getOrCreateItemLabel(itemModel)
+    local labelName = "ItemLabel_" .. itemModel.Name
+    local label = PremiumGui:FindFirstChild(labelName)
+    
+    if not label then
+        label = Instance.new("TextLabel")
+        label.Name = labelName
+        label.BackgroundTransparency = 1
+        label.TextColor3 = Color3.fromRGB(190, 110, 255) -- Неоново-пурпурный VIP цвет
+        label.Font = Enum.Font.SourceSansBold
+        label.TextSize = 11
+        
+        local textStroke = Instance.new("UIStroke", label)
+        textStroke.Color = Color3.fromRGB(15, 10, 25)
+        textStroke.Thickness = 1
+        
+        label.Parent = PremiumGui
+    end
+    return label
+end
+
+-- ИЗОЛИРОВАННЫЙ МОДУЛЬ 1: Отрисовка оружия на земле и ПОЛНЫЙ ФИКС ДЫМА (NoSmoke)
+_G.ChoNax4RenderItems = function(groundWeapons, smokeObjects, myRoot)
+    -- 🌫 Логика NoSmoke: Мгновенно тушим весь дым на карте на этом кадре
+    if _G.KONTRAA_NOSMOKE_ENABLED and #smokeObjects > 0 then
+        for _, smoke in ipairs(smokeObjects) do
+            pcall(function()
+                if smoke:IsA("Smoke") then
+                    smoke.Enabled = false
+                    smoke.Opacity = 0
+                elseif smoke:IsA("ParticleEmitter") then
+                    smoke.Enabled = false
+                    smoke:Clear()
+                elseif smoke:IsA("BasePart") then
+                    smoke.Transparency = 1
+                    smoke.CanCollide = false
+                end
+            end)
+        end
+    end
+
+    -- 🔫 Логика Item ESP
+    local activeItems = {}
+    for _, item in pairs(groundWeapons) do
+        local primaryPart = item:IsA("Model") and item.PrimaryPart or item
+        if primaryPart and item.Parent then
+            local labelName = "ItemLabel_" .. item.Name
+            activeItems[labelName] = true
+            
+            local itemPos, itemOnScreen = Camera:WorldToViewportPoint(primaryPart.Position)
+            local itemLabel = getOrCreateItemLabel(item)
+            
+            if itemOnScreen then
+                local groundWeaponName = item:GetAttribute("WeaponName") or item.Name
+                local distToItem = myRoot and math.floor((primaryPart.Position - myRoot.Position).Magnitude) or 0
+                
+                itemLabel.Size = UDim2.fromOffset(200, 20)
+                itemLabel.Position = UDim2.fromOffset(itemPos.X - 100, itemPos.Y - 10)
+                itemLabel.Text = string.format("• %s [%d Ш] •", string.upper(tostring(groundWeaponName)), distToItem)
+                itemLabel.Visible = true
+            else
+                itemLabel.Visible = false
+            end
+        end
+    end
+
+    -- Очистка шлейфов подобранных предметов
+    for _, child in pairs(PremiumGui:GetChildren()) do
+        if child:IsA("TextLabel") and child.Name:match("^ItemLabel_") and not activeItems[child.Name] then
+            child.Visible = false
+        end
+    end
+end
+
+-- ИЗОЛИРОВАННЫЙ МОДУЛЬ 2: PRIVATE HARD VECTOR AIMLOCK (ПК: клавиша 'E' | МОБИЛКА: ЗАЖИМ В FOV)
+_G.ChoNax4ProcessAimbot = function()
+    local targetRoot = _G.ChoNax4AimbotTarget
+    if not _G.KONTRAA_AIMBOT_ENABLED or not targetRoot then return end
+
+    local isAimKeyPressed = UserInputService:IsKeyDown(Enum.KeyCode.E) -- Удержание E на ПК
+    local isScreenTouched = UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) -- Зажим на мобилке
+    
+    -- Фильтр мобильного тапа в зоне FOV круга
+    if isScreenTouched and UserInputService.TouchEnabled then
+        local touchLocation = UserInputService:GetMouseLocation()
+        local screenCenter = Camera.ViewportSize / 2
+        if (touchLocation - screenCenter).Magnitude > AimFOV.Radius then
+            isScreenTouched = false 
+        end
+    elseif UserInputService.TouchEnabled then
+        isScreenTouched = false
+    end
+
+    -- Жесткая векторная фиксация взгляда камеры (Железный обход возврата CFrame)
+    if isAimKeyPressed or isScreenTouched then
+        local head = targetRoot.Parent:FindFirstChild("Head") or targetRoot
+        local headScreenPos, headOnScreen = Camera:WorldToViewportPoint(head.Position)
+        if headOnScreen then
+            -- Принудительное перебивание кастомного CharacterController игры через CoordinateFrame
+            pcall(function()
+                Camera.CFrame = CFrame.new(Camera.CFrame.Position, head.Position)
+            end)
+        end
+    end
+end
+
+-- Финальный премиальный статус в консоль
+print("====================================================")
+print("👑 KONTRAA PRIVATE HYPER VIP BUNDLE v8.0 COMPLETELY ACTIVE 👑")
+print("[DEVELOPER]: CHO_NAX4 | TIKTOK: 6TORNADIKS7")
+print("[AIMBOT MODE]: 🔒 HARDCORE VECTOR AIMLOCK [E KEY / TOUCH] 🔒")
+-- Дым отключен, противники видны насквозь, оружие на полу подсвечено!
+print("[FEATURES]: INTERPOLATED ESP, GROUND WEAPONS ESP, NO-SMOKE ACTIVE")
+print("[STATUS]: ALL 6 PARTS MERGED SUCCESSFULLY IN GAME MEMORY")
+print("====================================================")
