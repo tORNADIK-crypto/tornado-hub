@@ -1,0 +1,1396 @@
+-- FIND THE ANIMALS LUXURY HUB — FULL REWORK — ЧАСТЬ 1 (CORE & TRANSLATIONS)
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+-- === ТОТАЛЬНЫЙ ОСТАНОВЩИК СТАРЫХ ФУНКЦИЙ (ANTI-CRASH) ===
+_G.StopAllHubLoops = true
+task.wait(0.3)
+
+local oldCore1 = game.CoreGui:FindFirstChild("AnimalsPremiumCore")
+local oldCore2 = game.CoreGui:FindFirstChild("AnimalsFreeCore")
+if oldCore1 then oldCore1:Destroy() end
+if oldCore2 then oldCore2:Destroy() end
+
+for _, obj in pairs(workspace:GetDescendants()) do
+    if obj.Name == "Premium3DESP" or obj.Name == "PremiumBoxESP" or obj.Name == "ESP_Anchor" then 
+        obj:Destroy() 
+    end
+end
+_G.StopAllHubLoops = false
+
+-- === ГИГАНТСКИЙ МУЛЬТИЯЗЫЧНЫЙ СЛОВАРЬ (БАЗОВЫЙ ЯЗЫК — ENGLISH) ===
+_G.Lang = "EN"
+_G.Translations = {
+    EN = {
+        ChoiceTitle = "WELCOME / ДОБРО ПОЖАЛОВАТЬ",
+        LaunchFree = "[ LAUNCH FREE VERSION (NO KEY) ]",
+        EnterPremium = "★ ENTER PREMIUM GATE (NEED KEY) ★",
+        FreeTitle = "FREE VERSION (NO PASS)",
+        FreeInfo = "Premium includes: top bar navigation, ultra-fast 0.5s collections, Fly and Noclip!",
+        FreeSubmit = "LAUNCH BASE MENU",
+        UpgradeBtn = "[ ⭐ UPGRADE TO PREMIUM EDITION ⭐ ]",
+        EnterKeyPass = "ENTER PREMIUM PRIVATE KEY...",
+        InjectSoft = "[ EXECUTE SYSTEM ACCESS ]",
+        EspAnimals = "ESP All Animals",
+        EspAnimalsDesc = "Draws neon 3D bounding boxes and names over all 283 animals.",
+        EspPlayers = "Royal Players ESP",
+        EspPlayersDesc = "Highlights player silhouettes with purple neon and names through walls.",
+        BlitzTitle = "Blitz Map Vacuum (Bring)",
+        BlitzDesc = "Character rapidly flies across Items folder, instantly vacuuming all animals.",
+        LoopTpTitle = "Smart Teleport Loop",
+        LoopTpDesc = "Sequential loop with a 0.5s delay and micro-stepping for flawless collection.",
+        PremFly = "Premium Fly",
+        PremFlyDesc = "Unrestricted flight mode through map geometry. Controlled via WASD.",
+        FlySlider = "Fly Speed", RunSlider = "WalkSpeed Slider",
+        NoclipTitle = "Premium Noclip", NoclipDesc = "Completely disables character collision with walls.",
+        OpacityTitle = "Menu Opacity", InvalidKey = "CRITICAL: ACCESS KEY DENIED!",
+        SearchPlace = "🔍 Enter animal name for ESP and TP...", SearchFound = "Found: ",
+        SearchNotFound = "Animal not found.", NeedKeyMsg = "NEED PREMIUM KEY!",
+        FreeLoopTp = "Free Teleport Loop",
+        FreeLoopTpDesc = "Collects all animals automatically but with a slow 5.0 second safety delay.",
+        TabMain = "Main", TabTp = "Teleports", TabPlayers = "Players", TabSettings = "Settings"
+    },
+    RU = {
+        ChoiceTitle = "WELCOME / ДОБРО ПОЖАЛОВАТЬ",
+        LaunchFree = "[ ЗАПУСТИТЬ БЕСПЛАТНУЮ ВЕРСИЮ (БЕЗ КЛЮЧА) ]",
+        EnterPremium = "★ ВОЙТИ В ПРЕМИУМ ГЕЙТ (НУЖЕН КЛЮЧ) ★",
+        FreeTitle = "БЕСПЛАТНАЯ ВЕРСИЯ (БЕЗ КЛЮЧА)",
+        FreeInfo = "В Премиуме: верхняя шторка навигации, молниеносный автосбор (0.5 сек вместо 5) и Полет!",
+        FreeSubmit = "ЗАПУСТИТЬ ОГРЫЗОК ХАБА",
+        UpgradeBtn = "[ ⭐ АПГРЕЙД ДО ПРЕМИУМ ИЗДАНИЯ ⭐ ]",
+        EnterKeyPass = "ВВЕДИТЕ ЛИЦЕНЗИОННЫЙ КЛЮЧ...",
+        InjectSoft = "[ АКТИВИРОВАТЬ ПРЕМИУМ СОФТ ]",
+        EspAnimals = "ESP Всех Животных",
+        EspAnimalsDesc = "Заливает силуэты животных неоновым 3D Box контуром и выводит ники.",
+        EspPlayers = "Королевский ESP Игроков",
+        EspPlayersDesc = "Подсвечивает силуэты игроков фиолетовым неоном и выводит ники сквозь стены.",
+        BlitzTitle = "Блиц-Пылесос карт (Bring)",
+        BlitzDesc = "Персонаж стремительно облетает карту и мгновенно пылесосит всех животных.",
+        LoopTpTitle = "Умный цикл телепортации",
+        LoopTpDesc = "Поочередный сбор всех животных с задержкой всего 0.5 сек и шагами вперед-назад.",
+        PremFly = "Premium Полет (Fly)",
+        PremFlyDesc = "Режим свободного полета персонажа сквозь карту. Управление на WASD.",
+        FlySlider = "Скорость Полета", RunSlider = "Скорость Бега (WalkSpeed)",
+        NoclipTitle = "Premium Клип (Noclip)", NoclipDesc = "Полностью отключает коллизию персонажа со стенами и горами.",
+        OpacityTitle = "Прозрачность Фона Меню", InvalidKey = "КРИТИЧЕСКАЯ ОШИБКА: НЕВЕРНЫЙ КЛЮЧ!",
+        SearchPlace = "🔍 Имя животного для ESP и ТП...", SearchFound = "Найдено: ",
+        SearchNotFound = "Животное не найдено.", NeedKeyMsg = "ТРЕБУЕТСЯ ПРЕМИУМ КЛЮЧ!",
+        FreeLoopTp = "Бесплатный автосбор",
+        FreeLoopTpDesc = "Собирает всех животных автоматически, но с медленной безопасной задержкой в 5.0 секунд.",
+        TabMain = "Главная", TabTp = "Телепорты", TabPlayers = "Игроки", TabSettings = "Настройки"
+    }
+}
+
+-- Инициализируем ScreenGui
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "AnimalsPremiumCore"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = game.CoreGui
+
+_G.AnimalsHubCore = {
+    ScreenGui = ScreenGui,
+    PremiumKey = "xenoxanimals",
+    Tier = "NONE"
+}
+-- FIND THE ANIMALS LUXURY HUB — ЧАСТЬ 2-3 (DRAG ENGINE & EDITION SECURITY GATE)
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+
+local Core = _G.AnimalsHubCore
+if not Core then return end
+
+-- Инициализируем внутренние сигнальные триггеры переключения для следующих частей
+Core.BuildFreeGuiEvent = Instance.new("BindableEvent")
+Core.BuildPremiumGuiEvent = Instance.new("BindableEvent")
+
+-- [[ СВЕРХНАДЕЖНЫЙ МУЛЬТИПЛАТФОРМЕННЫЙ ДВИЖОК ПЕРЕТАСКИВАНИЯ UI (ПК + MOBILE) ]]
+local function makeCrossPlatformDraggable(frame)
+    local dragging = false
+    local dragInput, dragStart, startPos
+
+    local function update(input)
+        local delta = input.Position - dragStart
+        frame.Position = UDim2.new(
+            startPos.X.Scale, 
+            startPos.X.Offset + delta.X, 
+            startPos.Y.Scale, 
+            startPos.Y.Offset + delta.Y
+        )
+    end
+
+    frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = frame.Position
+
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    frame.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            update(input)
+        end
+    end)
+end
+
+Core.ApplyDrag = makeCrossPlatformDraggable -- Экспортируем функцию драга
+
+-- ==================== СТАРТОВОЕ ОКНО МГНОВЕННОГО ВЫБОРА ЯЗЫКА И ИЗДАНИЯ ====================
+local ChoiceFrame = Instance.new("Frame")
+ChoiceFrame.Name = "VersionChoiceFrame"
+ChoiceFrame.Size = UDim2.new(0, 440, 0, 320)
+ChoiceFrame.Position = UDim2.new(0.5, -220, 0.5, -160)
+ChoiceFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 17)
+ChoiceFrame.BorderSizePixel = 0
+ChoiceFrame.Active = true
+ChoiceFrame.Parent = Core.ScreenGui
+Core.ApplyDrag(ChoiceFrame)
+
+local ChoiceStroke = Instance.new("UIStroke")
+ChoiceStroke.Thickness = 2.5
+ChoiceStroke.Color = Color3.fromRGB(255, 215, 0)
+ChoiceStroke.Parent = ChoiceFrame
+
+local ChoiceTitle = Instance.new("TextLabel")
+ChoiceTitle.Size = UDim2.new(1, 0, 0, 50)
+ChoiceTitle.Text = "★ SELECT LANGUAGE & EDITION / ВЫБЕРИТЕ ЯЗЫК И ВЕРСИЮ ★"
+ChoiceTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+ChoiceTitle.Font = Enum.Font.RobotoMono
+ChoiceTitle.TextSize = 11
+ChoiceTitle.BackgroundTransparency = 1
+ChoiceTitle.Parent = ChoiceFrame
+
+-- Потоковые функции создания окон авторизации в один клик
+local function initFreeGate(lang)
+    _G.Lang = lang Core.Tier = "FREE" ChoiceFrame:Destroy()
+    local T = _G.Translations[lang]
+    
+    local FreeKeyFrame = Instance.new("Frame")
+    FreeKeyFrame.Size = UDim2.new(0, 340, 0, 190)
+    FreeKeyFrame.Position = UDim2.new(0.5, -170, 0.5, -95)
+    FreeKeyFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 53)
+    FreeKeyFrame.BorderSizePixel = 2
+    FreeKeyFrame.BorderColor3 = Color3.fromRGB(90, 90, 95)
+    FreeKeyFrame.Active = true
+    FreeKeyFrame.Parent = Core.ScreenGui
+    Core.ApplyDrag(FreeKeyFrame)
+
+    local FreeTitle = Instance.new("TextLabel")
+    FreeTitle.Size = UDim2.new(1, 0, 0, 40)
+    FreeTitle.Text = T.FreeTitle
+    FreeTitle.TextColor3 = Color3.fromRGB(180, 180, 180)
+    FreeTitle.Font = Enum.Font.SourceSansBold
+    FreeTitle.TextSize = 14
+    FreeTitle.BackgroundTransparency = 1
+    FreeTitle.Parent = FreeKeyFrame
+
+    local FreeInfo = Instance.new("TextLabel")
+    FreeInfo.Size = UDim2.new(0.9, 0, 0, 45)
+    FreeInfo.Position = UDim2.new(0.05, 0, 0.22, 0)
+    FreeInfo.Text = T.FreeInfo
+    FreeInfo.TextColor3 = Color3.fromRGB(230, 90, 90)
+    FreeInfo.Font = Enum.Font.SourceSansItalic
+    FreeInfo.TextSize = 12
+    FreeInfo.TextWrapped = true
+    FreeInfo.BackgroundTransparency = 1
+    FreeInfo.Parent = FreeKeyFrame
+
+    local FreeSubmit = Instance.new("TextButton")
+    FreeSubmit.Size = UDim2.new(0.85, 0, 0, 38)
+    FreeSubmit.Position = UDim2.new(0.075, 0, 0.65, 0)
+    FreeSubmit.Text = T.FreeSubmit
+    FreeSubmit.BackgroundColor3 = Color3.fromRGB(70, 70, 75)
+    FreeSubmit.TextColor3 = Color3.fromRGB(255, 255, 255)
+    FreeSubmit.Font = Enum.Font.SourceSansBold
+    FreeSubmit.TextSize = 14
+    FreeSubmit.Parent = FreeKeyFrame
+
+    FreeSubmit.MouseButton1Click:Connect(function() FreeKeyFrame:Destroy() Core.BuildFreeGuiEvent:Fire() end)
+end
+
+local function initPremiumGate(lang)
+    _G.Lang = lang Core.Tier = "PREMIUM" ChoiceFrame:Destroy()
+    local T = _G.Translations[lang]
+    
+    local PremiumKeyFrame = Instance.new("Frame")
+    PremiumKeyFrame.Size = UDim2.new(0, 390, 0, 240)
+    PremiumKeyFrame.Position = UDim2.new(0.5, -195, 0.5, -120)
+    PremiumKeyFrame.BackgroundColor3 = Color3.fromRGB(15, 12, 6)
+    PremiumKeyFrame.BorderSizePixel = 0
+    PremiumKeyFrame.Active = true
+    PremiumKeyFrame.Parent = Core.ScreenGui
+    Core.ApplyDrag(PremiumKeyFrame)
+    Instance.new("UIStroke", PremiumKeyFrame).Color = Color3.fromRGB(255, 215, 0)
+
+    local PremiumTitle = Instance.new("TextLabel")
+    PremiumTitle.Size = UDim2.new(1, 0, 0, 50)
+    PremiumTitle.Text = "★ ANIMALS PREMIUM SECURITY ★"
+    PremiumTitle.TextColor3 = Color3.fromRGB(255, 215, 0)
+    PremiumTitle.Font = Enum.Font.RobotoMono
+    PremiumTitle.BackgroundTransparency = 1
+    PremiumTitle.Parent = PremiumKeyFrame
+
+    local KeyInput = Instance.new("TextBox")
+    KeyInput.Size = UDim2.new(0.85, 0, 0, 42)
+    KeyInput.Position = UDim2.new(0.075, 0, 0.35, 0)
+    KeyInput.PlaceholderText = T.EnterKeyPass
+    KeyInput.Text = ""
+    KeyInput.BackgroundColor3 = Color3.fromRGB(22, 14, 28)
+    KeyInput.TextColor3 = Color3.fromRGB(186, 85, 211)
+    KeyInput.Font = Enum.Font.Code
+    KeyInput.Parent = PremiumKeyFrame
+
+    local PremiumSubmit = Instance.new("TextButton")
+    PremiumSubmit.Size = UDim2.new(0.85, 0, 0, 45)
+    PremiumSubmit.Position = UDim2.new(0.075, 0, 0.65, 0)
+    PremiumSubmit.Text = T.InjectSoft
+    PremiumSubmit.BackgroundColor3 = Color3.fromRGB(42, 32, 8)
+    PremiumSubmit.TextColor3 = Color3.fromRGB(255, 215, 0)
+    PremiumSubmit.Font = Enum.Font.RobotoMono
+    PremiumSubmit.Parent = PremiumKeyFrame
+
+    PremiumSubmit.MouseButton1Click:Connect(function()
+        if KeyInput.Text == Core.PremiumKey then PremiumKeyFrame:Destroy() Core.BuildPremiumGuiEvent:Fire()
+        else KeyInput.Text = "" KeyInput.PlaceholderText = T.InvalidKey end
+    end)
+end
+
+-- Генератор кнопок выбора
+local function createChoiceBtn(text, pos, color, callback)
+    local B = Instance.new("TextButton") B.Size = UDim2.new(0, 400, 0, 42) B.Position = pos B.Text = text B.BackgroundColor3 = color B.TextColor3 = (color == Color3.fromRGB(35, 35, 38)) and Color3.fromRGB(180, 180, 180) or Color3.fromRGB(255, 215, 0) B.Font = Enum.Font.RobotoMono B.TextSize = 12 B.BorderSizePixel = 0 B.Parent = ChoiceFrame
+    Instance.new("UIStroke", B).Color = (color == Color3.fromRGB(35, 35, 38)) and Color3.fromRGB(100, 100, 100) or Color3.fromRGB(255, 215, 0)
+    B.MouseButton1Click:Connect(callback)
+end
+
+createChoiceBtn("[ LAUNCH FREE EDITION (ENGLISH) ]", UDim2.new(0, 20, 0, 70), Color3.fromRGB(35, 35, 38), function() initFreeGate("EN") end)
+createChoiceBtn("[ ЗАПУСТИТЬ БЕСПЛАТНУЮ ВЕРСИЮ (РУССКИЙ) ]", UDim2.new(0, 20, 0, 125), Color3.fromRGB(35, 35, 38), function() initFreeGate("RU") end)
+createChoiceBtn("★ ENTER PREMIUM GATE (ENGLISH) ★", UDim2.new(0, 20, 0, 190), Color3.fromRGB(45, 35, 10), function() initPremiumGate("EN") end)
+createChoiceBtn("★ ВОЙТИ В ПРЕМИУМ ГЕЙТ (РУССКИЙ) ★", UDim2.new(0, 20, 0, 245), Color3.fromRGB(45, 35, 10), function() initPremiumGate("RU") end)
+-- FIND THE ANIMALS LUXURY HUB — ЧАСТЬ 4 (MAIN INTERFACE FRAMES CONSTRUCTOR)
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local Core = _G.AnimalsHubCore
+if not Core then return end
+
+-- === 1. СБОРКА FREE-КОРПУСА С БЕСШОВНОЙ КНОПКОЙ UPGRADE ===
+function Core:BuildFreeInterface()
+    local T = _G.Translations[_G.Lang]
+    
+    local FreeMainFrame = Instance.new("Frame")
+    FreeMainFrame.Name = "FreeMainFrame"
+    FreeMainFrame.Size = UDim2.new(0, 440, 0, 350)
+    FreeMainFrame.Position = UDim2.new(0.5, -220, 0.5, -175)
+    FreeMainFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 48)
+    FreeMainFrame.BorderSizePixel = 3
+    FreeMainFrame.BorderColor3 = Color3.fromRGB(80, 80, 85)
+    FreeMainFrame.Active = true
+    FreeMainFrame.Parent = Core.ScreenGui
+    Core.FreeMainFrame = FreeMainFrame
+    Core.ApplyDrag(FreeMainFrame) -- Кроссплатформенный драг из Части 2
+
+    local FreeTitle = Instance.new("TextLabel")
+    FreeTitle.Size = UDim2.new(1, 0, 0, 36)
+    FreeTitle.BackgroundColor3 = Color3.fromRGB(30, 30, 32)
+    FreeTitle.Text = "  Find the Animals Free Menu [" .. _G.Lang .. "]"
+    FreeTitle.TextColor3 = Color3.fromRGB(180, 180, 180)
+    FreeTitle.Font = Enum.Font.SourceSansBold
+    FreeTitle.TextSize = 14
+    FreeTitle.TextXAlignment = Enum.TextXAlignment.Left
+    FreeTitle.BorderSizePixel = 0
+    FreeTitle.Parent = FreeMainFrame
+
+    local FreeClose = Instance.new("TextButton")
+    FreeClose.Size = UDim2.new(0, 26, 0, 26)
+    FreeClose.Position = UDim2.new(1, -32, 0, 5)
+    FreeClose.Text = "X"
+    FreeClose.TextColor3 = Color3.fromRGB(255, 60, 60)
+    FreeClose.BackgroundColor3 = Color3.fromRGB(55, 55, 58)
+    FreeClose.Font = Enum.Font.SourceSansBold
+    FreeClose.TextSize = 14
+    FreeClose.Parent = FreeMainFrame
+
+    local UpgradeBtn = Instance.new("TextButton")
+    UpgradeBtn.Size = UDim2.new(1, -20, 0, 38)
+    UpgradeBtn.Position = UDim2.new(0, 10, 1, -48)
+    UpgradeBtn.Text = T.UpgradeBtn
+    UpgradeBtn.BackgroundColor3 = Color3.fromRGB(45, 35, 10)
+    UpgradeBtn.TextColor3 = Color3.fromRGB(255, 215, 0)
+    UpgradeBtn.Font = Enum.Font.RobotoMono
+    UpgradeBtn.TextSize = 12
+    UpgradeBtn.Parent = FreeMainFrame
+    Instance.new("UIStroke", UpgradeBtn).Color = Color3.fromRGB(255, 215, 0)
+
+    local FreeContent = Instance.new("ScrollingFrame")
+    FreeContent.Size = UDim2.new(1, -20, 1, -100)
+    FreeContent.Position = UDim2.new(0, 10, 0, 44)
+    FreeContent.BackgroundTransparency = 1
+    FreeContent.CanvasSize = UDim2.new(0, 0, 0, 380)
+    FreeContent.ScrollBarThickness = 5
+    FreeContent.ScrollBarImageColor3 = Color3.fromRGB(90, 90, 95)
+    FreeContent.Parent = FreeMainFrame
+    Core.FreeContent = FreeContent
+
+    local FreeLayout = Instance.new("UIListLayout")
+    FreeLayout.Padding = UDim.new(0, 8)
+    FreeLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    FreeLayout.Parent = FreeContent
+
+    UserInputService.InputBegan:Connect(function(input, chat)
+        if not chat and input.KeyCode == Enum.KeyCode.Insert and Core.Tier == "FREE" and FreeMainFrame then
+            FreeMainFrame.Visible = not FreeMainFrame.Visible
+        end
+    end)
+    FreeClose.MouseButton1Click:Connect(function() Core.ScreenGui:Destroy() end)
+    UpgradeBtn.MouseButton1Click:Connect(function() FreeMainFrame:Destroy() _G.OpenPremiumKeyGate() end)
+end
+
+-- === 2. СБОРКА PREMIUM-КОРПУСА С ВЕРХНЕЙ НЕОНОВОЙ ШТОРКОЙ ===
+function Core:BuildPremiumInterface()
+    local MainFrame = Instance.new("Frame")
+    MainFrame.Name = "MainFrame"
+    MainFrame.Size = UDim2.new(0, 600, 0, 440)
+    MainFrame.Position = UDim2.new(0.5, -300, 0.5, -220)
+    MainFrame.BackgroundColor3 = Color3.fromRGB(15, 12, 10)
+    MainFrame.BackgroundTransparency = _G.CurrentMenuOpacity or 0.25
+    MainFrame.BorderSizePixel = 0
+    MainFrame.Active = true
+    MainFrame.ClipsDescendants = true
+    MainFrame.Parent = Core.ScreenGui
+    Core.MainFrame = MainFrame
+    Core.ApplyDrag(MainFrame)
+
+    local UIStroke = Instance.new("UIStroke")
+    UIStroke.Thickness = 2.5
+    UIStroke.Color = Color3.fromRGB(255, 215, 0)
+    UIStroke.Parent = MainFrame
+
+    local Topbar = Instance.new("Frame")
+    Topbar.Name = "TopbarNavigation"
+    Topbar.Size = UDim2.new(1, 0, 0, 48)
+    Topbar.BackgroundColor3 = Color3.fromRGB(35, 10, 60)
+    Topbar.BackgroundTransparency = 0.1
+    Topbar.BorderSizePixel = 0
+    Topbar.ZIndex = 3
+    Topbar.Parent = MainFrame
+
+    local TopbarGradient = Instance.new("UIGradient")
+    TopbarGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(160, 20, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(60, 5, 120))
+    })
+    TopbarGradient.Rotation = 0
+    TopbarGradient.Parent = Topbar
+
+    local HorizonDivider = Instance.new("Frame")
+    HorizonDivider.Size = UDim2.new(1, 0, 0, 1.5)
+    HorizonDivider.Position = UDim2.new(0, 0, 1, -1)
+    HorizonDivider.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+    HorizonDivider.BorderSizePixel = 0
+    HorizonDivider.ZIndex = 4
+    HorizonDivider.Parent = Topbar
+
+    local LogoLabel = Instance.new("TextLabel")
+    LogoLabel.Size = UDim2.new(0, 140, 1, 0)
+    LogoLabel.Position = UDim2.new(0, 12, 0, 0)
+    LogoLabel.Text = "★ PREMIUM ★"
+    LogoLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
+    LogoLabel.Font = Enum.Font.GothamBold
+    LogoLabel.TextSize = 13
+    LogoLabel.TextXAlignment = Enum.TextXAlignment.Left
+    LogoLabel.BackgroundTransparency = 1
+    LogoLabel.ZIndex = 4
+    LogoLabel.Parent = Topbar
+
+    local TabButtonsFrame = Instance.new("Frame")
+    TabButtonsFrame.Size = UDim2.new(1, -230, 1, 0)
+    TabButtonsFrame.Position = UDim2.new(0, 150, 0, 0)
+    TabButtonsFrame.BackgroundTransparency = 1
+    TabButtonsFrame.ZIndex = 4
+    TabButtonsFrame.Parent = Topbar
+    Core.TabButtonsFrame = TabButtonsFrame
+
+    local PagesContainer = Instance.new("Frame")
+    PagesContainer.Name = "PagesContainer"
+    PagesContainer.Size = UDim2.new(1, -20, 1, -125)
+    PagesContainer.Position = UDim2.new(0, 10, 0, 58)
+    PagesContainer.BackgroundTransparency = 1
+    PagesContainer.ZIndex = 2
+    PagesContainer.Parent = MainFrame
+    Core.PagesContainer = PagesContainer
+
+    -- === 💎 БЕЗОПАСНЫЙ И СТИЛЬНЫЙ БЛОК АВАТАРОК И АВТОРСТВА ВНИЗУ ===
+    local CreditsFrame = Instance.new("Frame")
+    CreditsFrame.Name = "LuxuryCreditsBlock"
+    CreditsFrame.Size = UDim2.new(1, -20, 0, 52)
+    CreditsFrame.Position = UDim2.new(0, 10, 1, -62)
+    CreditsFrame.BackgroundColor3 = Color3.fromRGB(20, 15, 25)
+    CreditsFrame.BackgroundTransparency = 0.4
+    CreditsFrame.ZIndex = 3
+    CreditsFrame.Parent = MainFrame
+    Instance.new("UIStroke", CreditsFrame).Color = Color3.fromRGB(255, 215, 0)
+
+    local authorThumbUrl = "https://roblox.com"
+    local AuthorImgLabel = Instance.new("ImageLabel")
+    AuthorImgLabel.Size = UDim2.new(0, 42, 0, 42)
+    AuthorImgLabel.Position = UDim2.new(0, 5, 0, 5)
+    AuthorImgLabel.Image = authorThumbUrl
+    AuthorImgLabel.BackgroundColor3 = Color3.fromRGB(45, 10, 75)
+    AuthorImgLabel.ZIndex = 4
+    AuthorImgLabel.Parent = CreditsFrame
+    Instance.new("UIStroke", AuthorImgLabel).Color = Color3.fromRGB(255, 215, 0)
+
+    local AuthorText = Instance.new("TextLabel")
+    AuthorText.Size = UDim2.new(0, 180, 1, 0)
+    AuthorText.Position = UDim2.new(0, 55, 0, 0)
+    AuthorText.Text = "Owner: cho_nax4\nTikTok: 6tornadiks7"
+    AuthorText.TextColor3 = Color3.fromRGB(255, 215, 0)
+    AuthorText.Font = Enum.Font.Code
+    AuthorText.TextSize = 11
+    AuthorText.TextXAlignment = Enum.TextXAlignment.Left
+    AuthorText.BackgroundTransparency = 1
+    AuthorText.ZIndex = 4
+    AuthorText.Parent = CreditsFrame
+
+    local userThumbUrl = "https://roblox.com"..tostring(LocalPlayer.UserId).."&width=48&height=48&format=png"
+    local UserImgLabel = Instance.new("ImageLabel")
+    UserImgLabel.Size = UDim2.new(0, 42, 0, 42)
+    UserImgLabel.Position = UDim2.new(1, -47, 0, 5)
+    UserImgLabel.Image = userThumbUrl
+    UserImgLabel.BackgroundColor3 = Color3.fromRGB(20, 20, 40)
+    UserImgLabel.ZIndex = 4
+    UserImgLabel.Parent = CreditsFrame
+    Instance.new("UIStroke", UserImgLabel).Color = Color3.fromRGB(186, 85, 211)
+
+    local UserText = Instance.new("TextLabel")
+    UserText.Size = UDim2.new(0, 150, 1, 0)
+    UserText.Position = UDim2.new(1, -205, 0, 0)
+    UserText.Text = "Welcome user:\n" .. LocalPlayer.Name
+    UserText.TextColor3 = Color3.fromRGB(255, 255, 255)
+    UserText.Font = Enum.Font.GothamBold
+    UserText.TextSize = 10
+    UserText.TextXAlignment = Enum.TextXAlignment.Right
+    UserText.BackgroundTransparency = 1
+    UserText.ZIndex = 4
+    UserText.Parent = CreditsFrame
+
+    local TopControls = Instance.new("Frame")
+    TopControls.Size = UDim2.new(0, 75, 0, 35)
+    TopControls.Position = UDim2.new(1, -80, 0, 6)
+    TopControls.BackgroundTransparency = 1
+    TopControls.ZIndex = 4
+    TopControls.Parent = Topbar
+
+    local CloseBtn = Instance.new("TextButton")
+    CloseBtn.Size = UDim2.new(0, 24, 0, 24)
+    CloseBtn.Position = UDim2.new(1, -28, 0, 5)
+    CloseBtn.Text = "✕"
+    CloseBtn.TextColor3 = Color3.fromRGB(255, 215, 0)
+    CloseBtn.BackgroundColor3 = Color3.fromRGB(45, 15, 15)
+    CloseBtn.Font = Enum.Font.GothamBold
+    CloseBtn.TextSize = 10
+    CloseBtn.Parent = TopControls
+    Instance.new("UIStroke", CloseBtn).Color = Color3.fromRGB(255, 215, 0)
+
+    local MinimizeBtn = Instance.new("TextButton")
+    MinimizeBtn.Size = UDim2.new(0, 24, 0, 24)
+    MinimizeBtn.Position = UDim2.new(1, -56, 0, 5)
+    MinimizeBtn.Text = "—"
+    MinimizeBtn.TextColor3 = Color3.fromRGB(255, 215, 0)
+    MinimizeBtn.BackgroundColor3 = Color3.fromRGB(15, 25, 45)
+    MinimizeBtn.Font = Enum.Font.GothamBold
+    MinimizeBtn.TextSize = 9
+    MinimizeBtn.Parent = TopControls
+    Instance.new("UIStroke", MinimizeBtn).Color = Color3.fromRGB(255, 215, 0)
+    local isMinimized = false
+    MinimizeBtn.MouseButton1Click:Connect(function()
+    isMinimized = not isMinimized
+    TweenService:Create(MainFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quart), {
+    Size = isMinimized and UDim2.new(0, MainFrame.Size.X.Offset, 0, 48) or UDim2.new(0, MainFrame.Size.X.Offset, 0, 440)
+    }):Play()
+    PagesContainer.Visible = not isMinimized
+    CreditsFrame.Visible = not isMinimized
+    eCreditsFrame.Visible = not isMinimized
+    end)
+    UserInputService.InputBegan:Connect(function(input, chat)
+     if not chat and input.KeyCode == Enum.KeyCode.Insert and Core.Tier == "PREMIUM" and MainFrame then
+    MainFrame.Visible = not MainFrame.Visible
+    end
+    end)
+     CloseBtn.MouseButton1Click:Connect(function() Core.ScreenGui:Destroy() end)
+    end
+-- FIND THE ANIMALS LUXURY HUB — ЧАСТЬ 5 (ЛЕВЫЙ САЙДБАР НАВИГАЦИИ)
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local Core = _G.AnimalsHubCore
+if not Core then return end
+
+Core.ActivePages = {}
+Core.ActiveButtons = {}
+
+-- Универсальное перетаскивание для мобилок и ПК
+local function makeFriendlyDraggable(frame)
+    local dragging, dragInput, dragStart, startPos
+    frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true dragStart = input.Position startPos = frame.Position
+            input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging = false end end)
+        end
+    end)
+    frame.InputChanged:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end end)
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - dragStart
+            frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+end
+
+function Core:BuildPremiumInterface()
+    -- Главное окно
+    local MainFrame = Instance.new("Frame")
+    MainFrame.Name = "MainFrame"
+    MainFrame.Size = UDim2.new(0, 595, 0, 435)
+    MainFrame.Position = UDim2.new(0.5, -297, 0.5, -217)
+    MainFrame.BackgroundColor3 = Color3.fromRGB(15, 12, 10)
+    MainFrame.BackgroundTransparency = _G.CurrentMenuOpacity or 0.25
+    MainFrame.BorderSizePixel = 0
+    MainFrame.Active = true
+    MainFrame.ClipsDescendants = true
+    MainFrame.Parent = Core.ScreenGui
+    Core.MainFrame = MainFrame
+    makeFriendlyDraggable(MainFrame)
+
+    local UIStroke = Instance.new("UIStroke")
+    UIStroke.Thickness = 2.5
+    UIStroke.Color = Color3.fromRGB(255, 215, 0)
+    UIStroke.Parent = MainFrame
+
+    -- === ЛЕВАЯ ПАНЕЛЬ НАВИГАЦИИ (САЙДБАР ВМЕСТО ВЕРХНЕЙ ШТОРКИ) ===
+    local Sidebar = Instance.new("Frame")
+    Sidebar.Name = "SidebarNavigation"
+    Sidebar.Size = UDim2.new(0, 165, 1, 0) -- Фиксированные 165 пикселей ширины
+    Sidebar.BackgroundColor3 = Color3.fromRGB(30, 5, 50)
+    Sidebar.BackgroundTransparency = 0.15
+    Sidebar.BorderSizePixel = 0
+    Sidebar.ZIndex = 3
+    Sidebar.Parent = MainFrame
+
+    local SidebarGradient = Instance.new("UIGradient")
+    SidebarGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(148, 0, 211)), -- Сочный фиолетовый неон
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(48, 0, 96))
+    })
+    SidebarGradient.Rotation = 90 -- Перелив идет сверху вниз
+    SidebarGradient.Parent = Sidebar
+
+    local Divider = Instance.new("Frame")
+    Divider.Size = UDim2.new(0, 1, 1, 0)
+    Divider.Position = UDim2.new(1, 0, 0, 0)
+    Divider.BackgroundColor3 = Color3.fromRGB(255, 215, 0) -- Золотой вертикальный разделитель
+    Divider.BorderSizePixel = 0
+    Divider.ZIndex = 4
+    Divider.Parent = Sidebar
+
+    local LogoLabel = Instance.new("TextLabel")
+    LogoLabel.Size = UDim2.new(1, 0, 0, 50)
+    LogoLabel.Text = "★ PREMIUM HUB ★"
+    LogoLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
+    LogoLabel.Font = Enum.Font.GothamBold
+    LogoLabel.TextSize = 13
+    LogoLabel.BackgroundTransparency = 1
+    LogoLabel.ZIndex = 4
+    LogoLabel.Parent = Sidebar
+
+    -- Контейнер для вертикального списка кнопок вкладок
+    local TabButtonsFrame = Instance.new("Frame")
+    TabButtonsFrame.Size = UDim2.new(1, -12, 1, -65)
+    TabButtonsFrame.Position = UDim2.new(0, 6, 0, 55)
+    TabButtonsFrame.BackgroundTransparency = 1
+    TabButtonsFrame.ZIndex = 4
+    TabButtonsFrame.Parent = Sidebar
+    Core.TabButtonsFrame = TabButtonsFrame
+
+    local SidebarLayout = Instance.new("UIListLayout") -- Кнопки выстраиваются друг под другом!
+    SidebarLayout.Padding = UDim.new(0, 7)
+    SidebarLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    SidebarLayout.Parent = TabButtonsFrame
+
+    -- ПРАВАЯ ЧАСТЬ (КОНТЕНТНЫЙ БЛОК ФУНКЦИЙ)
+    local PagesContainer = Instance.new("Frame")
+    PagesContainer.Name = "PagesContainer"
+    PagesContainer.Size = UDim2.new(1, -185, 1, -115) -- Выделяем место справа от сайдбара
+    PagesContainer.Position = UDim2.new(0, 175, 0, 50)
+    PagesContainer.BackgroundTransparency = 1
+    PagesContainer.ZIndex = 2
+    PagesContainer.Parent = MainFrame
+    Core.PagesContainer = PagesContainer
+
+    -- === 💎 БЛОК АВАТАРОК И АВТОРСТВА ВНИЗУ (ПОД СТРАНИЦАМИ) ===
+    local CreditsFrame = Instance.new("Frame")
+    CreditsFrame.Name = "LuxuryCreditsBlock"
+    CreditsFrame.Size = UDim2.new(1, -185, 0, 52)
+    CreditsFrame.Position = UDim2.new(0, 175, 1, -62)
+    CreditsFrame.BackgroundColor3 = Color3.fromRGB(20, 15, 25)
+    CreditsFrame.BackgroundTransparency = 0.4
+    CreditsFrame.ZIndex = 3
+    CreditsFrame.Parent = MainFrame
+    Instance.new("UIStroke", CreditsFrame).Color = Color3.fromRGB(255, 215, 0)
+
+    local authorThumbUrl = "https://roblox.com"
+    local AuthorImgLabel = Instance.new("ImageLabel")
+    AuthorImgLabel.Size = UDim2.new(0, 42, 0, 42)
+    AuthorImgLabel.Position = UDim2.new(0, 5, 0, 5)
+    AuthorImgLabel.Image = authorThumbUrl
+    AuthorImgLabel.BackgroundColor3 = Color3.fromRGB(45, 10, 75)
+    AuthorImgLabel.ZIndex = 4
+    AuthorImgLabel.Parent = CreditsFrame
+    Instance.new("UIStroke", AuthorImgLabel).Color = Color3.fromRGB(255, 215, 0)
+
+    local AuthorText = Instance.new("TextLabel")
+    AuthorText.Size = UDim2.new(0, 150, 1, 0)
+    AuthorText.Position = UDim2.new(0, 54, 0, 0)
+    AuthorText.Text = "Owner: cho_nax4\nTikTok: 6tornadiks7"
+    AuthorText.TextColor3 = Color3.fromRGB(255, 215, 0)
+    AuthorText.Font = Enum.Font.Code
+    AuthorText.TextSize = 10
+    AuthorText.TextXAlignment = Enum.TextXAlignment.Left
+    AuthorText.BackgroundTransparency = 1
+    AuthorText.ZIndex = 4
+    AuthorText.Parent = CreditsFrame
+
+    local userThumbUrl = "https://roblox.com"..tostring(LocalPlayer.UserId).."&width=48&height=48&format=png"
+    local UserImgLabel = Instance.new("ImageLabel")
+    UserImgLabel.Size = UDim2.new(0, 42, 0, 42)
+    UserImgLabel.Position = UDim2.new(1, -47, 0, 5)
+    UserImgLabel.Image = userThumbUrl
+    UserImgLabel.BackgroundColor3 = Color3.fromRGB(20, 20, 40)
+    UserImgLabel.ZIndex = 4
+    UserImgLabel.Parent = CreditsFrame
+    Instance.new("UIStroke", UserImgLabel).Color = Color3.fromRGB(186, 85, 211)
+
+    local UserText = Instance.new("TextLabel")
+    UserText.Size = UDim2.new(0, 130, 1, 0)
+    UserText.Position = UDim2.new(1, -182, 0, 0)
+    UserText.Text = "Welcome:\n" .. LocalPlayer.Name
+    UserText.TextColor3 = Color3.fromRGB(255, 255, 255)
+    UserText.Font = Enum.Font.GothamBold
+    UserText.TextSize = 10
+    UserText.TextXAlignment = Enum.TextXAlignment.Right
+    UserText.BackgroundTransparency = 1
+    UserText.ZIndex = 4
+    UserText.Parent = CreditsFrame
+
+    -- Кнопки закрытия числятся в правом углу корпуса
+    local CloseBtn = Instance.new("TextButton")
+    CloseBtn.Size = UDim2.new(0, 24, 0, 24)
+    CloseBtn.Position = UDim2.new(1, -30, 0, 12)
+    CloseBtn.Text = "✕"
+    CloseBtn.TextColor3 = Color3.fromRGB(255, 215, 0)
+    CloseBtn.BackgroundColor3 = Color3.fromRGB(45, 15, 15)
+    CloseBtn.Font = Enum.Font.GothamBold
+    CloseBtn.TextSize = 10
+    CloseBtn.Parent = MainFrame
+    Instance.new("UIStroke", CloseBtn).Color = Color3.fromRGB(255, 215, 0)
+
+    CloseBtn.MouseButton1Click:Connect(function() Core.ScreenGui:Destroy() end)
+end
+-- FIND THE ANIMALS LUXURY HUB — ЧАСТЬ 6 (VERTICAL SIDEBAR TABS CONSTRUCTOR)
+local TweenService = game:GetService("TweenService")
+local Core = _G.AnimalsHubCore
+if not Core then return end
+
+Core.ActiveAnimalESP = {}
+Core.ActivePlayerESP = {}
+
+-- === КРОСС-ПЛАТФОРМЕННЫЙ ДВОЙНОЙ ESP (НИК + 3D BOX) ===
+function Core:ApplyMegaESP(target, name, color, isPlayer)
+    if not target or _G.StopAllHubLoops then return end
+    local root = target:IsA("Model") and (target.PrimaryPart or target:FindFirstChildWhichIsA("BasePart")) or target
+    if not root or not root:IsA("BasePart") then return end
+    
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "Premium3DESP"
+    billboard.AlwaysOnTop = true
+    billboard.Size = UDim2.new(0, 140, 0, 35)
+    billboard.StudsOffset = Vector3.new(0, 3, 0)
+    billboard.Adornee = root
+    billboard.Parent = root
+
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.Text = name
+    textLabel.TextColor3 = color
+    textLabel.Font = Enum.Font.GothamBold
+    textLabel.TextSize = 11
+    textLabel.BackgroundTransparency = 1
+    textLabel.TextStrokeTransparency = 0.3
+    textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    textLabel.Parent = billboard
+
+    local selectionBox = Instance.new("SelectionBox")
+    selectionBox.Name = "PremiumBoxESP"
+    selectionBox.Color3 = color
+    selectionBox.LineThickness = 0.05
+    selectionBox.SurfaceColor3 = color
+    selectionBox.SurfaceTransparency = 0.85
+    selectionBox.Adornee = target
+    selectionBox.Parent = root
+
+    if isPlayer then table.insert(Core.ActivePlayerESP, {billboard = billboard, box = selectionBox, root = root})
+    else table.insert(Core.ActiveAnimalESP, {billboard = billboard, box = selectionBox, root = root}) end
+end
+
+function Core:ClearAnimalESP()
+    if Core.ActiveAnimalESP then
+        for _, v in pairs(Core.ActiveAnimalESP) do if v.billboard then v.billboard:Destroy() end if v.box then v.box:Destroy() end end
+        Core.ActiveAnimalESP = {}
+    end
+end
+
+function Core:ClearPlayerESP()
+    if Core.ActivePlayerESP then
+        for _, v in pairs(Core.ActivePlayerESP) do if v.billboard then v.billboard:Destroy() end if v.box then v.box:Destroy() end end
+        Core.ActivePlayerESP = {}
+    end
+end
+
+task.spawn(function()
+    while task.wait(0.5) do
+        if _G.StopAllHubLoops then break end
+        if Core.ActiveAnimalESP then
+            for i = #Core.ActiveAnimalESP, 1, -1 do
+                local data = Core.ActiveAnimalESP[i]
+                if not data.root or not data.root.Parent or not data.root.Parent.Parent then
+                    if data.billboard then data.billboard:Destroy() end if data.box then data.box:Destroy() end
+                    table.remove(Core.ActiveAnimalESP, i)
+                end
+            end
+        end
+    end
+end)
+
+-- ================= НАДЕЖНЫЙ ВЕРТИКАЛЬНЫЙ КОНСТРУКТОР ТАБОВ В САЙДБАРЕ =================
+function Core:CreatePremiumTab(tabName, order)
+    local T = _G.Translations[_G.Lang]
+    local localizedName = T["Tab" .. tabName] or tabName
+
+    local Page = Instance.new("ScrollingFrame")
+    Page.Name = tabName .. "Page"
+    Page.Size = UDim2.new(1, 0, 1, 0)
+    Page.BackgroundTransparency = 1
+    Page.CanvasSize = UDim2.new(0, 0, 0, 520)
+    Page.ScrollBarThickness = 3
+    Page.ScrollBarImageColor3 = Color3.fromRGB(255, 215, 0)
+    Page.Visible = false
+    Page.ZIndex = 3
+    Page.Parent = Core.PagesContainer
+
+    local PageList = Instance.new("UIListLayout")
+    PageList.Padding = UDim.new(0, 10)
+    PageList.SortOrder = Enum.SortOrder.LayoutOrder
+    PageList.Parent = Page
+
+    -- Кнопка вкладки для левого сайдбара
+    local TabBtn = Instance.new("TextButton")
+    TabBtn.Size = UDim2.new(1, 0, 0, 36) -- Растягивается на всю ширину левого сайдбара
+    TabBtn.Text = "   " .. localizedName
+    TabBtn.TextColor3 = Color3.fromRGB(220, 200, 255)
+    TabBtn.BackgroundColor3 = Color3.fromRGB(45, 10, 75)
+    TabBtn.BackgroundTransparency = 0.4
+    TabBtn.Font = Enum.Font.GothamBold
+    TabBtn.TextSize = 12
+    TabBtn.TextXAlignment = Enum.TextXAlignment.Left
+    TabBtn.BorderSizePixel = 0
+    TabBtn.LayoutOrder = order
+    TabBtn.ZIndex = 4
+    TabBtn.Parent = Core.TabButtonsFrame
+
+    local BtnStroke = Instance.new("UIStroke")
+    BtnStroke.Thickness = 1
+    BtnStroke.Color = Color3.fromRGB(212, 175, 55)
+    BtnStroke.Parent = TabBtn
+
+    TabBtn.MouseButton1Click:Connect(function()
+        for _, p in pairs(Core.PagesContainer:GetChildren()) do if p:IsA("ScrollingFrame") then p.Visible = false end end
+        for _, b in pairs(Core.TabButtonsFrame:GetChildren()) do 
+            if b:IsA("TextButton") then
+                b.TextColor3 = Color3.fromRGB(220, 200, 255)
+                b.BackgroundColor3 = Color3.fromRGB(45, 10, 75)
+                b.BackgroundTransparency = 0.4
+            end
+        end
+        Page.Visible = true
+        TabBtn.TextColor3 = Color3.fromRGB(255, 215, 0)
+        TabBtn.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
+        TabBtn.BackgroundTransparency = 0.1
+    end)
+
+    table.insert(Core.ActivePages, Page)
+    table.insert(Core.ActiveButtons, TabBtn)
+    
+    if order == 1 then
+        Page.Visible = true
+        TabBtn.TextColor3 = Color3.fromRGB(255, 215, 0)
+        TabBtn.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
+        TabBtn.BackgroundTransparency = 0.1
+    end
+
+    return Page
+end
+
+-- КОНСТРУКТОР КАРТОЧЕК ФУНКЦИЙ
+Core.PremiumCardsTable = {}
+function Core:AddPremiumToggle(page, nameKey, descKey, callback)
+    local T = _G.Translations[_G.Lang]
+    local Frame = Instance.new("Frame")
+    Frame.Size = UDim2.new(1, -10, 0, 68)
+    Frame.BackgroundColor3 = Color3.fromRGB(25, 20, 15)
+    Frame.BackgroundTransparency = _G.CurrentMenuOpacity or 0.35
+    Frame.BorderSizePixel = 0
+    Frame.ZIndex = 3
+    
+    local Stroke = Instance.new("UIStroke") Stroke.Color = Color3.fromRGB(255, 215, 0) Stroke.Thickness = 1 Stroke.Parent = Frame
+    local Title = Instance.new("TextLabel") Title.Text = (T[nameKey] or nameKey) .. " [PREMIUM]" Title.Size = UDim2.new(0.65, 0, 0, 24) Title.Position = UDim2.new(0, 12, 0, 6) Title.TextColor3 = Color3.fromRGB(255, 255, 255) Title.Font = Enum.Font.GothamBold Title.TextSize = 13 Title.TextXAlignment = Enum.TextXAlignment.Left Title.BackgroundTransparency = 1 Title.ZIndex = 4 Title.Parent = Frame
+    local Description = Instance.new("TextLabel") Description.Text = T[descKey] or descKey Description.Size = UDim2.new(0.65, 0, 0, 26) Description.Position = UDim2.new(0, 12, 0, 30) Description.TextColor3 = Color3.fromRGB(175, 175, 175) Description.Font = Enum.Font.Gotham Description.TextSize = 10 Description.TextWrapped = true Description.TextXAlignment = Enum.TextXAlignment.Left Description.BackgroundTransparency = 1 Description.ZIndex = 4 Description.Parent = Frame
+    local ToggleBg = Instance.new("TextButton") ToggleBg.Size = UDim2.new(0, 52, 0, 26) ToggleBg.Position = UDim2.new(1, -68, 0, 21) ToggleBg.BackgroundColor3 = Color3.fromRGB(15, 10, 5) ToggleBg.Text = "" ToggleBg.ZIndex = 4 ToggleBg.Parent = Frame
+    local ToggleCircle = Instance.new("Frame") ToggleCircle.Size = UDim2.new(0, 20, 0, 20) ToggleCircle.Position = UDim2.new(0, 3, 0, 3) ToggleCircle.BackgroundColor3 = Color3.fromRGB(100, 100, 100) ToggleCircle.ZIndex = 5 ToggleCircle.Parent = ToggleBg
+    
+    local state = false
+    ToggleBg.MouseButton1Click:Connect(function()
+        state = not state
+        TweenService:Create(ToggleCircle, TweenInfo.new(0.15), { Position = state and UDim2.new(0, 29, 0, 3) or UDim2.new(0, 3, 0, 3), BackgroundColor3 = state and Color3.fromRGB(255, 215, 0) or Color3.fromRGB(100, 100, 100) }):Play()
+        callback(state)
+    end)
+    Frame.Parent = page table.insert(Core.PremiumCardsTable, Frame)
+end
+-- FIND THE ANIMALS ULTIMATE — ЧАСТЬ 7 (FREE EDITION FEATURES & LOOP CONTROL)
+local UserInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local Core = _G.AnimalsHubCore
+if not Core then return end
+
+local AnimalsFolder = workspace:WaitForChild("Items")
+Core.FreeCardsTable = {} 
+
+function Core:PopulateFreeFeatures()
+    local container = Core.FreeContent
+    if not container then return end
+    local T = _G.Translations[_G.Lang]
+
+    -- Вспомогательный конструктор топорных карточек для Free
+    local function createFreeCard(sizeY)
+        local F = Instance.new("Frame")
+        F.Size = UDim2.new(1, -10, 0, sizeY)
+        F.BackgroundColor3 = Color3.fromRGB(60, 60, 63)
+        F.BackgroundTransparency = _G.CurrentMenuOpacity or 0
+        F.BorderSizePixel = 1
+        F.BorderColor3 = Color3.fromRGB(100, 100, 105)
+        F.ZIndex = 2
+        F.Parent = container
+        table.insert(Core.FreeCardsTable, F)
+        return F
+    end
+
+    -- 1. ЭЛЕMЕНТ: Простой ESP Животных
+    local EspCard = createFreeCard(50)
+    local EspTitle = Instance.new("TextLabel")
+    EspTitle.Size = UDim2.new(0.6, 0, 1, 0)
+    EspTitle.Position = UDim2.new(0, 10, 0, 0)
+    EspTitle.Text = T.EspAnimals
+    EspTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    EspTitle.Font = Enum.Font.SourceSansBold
+    EspTitle.TextSize = 14
+    EspTitle.TextXAlignment = Enum.TextXAlignment.Left
+    EspTitle.BackgroundTransparency = 1
+    EspTitle.ZIndex = 3
+    EspTitle.Parent = EspCard
+
+    local EspBtn = Instance.new("TextButton")
+    EspBtn.Size = UDim2.new(0, 90, 0, 30)
+    EspBtn.Position = UDim2.new(1, -100, 0, 10)
+    EspBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 85)
+    EspBtn.Text = "TOGGLE"
+    EspBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    EspBtn.Font = Enum.Font.SourceSansBold
+    EspBtn.TextSize = 12
+    EspBtn.ZIndex = 3
+    EspBtn.Parent = EspCard
+
+    local espState = false
+    EspBtn.MouseButton1Click:Connect(function()
+        if _G.StopAllHubLoops then return end
+        espState = not espState
+        if espState then
+            EspBtn.BackgroundColor3 = Color3.fromRGB(130, 40, 40)
+            for _, animal in pairs(AnimalsFolder:GetChildren()) do
+                Core:ApplyMegaESP(animal, animal.Name, Color3.fromRGB(200, 200, 200), false)
+            end
+        else
+            EspBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 85)
+            Core:ClearAnimalESP()
+        end
+    end)
+
+    -- 2. ЭЛЕМЕНТ: Бесплатный автосбор питомцев с задержкой 5.0 секунд
+    local FreeTpCard = createFreeCard(65)
+    local FreeTpTitle = Instance.new("TextLabel")
+    FreeTpTitle.Size = UDim2.new(0.65, 0, 0, 22)
+    FreeTpTitle.Position = UDim2.new(0, 10, 0, 4)
+    FreeTpTitle.Text = T.FreeLoopTp
+    FreeTpTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    FreeTpTitle.Font = Enum.Font.SourceSansBold
+    FreeTpTitle.TextSize = 14
+    FreeTpTitle.TextXAlignment = Enum.TextXAlignment.Left
+    FreeTpTitle.BackgroundTransparency = 1
+    FreeTpTitle.ZIndex = 3
+    FreeTpTitle.Parent = FreeTpCard
+
+    local FreeTpDesc = Instance.new("TextLabel")
+    FreeTpDesc.Size = UDim2.new(0.65, 0, 0, 32)
+    FreeTpDesc.Position = UDim2.new(0, 10, 0, 24)
+    FreeTpDesc.Text = T.FreeLoopTpDesc
+    FreeTpDesc.TextColor3 = Color3.fromRGB(220, 220, 220)
+    FreeTpDesc.Font = Enum.Font.SourceSansItalic
+    FreeTpDesc.TextSize = 11
+    FreeTpDesc.TextWrapped = true
+    FreeTpDesc.TextXAlignment = Enum.TextXAlignment.Left
+    FreeTpDesc.BackgroundTransparency = 1
+    FreeTpDesc.ZIndex = 3
+    FreeTpDesc.Parent = FreeTpCard
+
+    local FreeTpBtn = Instance.new("TextButton")
+    FreeTpBtn.Size = UDim2.new(0, 90, 0, 30)
+    FreeTpBtn.Position = UDim2.new(1, -100, 0, 17)
+    FreeTpBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 85)
+    FreeTpBtn.Text = "START"
+    FreeTpBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    FreeTpBtn.Font = Enum.Font.SourceSansBold
+    FreeTpBtn.TextSize = 12
+    FreeTpBtn.ZIndex = 3
+    FreeTpBtn.Parent = FreeTpCard
+
+    local freeTpActive = false
+    FreeTpBtn.MouseButton1Click:Connect(function()
+        freeTpActive = not freeTpActive
+        if freeTpActive then
+            FreeTpBtn.Text = "STOP"
+            FreeTpBtn.BackgroundColor3 = Color3.fromRGB(130, 40, 40)
+            task.spawn(function()
+                while freeTpActive and not _G.StopAllHubLoops do
+                    local currentList = AnimalsFolder:GetChildren()
+                    if #currentList == 0 or not freeTpActive or _G.StopAllHubLoops then break end
+                    
+                    for _, animal in pairs(currentList) do
+                        if not freeTpActive or _G.StopAllHubLoops then break end
+                        if animal.Parent == AnimalsFolder and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                            local hrp = LocalPlayer.Character.HumanoidRootPart
+                            for _, part in pairs(LocalPlayer.Character:GetChildren()) do
+                                if part:IsA("BasePart") then part.CanCollide = false end
+                            end
+                            hrp.CFrame = animal:GetPivot()
+                            task.wait(5.0) -- Тот самый медленный 5-секундный цикл
+                        end
+                    end
+                    task.wait(1)
+                end
+            end)
+        else
+            FreeTpBtn.Text = "START"
+            FreeTpBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 85)
+        end
+    end)
+
+    -- 3. ЭЛЕМЕНТ: Топорный серый слайдер WalkSpeed
+    local SpeedCard = createFreeCard(55)
+    local SpeedTitle = Instance.new("TextLabel")
+    SpeedTitle.Size = UDim2.new(0.9, 0, 0, 25)
+    SpeedTitle.Position = UDim2.new(0, 10, 0, 2)
+    SpeedTitle.Text = T.RunSlider .. ": 16"
+    SpeedTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    SpeedTitle.Font = Enum.Font.SourceSans
+    SpeedTitle.TextSize = 13
+    SpeedTitle.TextXAlignment = Enum.TextXAlignment.Left
+    SpeedTitle.BackgroundTransparency = 1
+    SpeedTitle.ZIndex = 3
+    SpeedTitle.Parent = SpeedCard
+
+    local SliderBar = Instance.new("TextButton")
+    SliderBar.Size = UDim2.new(1, -30, 0, 8)
+    SliderBar.Position = UDim2.new(0, 15, 0, 34)
+    SliderBar.BackgroundColor3 = Color3.fromRGB(40, 40, 42)
+    SliderBar.Text = ""
+    SliderBar.BorderSizePixel = 0
+    SliderBar.ZIndex = 3
+    SliderBar.Parent = SpeedCard
+
+    local SliderFill = Instance.new("Frame")
+    SliderFill.Size = UDim2.new(0, 0, 1, 0)
+    SliderFill.BackgroundColor3 = Color3.fromRGB(140, 140, 145)
+    SliderFill.BorderSizePixel = 0
+    SliderFill.ZIndex = 4
+    SliderFill.Parent = SliderBar
+
+    local sliding = false
+    local function update(input)
+        local ratio = math.clamp((input.Position.X - SliderBar.AbsolutePosition.X) / SliderBar.AbsoluteSize.X, 0, 1)
+        SliderFill.Size = UDim2.new(ratio, 0, 1, 0)
+        local currentSpeed = math.floor(16 + (140 - 16) * ratio)
+        SpeedTitle.Text = T.RunSlider .. ": " .. tostring(currentSpeed)
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildWhichIsA("Humanoid") then
+            LocalPlayer.Character:FindFirstChildWhichIsA("Humanoid").WalkSpeed = currentSpeed
+        end
+    end
+
+    SliderBar.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then sliding = true update(input) end end)
+    UserInputService.InputChanged:Connect(function(input) if sliding and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then update(input) end end)
+    UserInputService.InputEnded:Connect(function(input) sliding = false end)
+end
+-- FIND THE ANIMALS ULTIMATE — ЧАСТЬ 8 (POPULATE PREMIUM PAGES & FAST LOOP)
+local UserInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local Core = _G.AnimalsHubCore
+if not Core then return end
+
+local AnimalsFolder = workspace:WaitForChild("Items")
+
+function Core:PopulatePremiumFeatures()
+    local MainPage = Core:CreatePremiumTab("Main", 1)
+    local TeleportsPage = Core:CreatePremiumTab("Teleports", 2)
+    local PlayersPage = Core:CreatePremiumTab("Players", 3)
+    local SettingsPage = Core:CreatePremiumTab("Settings", 4)
+    Core.SettingsPageFrame = SettingsPage -- Передаем ссылку дальше в Часть 9
+
+    local T = _G.Translations[_G.Lang]
+
+    -- ==================== PREMIUM: ВКЛАДКА MAIN ====================
+    local searchBox = Instance.new("TextBox")
+    searchBox.Size = UDim2.new(1, -10, 0, 40)
+    searchBox.PlaceholderText = T.SearchPlace
+    searchBox.Text = ""
+    searchBox.BackgroundColor3 = Color3.fromRGB(30, 25, 10)
+    searchBox.BackgroundTransparency = 0.3
+    searchBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    searchBox.Font = Enum.Font.GothamBold
+    searchBox.TextSize = 12
+    searchBox.ZIndex = 4
+    searchBox.Parent = MainPage
+
+    local SearchStroke = Instance.new("UIStroke")
+    SearchStroke.Color = Color3.fromRGB(255, 215, 0)
+    SearchStroke.Thickness = 1.5
+    SearchStroke.Parent = searchBox
+
+    searchBox.FocusLost:Connect(function(enterPressed)
+        if enterPressed then
+            local text = string.lower(searchBox.Text)
+            local found = nil
+            for _, child in pairs(AnimalsFolder:GetChildren()) do
+                if string.find(string.lower(child.Name), text) then found = child break end
+            end
+            if found then
+                searchBox.Text = T.SearchFound .. found.Name .. "!"
+                Core:ApplyMegaESP(found, "🎯 " .. found.Name, Color3.fromRGB(255, 215, 0), false)
+                if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                    LocalPlayer.Character.HumanoidRootPart.CFrame = found:GetPivot()
+                end
+                task.wait(1) searchBox.Text = ""
+            else
+                searchBox.Text = T.SearchNotFound
+                task.wait(1.5) searchBox.Text = ""
+            end
+        end
+    end)
+
+    Core:AddPremiumToggle(MainPage, "EspAnimals", "EspAnimalsDesc", function(state)
+        if state then
+            for _, animal in pairs(AnimalsFolder:GetChildren()) do
+                if _G.StopAllHubLoops then break end
+                Core:ApplyMegaESP(animal, animal.Name, Color3.fromRGB(0, 255, 120), false)
+            end
+        else
+            Core:ClearAnimalESP()
+        end
+    end)
+
+    local blitzActive = false
+    Core:AddPremiumToggle(MainPage, "BlitzTitle", "BlitzDesc", function(state)
+        blitzActive = state
+        if state and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            task.spawn(function()
+                local char = LocalPlayer.Character
+                local hrp = char.HumanoidRootPart
+                local oldPos = hrp.CFrame
+                while blitzActive and not _G.StopAllHubLoops do
+                    local currentList = AnimalsFolder:GetChildren()
+                    if #currentList == 0 or not blitzActive or _G.StopAllHubLoops then break end
+                    for _, animal in pairs(currentList) do
+                        if not blitzActive or _G.StopAllHubLoops then break end
+                        if animal.Parent == AnimalsFolder then
+                            for _, part in pairs(char:GetChildren()) do if part:IsA("BasePart") then part.CanCollide = false end end
+                            hrp.CFrame = animal:GetPivot()
+                            task.wait(0.2)
+                        end
+                    end
+                    task.wait(0.5)
+                end
+                if hrp and hrp.Parent then hrp.CFrame = oldPos end
+            end)
+        end
+    end)
+
+    -- ==================== PREMIUM: ВКЛАДКА TELEPORTS ====================
+    local loopTeleporting = false
+    Core:AddPremiumToggle(TeleportsPage, "LoopTpTitle", "LoopTpDesc", function(state)
+        loopTeleporting = state
+        if state then
+            task.spawn(function()
+                while loopTeleporting and not _G.StopAllHubLoops do
+                    local list = AnimalsFolder:GetChildren()
+                    if #list == 0 or not loopTeleporting or _G.StopAllHubLoops then break end
+                    for _, animal in pairs(list) do
+                        if not loopTeleporting or _G.StopAllHubLoops then break end
+                        if animal.Parent == AnimalsFolder and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                            local hrp = LocalPlayer.Character.HumanoidRootPart
+                            local targetPos = animal:GetPivot().Position
+                            for _, part in pairs(LocalPlayer.Character:GetChildren()) do if part:IsA("BasePart") then part.CanCollide = false end end
+                            
+                            -- Молниеносный премиум-обход: ровно 0.5 секунды на питомца
+                            hrp.CFrame = CFrame.new(targetPos)
+                            task.wait(0.12)
+                            hrp.CFrame = CFrame.new(targetPos + Vector3.new(0, 0, 3.5))
+                            task.wait(0.12)
+                            hrp.CFrame = CFrame.new(targetPos - Vector3.new(0, 0, 3.5))
+                            task.wait(0.26)
+                        end
+                    end
+                    task.wait(0.3)
+                end
+            end)
+        end
+    end)
+
+    -- ==================== PREMIUM: ВКЛАДКА PLAYERS ====================
+    Core:AddPremiumToggle(PlayersPage, "EspPlayers", "EspPlayersDesc", function(state)
+        if state then
+            for _, p in pairs(Players:GetPlayers()) do
+                if _G.StopAllHubLoops then break end
+                if p ~= LocalPlayer and p.Character then
+                    Core:ApplyMegaESP(p.Character, "👑 " .. p.Name, Color3.fromRGB(186, 85, 211), true)
+                end
+            end
+        else
+            Core:ClearPlayerESP()
+        end
+    end)
+
+    -- Передаем логику Fly в глобальное пространство для связки с Частью 9
+    _G.PremiumFlyToggleFunc = function(state)
+        _G.IsPremiumFlying = state
+        local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+        local root = char:WaitForChild("HumanoidRootPart")
+        task.spawn(function()
+            local bv = Instance.new("BodyVelocity")
+            bv.MaxForce = Vector3.new(1e9, 1e9, 1e9)
+            if _G.IsPremiumFlying then bv.Parent = root end
+            while _G.IsPremiumFlying and root and root.Parent and not _G.StopAllHubLoops do
+                local cam = workspace.CurrentCamera.CFrame
+                local vel = Vector3.new(0, 0, 0)
+                if UserInputService:IsKeyDown(Enum.KeyCode.W) then vel = vel + cam.LookVector end
+                if UserInputService:IsKeyDown(Enum.KeyCode.S) then vel = vel - cam.LookVector end
+                if UserInputService:IsKeyDown(Enum.KeyCode.A) then vel = vel - cam.RightVector end
+                if UserInputService:IsKeyDown(Enum.KeyCode.D) then vel = vel + cam.RightVector end
+                bv.Velocity = vel * (_G.PremiumFlySpeed or 50)
+                task.wait()
+            end
+            bv:Destroy()
+        end)
+    end
+end
+-- FIND THE ANIMALS ULTIMATE — ЧАСТЬ 9 (SLIDERS, OPACITY & PREMIUM SETTINGS)
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local Core = _G.AnimalsHubCore
+if not Core then return end
+
+-- Функция наполнения вкладки Settings (Вызывается при сборке Premium)
+function Core:PopulatePremiumSettings()
+    local SettingsPage = Core.SettingsPageFrame
+    if not SettingsPage then return end
+    local T = _G.Translations[_G.Lang]
+
+    -- 1. Тумблер активации Premium Fly
+    Core:AddPremiumToggle(SettingsPage, "PremFly", "PremFlyDesc", function(state)
+        if _G.PremiumFlyToggleFunc then _G.PremiumFlyToggleFunc(state) end
+    end)
+
+    -- КОНСТРУКТОР ПЛАВНЫХ ЗОЛОТЫХ СЛАЙДЕРОВ С ПОДДЕРЖКОЙ ТАЧ-ПАЛЬЦА ДЛЯ СМАРТФОНОВ
+    local function createLuxurySlider(parent, titleText, min, max, default, callback)
+        local Frame = Instance.new("Frame")
+        Frame.Size = UDim2.new(1, -10, 0, 55)
+        Frame.BackgroundColor3 = Color3.fromRGB(25, 20, 15)
+        Frame.BackgroundTransparency = _G.CurrentMenuOpacity or 0.35
+        Frame.BorderSizePixel = 0
+        Frame.ZIndex = 3
+        Frame.Parent = parent
+        table.insert(Core.PremiumCardsTable, Frame) -- Для динамического изменения прозрачности
+        
+        local Stroke = Instance.new("UIStroke") Stroke.Color = Color3.fromRGB(255, 215, 0) Stroke.Parent = Frame
+        local Title = Instance.new("TextLabel") Title.Text = titleText .. ": " .. tostring(default) Title.Size = UDim2.new(0.8, 0, 0, 25) Title.Position = UDim2.new(0, 12, 0, 3) Title.TextColor3 = Color3.fromRGB(255, 255, 255) Title.Font = Enum.Font.GothamBold Title.TextSize = 12 Title.BackgroundTransparency = 1 Title.ZIndex = 4 Title.Parent = Frame
+        local SliderBar = Instance.new("TextButton") SliderBar.Size = UDim2.new(1, -30, 0, 6) SliderBar.Position = UDim2.new(0, 15, 0, 34) SliderBar.BackgroundColor3 = Color3.fromRGB(15, 10, 5) SliderBar.Text = "" SliderBar.ZIndex = 4 SliderBar.Parent = Frame
+        local SliderFill = Instance.new("Frame") SliderFill.Size = UDim2.new((default - min)/(max - min), 0, 1, 0) SliderFill.BackgroundColor3 = Color3.fromRGB(255, 215, 0) SliderFill.BorderSizePixel = 0 SliderFill.ZIndex = 5 SliderFill.Parent = SliderBar
+        
+        local sliding = false
+        local function update(input)
+            local ratio = math.clamp((input.Position.X - SliderBar.AbsolutePosition.X) / SliderBar.AbsoluteSize.X, 0, 1)
+            SliderFill.Size = UDim2.new(ratio, 0, 1, 0)
+            local currentVal = math.floor(min + (max - min) * ratio)
+            Title.Text = titleText .. ": " .. tostring(currentVal)
+            callback(currentVal)
+        end
+        SliderBar.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then sliding = true update(input) end end)
+        UserInputService.InputChanged:Connect(function(input) if sliding and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then update(input) end end)
+        UserInputService.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then sliding = false end end)
+    end
+
+    -- Слайдер 1: Изменение скорости полета Premium Fly
+    _G.PremiumFlySpeed = 50
+    createLuxurySlider(SettingsPage, T.FlySlider, 20, 250, 60, function(val) _G.PremiumFlySpeed = val end)
+
+    -- Слайдер 2: Изменение скорости бега WalkSpeed (Без ограничений для Premium!)
+    createLuxurySlider(SettingsPage, T.RunSlider, 16, 250, 16, function(val)
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildWhichIsA("Humanoid") then
+            LocalPlayer.Character:FindFirstChildWhichIsA("Humanoid").WalkSpeed = val
+        end
+    end)
+
+    -- Слайдер 3: РЕГУЛИРОВКА ПРОЗРАЧНОСТИ ДО 100% (OPACITY SLIDER)
+    _G.CurrentMenuOpacity = 0.25
+    createLuxurySlider(SettingsPage, T.OpacityTitle .. " %", 0, 100, 25, function(val)
+        local opacityRatio = val / 100
+        _G.CurrentMenuOpacity = opacityRatio
+        
+        -- Плавно выставляем прозрачность главному окну
+        if Core.MainFrame then Core.MainFrame.BackgroundTransparency = opacityRatio end
+        
+        -- Меняем прозрачность всех внутренних Premium-карточек
+        if Core.PremiumCardsTable then
+            for _, card in pairs(Core.PremiumCardsTable) do card.BackgroundTransparency = opacityRatio end
+        end
+        -- Если выкручено на 100 (то есть 1.0 прозрачности), гасим линии UIStroke
+        if Core.MainFrame and Core.MainFrame:FindFirstChildWhichIsA("UIStroke") then
+            Core.MainFrame:FindFirstChildWhichIsA("UIStroke").Transparency = (val == 100) and 1 or 0
+        end
+    end)
+
+    -- Тумблер активации Premium Noclip
+    local noclipActive = false
+    Core:AddPremiumToggle(SettingsPage, "NoclipTitle", "NoclipDesc", function(state) noclipActive = state end)
+    RunService.Stepped:Connect(function()
+        if noclipActive and LocalPlayer.Character and not _G.StopAllHubLoops then
+            for _, part in pairs(LocalPlayer.Character:GetChildren()) do if part:IsA("BasePart") then part.CanCollide = false end end
+        end
+    end)
+end
+-- FIND THE ANIMALS ULTIMATE — ЧАСТЬ 10 (FINAL SECURITY GATE TRIGGERS & ACCESS CONTROL)
+local UserInputService = game:GetService("UserInputService")
+local Core = _G.AnimalsHubCore
+if not Core then return end
+
+-- ================= БЕСШОВНЫЙ АПГРЕЙД ИЗ ВНУТРЕННОСТЕЙ FREE В PREMIUM =================
+_G.OpenPremiumKeyGate = function()
+    local T = _G.Translations[_G.Lang]
+    local Gate = Instance.new("Frame") 
+    Gate.Size = UDim2.new(0, 390, 0, 220) 
+    Gate.Position = UDim2.new(0.5, -195, 0.5, -110) 
+    Gate.BackgroundColor3 = Color3.fromRGB(15, 12, 10) 
+    Gate.Parent = Core.ScreenGui 
+    Instance.new("UIStroke", Gate).Color = Color3.fromRGB(255, 215, 0)
+    
+    local dragging, dragInput, dragStart, startPos
+    Gate.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true dragStart = input.Position startPos = Gate.Position
+            input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging = false end end)
+        end
+    end)
+    Gate.InputChanged:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end end)
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - dragStart
+            Gate.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+
+    local Title = Instance.new("TextLabel") Title.Size = UDim2.new(1, 0, 0, 50) Title.Text = "★ ANIMALS PREMIUM SECURITY ★" Title.TextColor3 = Color3.fromRGB(255, 215, 0) Title.Font = Enum.Font.RobotoMono Title.BackgroundTransparency = 1 Title.Parent = Gate
+    local Input = Instance.new("TextBox") Input.Size = UDim2.new(0.85, 0, 0, 42) Input.Position = UDim2.new(0.075, 0, 0.35, 0) Input.PlaceholderText = T.EnterKeyPass Input.Text = "" Input.TextColor3 = Color3.fromRGB(186, 85, 211) Input.Font = Enum.Font.Code Input.Parent = Gate
+    local Sub = Instance.new("TextButton") Sub.Size = UDim2.new(0.85, 0, 0, 45) Sub.Position = UDim2.new(0.075, 0, 0.65, 0) Sub.Text = T.InjectSoft Sub.TextColor3 = Color3.fromRGB(255, 215, 0) Sub.BackgroundColor3 = Color3.fromRGB(42, 32, 8) Sub.Parent = Gate
+    
+    Sub.MouseButton1Click:Connect(function() 
+        if Input.Text == Core.PremiumKey then 
+            Gate:Destroy() 
+            Core.Tier = "PREMIUM"
+            Core:BuildPremiumInterface() 
+            Core:PopulatePremiumFeatures() 
+            Core:PopulatePremiumSettings() 
+        else 
+            Input.Text = "" 
+            Input.PlaceholderText = T.InvalidKey 
+        end 
+    end)
+end
+
+-- ================= ОБРАБОТЧИКИ СОБЫТИЙ ЗАПУСКА ИЗ ЧАСТИ 3 =================
+task.spawn(function()
+    while task.wait(0.1) do
+        if Core.BuildFreeGuiEvent then
+            Core.BuildFreeGuiEvent.Event:Connect(function()
+                Core:BuildFreeInterface()   -- Из Части 4
+                Core:PopulateFreeFeatures() -- Из Части 7
+            end)
+            break
+        end
+    end
+end)
+
+task.spawn(function()
+    while task.wait(0.1) do
+        if Core.BuildPremiumGuiEvent then
+            Core.BuildPremiumGuiEvent.Event:Connect(function()
+                Core:BuildPremiumInterface()     -- Из Части 4
+                Core:PopulatePremiumFeatures()   -- Из Части 8
+                Core:PopulatePremiumSettings()   -- Из Части 9
+            end)
+            break
+        end
+    end
+end)
+
+print("[Find the Animals Luxury Hub]: Скрипт полностью укомплектован из 10 частей и готов к инжекту!")
