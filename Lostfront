@@ -1,0 +1,413 @@
+-- // 1. ENGINE, CONFIGURATION & ANTI-FREEZE PROTECTION
+local Workspace = game:GetService("Workspace")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local CoreGui = game:GetService("CoreGui")
+
+local LocalPlayer = Players.LocalPlayer
+local Camera = Workspace.CurrentCamera
+
+-- Инициализация глобального конфига (если не создан)
+_G.LostFrontConfig = _G.LostFrontConfig or {
+    ActiveTab = "Players", -- Текущая вкладка в UI
+    UI_Visible = true,
+    
+    -- Опции вкладки Игроки
+    Players_Enabled = true,
+    Players_Boxes = true,
+    Players_Tracers = true,
+    Players_Names = true,
+    Players_TeamTags = true,
+    Players_HealthBar = true,
+    Players_Skeletons = true,
+    
+    -- Опции вкладки Дроны
+    Drones_Enabled = true,
+    Drones_Boxes = true,
+    Drones_Tracers = true,
+    Drones_Names = true
+}
+local Config = _G.LostFrontConfig
+
+-- Выделение памяти под кэш низкоуровневой графики Drawing API
+_G.PlayerCache = _G.PlayerCache or {}
+_G.DroneCache = _G.DroneCache or {}
+local HiddenVector = Vector2.new(-10000, -10000)
+
+-- Конструктор графических примитивов Drawing API
+local function NewDrawing(type, props)
+    local obj = Drawing.new(type)
+    for k, v in pairs(props) do obj[k] = v end
+    return obj
+end
+
+-- Безопасный регистронезависимый поиск костей структуры R6 персонажей
+local function GetR6Part(model, name)
+    if not model then return nil end
+    local cleanName = name:lower():gsub("%s+", "")
+    for _, child in ipairs(model:GetChildren()) do
+        if child:IsA("BasePart") and child.Name:lower():gsub("%s+", "") == cleanName then
+            return child
+        end
+    end
+    return nil
+end
+
+-- Метод жесткого обнуления координат (Защита от замерзания ESP при повороте камеры)
+local function ResetESP(esp)
+    for _, obj in pairs(esp) do
+        if type(obj) == "table" or (type(obj) == "userdata" and obj.Remove) then
+            obj.Visible = false
+            if pcall(function() return obj.Position end) then 
+                obj.Position = HiddenVector
+            elseif pcall(function() return obj.From end) then 
+                obj.From = HiddenVector
+                obj.To = HiddenVector 
+            end
+        end
+    end
+end
+-- // 2. PREMIUM UI & TAB RE-RENDERING ENGINE
+if CoreGui:FindFirstChild("LostFront_FinalUI") then
+    CoreGui["LostFront_FinalUI"]:Destroy()
+end
+
+local ScreenGui = Instance.new("ScreenGui", CoreGui)
+ScreenGui.Name = "LostFront_FinalUI"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Enabled = Config.UI_Visible
+
+-- Главное Окно меню
+local MainFrame = Instance.new("Frame", ScreenGui)
+MainFrame.Size = UDim2.new(0, 520, 0, 360)
+MainFrame.Position = UDim2.new(0.5, -260, 0.5, -180)
+MainFrame.BackgroundColor3 = Color3.fromRGB(12, 12, 16)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true
+
+-- Радужная Stroke-обводка (Rainbow Border) на цикле tick()
+local UIStroke = Instance.new("UIStroke", MainFrame)
+UIStroke.Thickness = 1.5
+UIStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+task.spawn(function()
+    while ScreenGui.Parent do
+        UIStroke.Color = Color3.fromHSV((tick() % 5) / 5, 1, 1)
+        task.wait()
+    end
+end)
+
+-- Левая шторка (Sidebar)
+local Sidebar = Instance.new("Frame", MainFrame)
+Sidebar.Size = UDim2.new(0, 150, 1, 0)
+Sidebar.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
+Sidebar.BorderSizePixel = 0
+
+-- Красивый виджет "Информация о создателе"
+local CreatorWidget = Instance.new("Frame", Sidebar)
+CreatorWidget.Size = UDim2.new(1, -12, 0, 45)
+CreatorWidget.Position = UDim2.new(0, 6, 1, -55)
+CreatorWidget.BackgroundColor3 = Color3.fromRGB(24, 24, 32)
+CreatorWidget.BorderSizePixel = 0
+
+local CreatorText = Instance.new("TextLabel", CreatorWidget)
+CreatorText.Size = UDim2.new(1, 0, 1, 0)
+CreatorText.BackgroundTransparency = 1
+CreatorText.Text = "Creator: cho_nax4\nTikTok: @6tornadiks7"
+CreatorText.TextColor3 = Color3.fromRGB(160, 160, 180)
+CreatorText.TextSize = 11
+CreatorText.Font = Enum.Font.Code
+CreatorText.TextXAlignment = Enum.TextXAlignment.Center
+
+-- Главная панель для элементов управления (Единая для всех вкладок)
+local ContentFrame = Instance.new("Frame", MainFrame)
+ContentFrame.Size = UDim2.new(1, -165, 1, -20)
+ContentFrame.Position = UDim2.new(0, 160, 0, 10)
+ContentFrame.BackgroundTransparency = 1
+
+local UIListLayout = Instance.new("UIListLayout", ContentFrame)
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayout.Padding = UDim.new(0, 6)
+
+-- Функция полной очистки панели
+local function ClearContent()
+    for _, child in ipairs(ContentFrame:GetChildren()) do
+        if child:IsA("Frame") then child:Destroy() end
+    end
+end
+
+-- Конструктор кнопок-переключателей (Toggles) с неоновой интерполяцией
+local function RenderToggle(text, configKey)
+    local frame = Instance.new("Frame", ContentFrame)
+    frame.Size = UDim2.new(1, 0, 0, 32)
+    frame.BackgroundTransparency = 1
+    
+    local lbl = Instance.new("TextLabel", frame)
+    lbl.Size = UDim2.new(0.7, 0, 1, 0)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = text
+    lbl.TextColor3 = Color3.fromRGB(230, 230, 230)
+    lbl.Font = Enum.Font.SourceSansSemibold
+    lbl.TextSize = 16
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    
+    local tgl = Instance.new("TextButton", frame)
+    tgl.Size = UDim2.new(0, 50, 0, 22)
+    tgl.Position = UDim2.new(1, -50, 0.5, -11)
+    tgl.BackgroundColor3 = Config[configKey] and Color3.fromRGB(255, 20, 147) or Color3.fromRGB(35, 35, 45)
+    tgl.Text = Config[configKey] and "ON" or "OFF"
+    tgl.TextColor3 = Color3.new(1,1,1)
+    tgl.Font = Enum.Font.SourceSansBold
+    tgl.TextSize = 12
+    tgl.BorderSizePixel = 0
+    
+    local c = Instance.new("UICorner", tgl)
+    c.CornerRadius = UDim.new(0, 4)
+    
+    tgl.MouseButton1Click:Connect(function()
+        Config[configKey] = not Config[configKey]
+        tgl.Text = Config[configKey] and "ON" or "OFF"
+        local targetColor = Config[configKey] and Color3.fromRGB(255, 20, 147) or Color3.fromRGB(35, 35, 45)
+        TweenService:Create(tgl, TweenInfo.new(0.15), {BackgroundColor3 = targetColor}):Play()
+    end)
+end
+
+-- Динамическое обновление контента при переключении вкладок
+local function RefreshTab()
+    ClearContent()
+    if Config.ActiveTab == "Players" then
+        RenderToggle("Мастер Включен", "Players_Enabled")
+        RenderToggle("2D Квадраты (Boxes)", "Players_Boxes")
+        RenderToggle("Линии до игроков (Tracers)", "Players_Tracers")
+        RenderToggle("Отображать Ники (Names)", "Players_Names")
+        RenderToggle("Теги Команд (Team Tags)", "Players_TeamTags")
+        RenderToggle("Полоса Здоровья (Health)", "Players_HealthBar")
+        RenderToggle("R6 Скелеты (Skeletons)", "Players_Skeletons")
+    elseif Config.ActiveTab == "Drones" then
+        RenderToggle("Мастер Включен", "Drones_Enabled")
+        RenderToggle("2D Квадраты (Boxes)", "Drones_Boxes")
+        RenderToggle("Линии до дронов (Tracers)", "Drones_Tracers")
+        RenderToggle("Метка [DRONE] (Names)", "Drones_Names")
+    end
+end
+
+-- Конструктор кнопок шторки (Sidebar) с анимацией интерактивного сжатия
+local function CreateTabButton(text, yPos, tabTarget)
+    local btn = Instance.new("TextButton", Sidebar)
+    btn.Size = UDim2.new(1, -12, 0, 36)
+    btn.Position = UDim2.new(0, 6, 0, yPos)
+    btn.BackgroundColor3 = (Config.ActiveTab == tabTarget) and Color3.fromRGB(255, 20, 147) or Color3.fromRGB(25, 25, 35)
+    btn.Text = text
+    btn.TextColor3 = Color3.fromRGB(240, 240, 240)
+    btn.Font = Enum.Font.SourceSansBold
+    btn.TextSize = 14
+    btn.BorderSizePixel = 0
+    
+    local c = Instance.new("UICorner", btn)
+    c.CornerRadius = UDim.new(0, 5)
+    
+    local origSize = btn.Size
+    local origPos = btn.Position
+
+    btn.MouseEnter:Connect(function()
+        if Config.ActiveTab ~= tabTarget then
+            TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255, 20, 147)}):Play()
+        end
+    end)
+    btn.MouseLeave:Connect(function()
+        if Config.ActiveTab ~= tabTarget then
+            TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(25, 25, 35)}):Play()
+        end
+    end)
+    btn.MouseButton1Down:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.05), {
+            Size = UDim2.new(origSize.X.Scale, origSize.X.Offset - 6, origSize.Y.Scale, origSize.Y.Offset - 4),
+            Position = UDim2.new(origPos.X.Scale, origPos.X.Offset + 3, origPos.Y.Scale, origPos.Y.Offset + 2)
+        }):Play()
+    end)
+    btn.MouseButton1Up:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.05), {Size = origSize, Position = origPos}):Play()
+        Config.ActiveTab = tabTarget
+        
+        -- Сброс активного цвета у других вкладок
+        for _, child in ipairs(Sidebar:GetChildren()) do
+            if child:IsA("TextButton") and child ~= btn then
+                child.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+            end
+        end
+        btn.BackgroundColor3 = Color3.fromRGB(255, 20, 147)
+        RefreshTab()
+    end)
+end
+
+-- Отрисовка кнопок и первый запуск контента
+CreateTabButton("ИГРОКИ (PLAYERS)", 15, "Players")
+CreateTabButton("ДРОНЫ (DRONES)", 58, "Drones")
+RefreshTab()
+
+-- Привязка видимости меню на клавишу Insert
+UserInputService.InputBegan:Connect(function(input, gpe)
+    if not gpe and input.KeyCode == Enum.KeyCode.Insert then
+        Config.UI_Visible = not Config.UI_Visible
+        ScreenGui.Enabled = Config.UI_Visible
+    end
+end)
+-- // 3. LOW-LEVEL VISUALS RENDER LOOP (PREMIUM SINGLE-COLOR UNBREAKABLE ESP)
+local PlayerCache = _G.PlayerCache
+local DroneCache = _G.DroneCache
+local HiddenVector = Vector2.new(-10000, -10000)
+
+-- Единый красивый неоновый цвет для всех игроков на карте
+local PremiumPlayerColor = Color3.fromRGB(255, 20, 147) -- Неоново-розовый
+local PremiumDroneColor = Color3.fromRGB(186, 85, 211)  -- Фиолетово-розовый неон
+
+local function SetupPlayerESP(model)
+    if PlayerCache[model] then return end
+    PlayerCache[model] = {
+        Box = NewDrawing("Square", { Thickness = 1, Color = PremiumPlayerColor, Visible = false }),
+        Tracer = NewDrawing("Line", { Thickness = 1, Color = PremiumPlayerColor, Visible = false }),
+        Name = NewDrawing("Text", { Size = 13, Center = true, Outline = true, Color = Color3.new(1,1,1), Visible = false }),
+        Tag = NewDrawing("Text", { Size = 12, Center = true, Outline = true, Color = PremiumPlayerColor, Visible = false }),
+        Health = NewDrawing("Line", { Thickness = 1.5, Visible = false }),
+        HealthBg = NewDrawing("Line", { Thickness = 1.5, Color = Color3.new(0.1, 0.1, 0.1), Visible = false }),
+        Spine = NewDrawing("Line", { Thickness = 1, Color = Color3.new(1,1,1), Visible = false }),
+        LArm = NewDrawing("Line", { Thickness = 1, Color = Color3.new(1,1,1), Visible = false }),
+        RArm = NewDrawing("Line", { Thickness = 1, Color = Color3.new(1,1,1), Visible = false }),
+        LLeg = NewDrawing("Line", { Thickness = 1, Color = Color3.new(1,1,1), Visible = false }),
+        RLeg = NewDrawing("Line", { Thickness = 1, Color = Color3.new(1,1,1), Visible = false })
+    }
+end
+
+local function SetupDroneESP(model)
+    if DroneCache[model] then return end
+    DroneCache[model] = {
+        Box = NewDrawing("Square", { Thickness = 1, Color = PremiumDroneColor, Visible = false }),
+        Tracer = NewDrawing("Line", { Thickness = 1, Color = PremiumDroneColor, Visible = false }),
+        Name = NewDrawing("Text", { Size = 13, Center = true, Outline = true, Color = PremiumDroneColor, Visible = false, Text = "[DRONE]" })
+    }
+end
+
+RunService.RenderStepped:Connect(function()
+    local root = Workspace:FindFirstChild("IIIIllllIIIllIIlIlI_IIllIlIIIllII_o")
+    if not root then return end
+
+    -- Просто собираем абсолютно всё, что лежит внутри главной папки обфускации
+    for _, folder in ipairs(root:GetChildren()) do
+        if folder:IsA("Folder") or folder:IsA("Model") then
+            local folderName = folder.Name
+            
+            for _, child in ipairs(folder:GetChildren()) do
+                if child:IsA("Model") and child.Name ~= LocalPlayer.Name then
+                    SetupPlayerESP(child)
+                    
+                    local esp = PlayerCache[child]
+                    if esp then
+                        -- Сверху пишется точное имя папки, где сидит игрок
+                        esp.Tag.Text = "[" .. tostring(folderName) .. "]"
+                    end
+                end
+            end
+        end
+    end
+    
+    -- Скан Дронов в Workspace
+    for _, child in ipairs(Workspace:GetChildren()) do
+        if child:IsA("Model") and string.find(child.Name:lower(), "drone") then SetupDroneESP(child) end
+    end
+
+    -- --- ГРАФИЧЕСКИЙ КОНВЕЙЕР drawing api ---
+    for model, esp in pairs(PlayerCache) do
+        if not model or not model.Parent then
+            ResetESP(esp); PlayerCache[model] = nil; continue
+        end
+
+        local torso = GetR6Part(model, "Torso")
+        local head = GetR6Part(model, "Head")
+        local hum = model:FindFirstChildOfClass("Humanoid")
+
+        if Config.Players_Enabled and torso and head and hum and hum.Health > 0 then
+            local torsoPos, onScreen = Camera:WorldToViewportPoint(torso.Position)
+            if onScreen then
+                local headPos = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0))
+                local legPos = Camera:WorldToViewportPoint(torso.Position - Vector3.new(0, 3, 0))
+                local boxHeight = math.abs(headPos.Y - legPos.Y)
+                local boxWidth = boxHeight * 0.6
+                local boxX = torsoPos.X - (boxWidth / 2)
+
+                esp.Box.Size = Vector2.new(boxWidth, boxHeight)
+                esp.Box.Position = Vector2.new(boxX, headPos.Y)
+                esp.Box.Visible = Config.Players_Boxes
+
+                esp.Tracer.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
+                esp.Tracer.To = Vector2.new(torsoPos.X, torsoPos.Y)
+                esp.Tracer.Visible = Config.Players_Tracers
+
+                esp.Tag.Position = Vector2.new(torsoPos.X, headPos.Y - 26)
+                esp.Tag.Visible = Config.Players_TeamTags
+
+                esp.Name.Text = model.Name
+                esp.Name.Position = Vector2.new(torsoPos.X, headPos.Y - 14)
+                esp.Name.Visible = Config.Players_Names
+
+                if Config.Players_HealthBar then
+                    local pct = hum.Health / hum.MaxHealth
+                    esp.HealthBg.From = Vector2.new(boxX - 5, headPos.Y)
+                    esp.HealthBg.To = Vector2.new(boxX - 5, headPos.Y + boxHeight)
+                    esp.HealthBg.Visible = true
+                    
+                    esp.Health.From = Vector2.new(boxX - 5, headPos.Y + boxHeight)
+                    esp.Health.To = Vector2.new(boxX - 5, headPos.Y + boxHeight - (boxHeight * pct))
+                    esp.Health.Color = Color3.fromRGB(255,0,0):Lerp(Color3.fromRGB(0,255,0), pct)
+                    esp.Health.Visible = true
+                else
+                    esp.Health.Visible = false; esp.HealthBg.Visible = false
+                end
+
+                if Config.Players_Skeletons then
+                    local lArm = GetR6Part(model, "Left Arm")
+                    local rArm = GetR6Part(model, "Right Arm")
+                    local lLeg = GetR6Part(model, "Left Leg")
+                    local rLeg = GetR6Part(model, "Right Leg")
+                    
+                    esp.Spine.From = Vector2.new(Camera:WorldToViewportPoint(head.Position).X, Camera:WorldToViewportPoint(head.Position).Y)
+                    esp.Spine.To = Vector2.new(torsoPos.X, torsoPos.Y)
+                    esp.Spine.Visible = true
+
+                    if lArm then esp.LArm.From = Vector2.new(torsoPos.X, torsoPos.Y); esp.LArm.To = Vector2.new(Camera:WorldToViewportPoint(lArm.Position).X, Camera:WorldToViewportPoint(lArm.Position).Y); esp.LArm.Visible = true else esp.LArm.Visible = false end
+                    if rArm then esp.RArm.From = Vector2.new(torsoPos.X, torsoPos.Y); esp.RArm.To = Vector2.new(Camera:WorldToViewportPoint(rArm.Position).X, Camera:WorldToViewportPoint(rArm.Position).Y); esp.RArm.Visible = true else esp.RArm.Visible = false end
+                    if lLeg then esp.LLeg.From = Vector2.new(torsoPos.X, torsoPos.Y); esp.LLeg.To = Vector2.new(Camera:WorldToViewportPoint(lLeg.Position).X, Camera:WorldToViewportPoint(lLeg.Position).Y); esp.LLeg.Visible = true else esp.LLeg.Visible = false end
+                    if rLeg then esp.RLeg.From = Vector2.new(torsoPos.X, torsoPos.Y); esp.RLeg.To = Vector2.new(Camera:WorldToViewportPoint(rLeg.Position).X, Camera:WorldToViewportPoint(rLeg.Position).Y); esp.RLeg.Visible = true else esp.RLeg.Visible = false end
+                else
+                    esp.Spine.Visible = false; esp.LArm.Visible = false; esp.RArm.Visible = false; esp.LLeg.Visible = false; esp.RLeg.Visible = false
+                end
+            else ResetESP(esp) end
+        else ResetESP(esp) end
+    end
+
+    -- Отрисовка дронов
+    for model, esp in pairs(DroneCache) do
+        if not model or not model.Parent then
+            ResetESP(esp); DroneCache[model] = nil; continue
+        end
+
+        local primary = model.PrimaryPart or model:FindFirstChildOfClass("BasePart")
+        if Config.Drones_Enabled and primary then
+            local pos, onScreen = Camera:WorldToViewportPoint(primary.Position)
+            if onScreen then
+                local s = 30
+                esp.Box.Size = Vector2.new(s, s)
+                esp.Box.Position = Vector2.new(pos.X - s/2, pos.Y - s/2)
+                esp.Box.Visible = Config.Drones_Boxes
+
+                esp.Tracer.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
+                esp.Tracer.To = Vector2.new(pos.X, pos.Y)
+                esp.Tracer.Visible = Config.Drones_Tracers
+
+                esp.Name.Position = Vector2.new(pos.X, pos.Y - s/2 - 12)
+                esp.Name.Visible = Config.Drones_Names
+            else ResetESP(esp) end
+        else ResetESP(esp) end
+    end
+end)
