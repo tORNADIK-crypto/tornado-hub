@@ -1,588 +1,772 @@
--- =====================================================================
--- ЧАСТЬ 1 ИЗ 4: ИНИЦИАЛИЗАЦИЯ И СТРУКТУРА МЕНЮ GET A GRIP
--- КРЕДИТЫ: BY CHO_NAX4 | TIKTOK: 6TORNADIKS7
--- =====================================================================
+-- [[ Get a grip script v7.7 - MONOLITH FIX ]] --
+-- ЧАСТЬ 1 ИЗ 8 (ИНИЦИАЛИЗАЦИЯ И НАСТРОЙКИ)
 
-local coreGui = game:GetService("CoreGui")
+local _G = {
+    AutoFarm = false,
+    FarmTarget = 1,
+    PickupDelay = 20.1,
+    DropoffDelay = 10.1,
+    RespawnDelay = 3.0,
+    
+    BunkerFarm = false,
+    DoorClicks = 10,
+    BunkerCooldown = 300,
+    
+    FlySpeed = 50,
+    Fly = false,
+    Noclip = false,
+    InfJump = false,
+    FakeLag = false,
+    SelectedPlayer = "",
+    
+    CourierWarnAccepted = false,
+    BunkerWarnAccepted = false
+}
 
--- Полная очистка всех старых панелей и ESP перед стартом
-for _, oldGui in ipairs(coreGui:GetChildren()) do
-    if oldGui.Name == "DoubleTpHub" or oldGui.Name:match("^DoubleTpMenu") or oldGui.Name == "CandyCollectorGui" or oldGui.Name == "GameChooserHub" then
-        pcall(function() oldGui:Destroy() end)
+local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+
+local TargetGuiFolder = LocalPlayer:WaitForChild("PlayerGui", 10)
+
+if TargetGuiFolder then
+    for _, oldMenu in pairs(TargetGuiFolder:GetChildren()) do
+        if oldMenu.Name == "GetAGripPinkMenu" then oldMenu:Destroy() end
     end
 end
-local oldEsp = coreGui:FindFirstChild("CandyESP")
-if oldEsp then pcall(function() oldEsp:Destroy() end) end
-task.wait(0.1)
 
--- Базовая задержка для Get A Grip под твою идеальную схему (45 секунд)
-_G.AntiCheatDelay = 45.01
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "GetAGripPinkMenu"
+ScreenGui.Parent = TargetGuiFolder
+ScreenGui.ResetOnSpawn = false
 
--- 1. СКЕЛЕТ МЕНЮ ДЛЯ GET A GRIP
-local Hub = Instance.new("ScreenGui")
-Hub.Name = "DoubleTpHub"
-Hub.Parent = coreGui
-Hub.ResetOnSpawn = false
-
-local MainFrame = Instance.new("Frame", Hub)
+local MainFrame = Instance.new("Frame", ScreenGui)
 MainFrame.Name = "MainFrame"
-MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-MainFrame.Position = UDim2.new(0.3, 0, 0.3, 0)
-MainFrame.Size = UDim2.new(0, 360, 0, 240)
-MainFrame.Active = true
-MainFrame.Draggable = true
-Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
+MainFrame.Size = UDim2.new(0, 740, 0, 520)
+MainFrame.Position = UDim2.new(0.5, -370, 0.5, -260)
+MainFrame.BackgroundColor3 = Color3.fromRGB(24, 10, 24)
+MainFrame.BackgroundTransparency = 0.18
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true MainFrame.Draggable = true
+
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 16)
 
 local MainStroke = Instance.new("UIStroke", MainFrame)
-MainStroke.Thickness = 2
-MainStroke.Color = Color3.fromRGB(0, 150, 255)
+MainStroke.Color = Color3.fromRGB(255, 30, 160)
+MainStroke.Thickness = 3.0
 
-local Sidebar = Instance.new("Frame", MainFrame)
-Sidebar.Name = "Sidebar"
-Sidebar.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
-Sidebar.Size = UDim2.new(0, 85, 1, 0)
-Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 10)
-
-local SideLayout = Instance.new("UIListLayout", Sidebar)
-SideLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-SideLayout.Padding = UDim.new(0, 6)
-SideLayout.VerticalAlignment = Enum.VerticalAlignment.Top
-
--- ТВОЙ ФИРМЕННЫЙ КРЕДИТ-ТЕКСТ В МЕНЮ
-local CreditsLabel = Instance.new("TextLabel", MainFrame)
-CreditsLabel.Size = UDim2.new(1, -100, 0, 25)
-CreditsLabel.Position = UDim2.new(0, 95, 0, 5)
-CreditsLabel.BackgroundTransparency = 1
-CreditsLabel.Font = Enum.Font.SourceSansItalic
-CreditsLabel.Text = "by CHO_NAX4 | TT: 6TORNADIKS7"
-CreditsLabel.TextColor3 = Color3.fromRGB(0, 150, 255)
-CreditsLabel.TextSize = 11
-CreditsLabel.TextXAlignment = Enum.TextXAlignment.Right
-
-_G.ContentFrame = Instance.new("Frame", MainFrame)
-_G.ContentFrame.Name = "ContentFrame"
-_G.ContentFrame.BackgroundTransparency = 1
-_G.ContentFrame.Position = UDim2.new(0, 95, 0, 25) -- Сместили вниз под кредиты
-_G.ContentFrame.Size = UDim2.new(1, -105, 1, -35)
-
-_G.FarmPage = Instance.new("Frame")
-_G.ShopPage = Instance.new("Frame")
-_G.FunPage = Instance.new("Frame")
-
-local function setupPage(page, name)
-    page.Name = name.."Page"
-    page.Parent = _G.ContentFrame
-    page.Size = UDim2.new(1, 0, 1, 0)
-    page.BackgroundTransparency = 1
-    page.Visible = false
-    local layout = Instance.new("UIListLayout", page)
-    layout.Padding = UDim.new(0, 5)
+local function applyGod3DEffect(element)
+    local origPos = element.Position
+    local stroke = element:FindFirstChildOfClass("UIStroke") or Instance.new("UIStroke", element)
+    stroke.Color = Color3.fromRGB(100, 20, 60)
+    stroke.Thickness = 1
+    
+    element.MouseEnter:Connect(function()
+        TweenService:Create(element, TweenInfo.new(0.2, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {
+            BackgroundColor3 = Color3.fromRGB(85, 15, 55),
+            BackgroundTransparency = 0.1,
+            Position = origPos + UDim2.new(0, 8, 0, 2)
+        }):Play()
+        TweenService:Create(stroke, TweenInfo.new(0.15), {Color = Color3.fromRGB(255, 80, 180), Thickness = 1.5}):Play()
+    end)
+    
+    element.MouseLeave:Connect(function()
+        TweenService:Create(element, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            BackgroundColor3 = Color3.fromRGB(35, 14, 35),
+            BackgroundTransparency = 0.3,
+            Position = origPos
+        }):Play()
+        TweenService:Create(stroke, TweenInfo.new(0.15), {Color = Color3.fromRGB(100, 20, 60), Thickness = 1}):Play()
+    end)
 end
-setupPage(_G.FarmPage, "Farm")
-setupPage(_G.ShopPage, "Shop")
-setupPage(_G.FunPage, "Fun")
-_G.FarmPage.Visible = true
+-- [[ Get a grip script v7.7 - MONOLITH FIX ]] --
+-- ЧАСТЬ 2 ИЗ 8 (СТРАНИЦЫ И ВКЛАДКИ)
 
-local function showPage(targetPage)
-    _G.FarmPage.Visible = false
-    _G.ShopPage.Visible = false
-    _G.FunPage.Visible = false
-    targetPage.Visible = true
+local Title = Instance.new("TextLabel", MainFrame)
+Title.Size = UDim2.new(1, -40, 0, 50)
+Title.BackgroundTransparency = 1
+Title.Text = "   GET A GRIP GOD MODE v6.1 | rb: cho_nax4 | tt: 6tornadiks7"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 13
+Title.Font = Enum.Font.GothamBold
+Title.TextXAlignment = Enum.TextXAlignment.Left
+
+local TabPanel = Instance.new("Frame", MainFrame)
+TabPanel.Size = UDim2.new(0, 175, 1, -50)
+TabPanel.Position = UDim2.new(0, 0, 0, 50)
+TabPanel.BackgroundColor3 = Color3.fromRGB(15, 5, 15)
+TabPanel.BackgroundTransparency = 0.25
+TabPanel.BorderSizePixel = 0
+Instance.new("UICorner", TabPanel).CornerRadius = UDim.new(0, 16)
+
+local ContentFrame = Instance.new("Frame", MainFrame)
+ContentFrame.Size = UDim2.new(1, -190, 1, -65)
+ContentFrame.Position = UDim2.new(0, 185, 0, 55)
+ContentFrame.BackgroundTransparency = 1
+
+local Pages = {
+    Farm = Instance.new("ScrollingFrame", ContentFrame),
+    Bunker = Instance.new("ScrollingFrame", ContentFrame),
+    Player = Instance.new("ScrollingFrame", ContentFrame),
+    R6Tab = Instance.new("ScrollingFrame", ContentFrame),
+    Utils = Instance.new("ScrollingFrame", ContentFrame)
+}
+
+for _, p in pairs(Pages) do
+    p.Size = UDim2.new(1, 0, 1, 0) p.BackgroundTransparency = 1
+    p.CanvasSize = UDim2.new(0, 0, 0, 550) p.ScrollBarThickness = 0 p.Visible = false
 end
+Pages.Farm.Visible = true
 
-local function createTabBtn(text, order, targetPage)
-    local btn = Instance.new("TextButton", Sidebar)
-    btn.Size = UDim2.new(0, 75, 0, 30)
-    btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    btn.Font = Enum.Font.SourceSansBold
-    btn.Text = text
-    btn.TextColor3 = Color3.fromRGB(220, 220, 220)
-    btn.TextSize = 12
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 5)
-    btn.MouseButton1Click:Connect(function() showPage(targetPage) end)
-end
-createTabBtn("FARM", 1, _G.FarmPage)
-createTabBtn("МАГАЗИН", 2, _G.ShopPage)
-createTabBtn("ФУНКЦИИ", 3, _G.FunPage)
+local tabsConfig = {
+    {Btn = Instance.new("TextButton", TabPanel), Text = "Авто Фарм Курьера", Page = Pages.Farm, Y = 15},
+    {Btn = Instance.new("TextButton", TabPanel), Text = "Автофарм ББ 2", Page = Pages.Bunker, Y = 55},
+    {Btn = Instance.new("TextButton", TabPanel), Text = "Характеристики", Page = Pages.Player, Y = 95},
+    {Btn = Instance.new("TextButton", TabPanel), Text = "R6 Эксплоиты", Page = Pages.R6Tab, Y = 135},
+    {Btn = Instance.new("TextButton", TabPanel), Text = "Телепорты / Ники", Page = Pages.Utils, Y = 175}
+}
 
--- Передаем объекты в глобал для склейки
-_G.HubGuiObject = Hub
-print("[CHO_NAX4 HUB]: Скрипт успешно инициализирован. TikTok: @6TORNADIKS7")
--- =====================================================================
--- ЧАСТЬ 2 ИЗ 4: СОЗДАНИЕ КНОПОК, ЛЕЙБЛОВ СТАТИСТИКИ И ИНПУТОВ
--- =====================================================================
-
-local players = game:GetService("Players")
-local localPlayer = players.LocalPlayer
-local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
-local camera = workspace.CurrentCamera
-
--- Вспомогательные функции генерации элементов UI (Get A Grip)
-local function createBtn(parent, text, color)
-    local btn = Instance.new("TextButton")
-    btn.Parent = parent
-    btn.Size = UDim2.new(1, -5, 0, 26)
-    btn.BackgroundColor3 = color
-    btn.Font = Enum.Font.SourceSansBold
-    btn.Text = text
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.TextSize = 13
-    local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0, 4) c.Parent = btn
-    return btn
-end
-
-local function createLabel(parent, text, color)
-    local lbl = Instance.new("TextLabel")
-    lbl.Parent = parent
-    lbl.Size = UDim2.new(1, -5, 0, 16)
-    lbl.BackgroundTransparency = 1
-    lbl.Font = Enum.Font.SourceSans
-    lbl.Text = text
-    lbl.TextColor3 = color
-    lbl.TextSize = 13
-    lbl.TextXAlignment = Enum.TextXAlignment.Left
-    return lbl
-end
-
--- ЭЛЕМЕНТЫ СТРАНИЦЫ FARM (GET A GRIP)
-_G.DropoffButton = createBtn(_G.FarmPage, "ТП В DROPOFF", Color3.fromRGB(220, 30, 60))
-_G.PickupButton = createBtn(_G.FarmPage, "ТП В PICKUP", Color3.fromRGB(0, 130, 220))
-_G.AutofarmButton = createBtn(_G.FarmPage, "АВТО ФАРМ: ВЫКЛ", Color3.fromRGB(50, 50, 50))
-
--- Поле ввода задержки для Get A Grip (под схему: Pickup -> Ждать 45 сек -> Сдать)
-local DelayInput = Instance.new("TextBox")
-DelayInput.Parent = _G.FarmPage
-DelayInput.Size = UDim2.new(1, -5, 0, 26)
-DelayInput.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-DelayInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-DelayInput.Text = "АНТИЧИТ: " .. _G.AntiCheatDelay .. " сек"
-DelayInput.Font = Enum.Font.SourceSansBold
-DelayInput.TextSize = 12
-local DelayCorner = Instance.new("UICorner") DelayCorner.CornerRadius = UDim.new(0, 4) DelayCorner.Parent = DelayInput
-
-DelayInput.FocusLost:Connect(function(enterPressed)
-    local num = tonumber(DelayInput.Text:match("[%d%.]+"))
-    if num then
-        _G.AntiCheatDelay = num
-        DelayInput.Text = "АНТИЧИТ: " .. num .. " сек"
-    else
-        DelayInput.Text = "АНТИЧИТ: " .. _G.AntiCheatDelay .. " сек"
-    end
-end)
-
-_G.TotalEarnedLabel = createLabel(_G.FarmPage, "Заработано: $0", Color3.fromRGB(255, 255, 255))
-_G.MaxEarnedLabel = createLabel(_G.FarmPage, "Макс. за заказ: $0", Color3.fromRGB(255, 200, 50))
-_G.HourlyRateLabel = createLabel(_G.FarmPage, "В час: ~$0/h", Color3.fromRGB(50, 255, 120))
-_G.CostAllLabel = createLabel(_G.FarmPage, "До полной скупочки магазина: $2450", Color3.fromRGB(255, 100, 255))
-
--- ЭЛЕМЕНТЫ СТРАНИЦЫ SHOP (GET A GRIP)
-_G.TpShopButton = createBtn(_G.ShopPage, "ТП К МАГАЗИНУ (ЦЕНТР)", Color3.fromRGB(0, 160, 100))
-
-local ShopScroll = Instance.new("ScrollingFrame")
-ShopScroll.Parent = _G.ShopPage
-ShopScroll.Size = UDim2.new(1, -5, 0, 150)
-ShopScroll.BackgroundTransparency = 1
-ShopScroll.CanvasSize = UDim2.new(0, 0, 0, 260)
-ShopScroll.ScrollBarThickness = 3
-local ShopLayout = Instance.new("UIListLayout") ShopLayout.Parent = ShopScroll; ShopLayout.Padding = UDim.new(0, 4)
-
--- ЭЛЕМЕНТЫ СТРАНИЦЫ FUN (GET A GRIP)
-local EspBtn = createBtn(_G.FunPage, "ФИОЛЕТОВЫЙ ESP ИГРОКОВ: ВЫКЛ", Color3.fromRGB(50, 50, 50))
-local FlyBtn = createBtn(_G.FunPage, "FLY ПОЛЕТ: ВЫКЛ", Color3.fromRGB(50, 50, 50))
-local NoclipBtn = createBtn(_G.FunPage, "NOCLIP (СКВОЗЬ СТЕНЫ): ВЫКЛ", Color3.fromRGB(50, 50, 50))
-
--- Передаем скроллбар и кнопки в глобал
-_G.ShopScroll = ShopScroll
-_G.EspBtnGag = EspBtn
-_G.FlyBtnGag = FlyBtn
-_G.NoclipBtnGag = NoclipBtn
--- =====================================================================
--- ЧАСТЬ 3 ИЗ 4: ФУНКЦИИ МАГАЗИНА, FUN-МЕХАНИКИ И ЛОКАЛЬНЫЙ ESP ИГРОКОВ
--- =====================================================================
-
-local ShopScroll = _G.ShopScroll
-local EspBtn = _G.EspBtnGag
-local FlyBtn = _G.FlyBtnGag
-local NoclipBtn = _G.NoclipBtnGag
-
-local players = game:GetService("Players")
-local localPlayer = players.LocalPlayer
-local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
-local camera = workspace.CurrentCamera
-
-local function shopTeleport(targetPos)
-    local character = localPlayer.Character
-    local rootPart = character and character:FindFirstChild("HumanoidRootPart")
-    if rootPart then
-        localPlayer:RequestStreamAroundAsync(targetPos)
-        local tween = TweenService:Create(rootPart, TweenInfo.new(0.02, Enum.EasingStyle.Linear), {CFrame = CFrame.new(targetPos)})
-        tween:Play()
-        tween.Completed:Wait()
-    end
-end
-
-local function weldVestToPlayer(sourceModel)
-    local char = localPlayer.Character
-    if not char then return end
-    local torso = char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso")
-    if not torso then return end
-
-    local clone = sourceModel:Clone()
-    clone.Parent = char
-    for _, part in ipairs(clone:GetDescendants()) do
-        if part:IsA("BasePart") then
-            part.CanCollide = false
-            part.Anchored = false
-            part.CFrame = torso.CFrame
-            local weld = Instance.new("WeldConstraint")
-            weld.Part0 = torso
-            weld.Part1 = part
-            weld.Parent = part
+for _, t in pairs(tabsConfig) do
+    t.Btn.Size = UDim2.new(1, -14, 0, 36) t.Btn.Position = UDim2.new(0, 7, 0, t.Y)
+    t.Btn.BackgroundColor3 = Color3.fromRGB(35, 14, 35) t.Btn.BackgroundTransparency = 0.4
+    t.Btn.TextColor3 = Color3.fromRGB(180, 150, 170) t.Btn.Text = t.Text
+    t.Btn.Font = Enum.Font.GothamBold t.Btn.TextSize = 11
+    Instance.new("UICorner", t.Btn).CornerRadius = UDim.new(0, 6)
+    
+    t.Btn.MouseButton1Click:Connect(function()
+        for _, t2 in pairs(tabsConfig) do
+            t2.Page.Visible = false t2.Btn.BackgroundColor3 = Color3.fromRGB(35, 14, 35)
+            t2.Btn.BackgroundTransparency = 0.4 t2.Btn.TextColor3 = Color3.fromRGB(180, 150, 170)
         end
-    end
-end
-
-local function addShopItem(displayName, searchName, priceText, mode)
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, -5, 0, 24)
-    frame.BackgroundTransparency = 1
-    frame.Parent = ShopScroll
-    
-    local lbl = Instance.new("TextLabel")
-    lbl.Size = UDim2.new(0, 140, 1, 0)
-    lbl.BackgroundTransparency = 1
-    lbl.Text = displayName.." ["..priceText.."]"
-    lbl.TextColor3 = (mode == "weld") and Color3.fromRGB(255, 180, 0) or Color3.fromRGB(200, 200, 200)
-    lbl.Font = Enum.Font.SourceSans
-    lbl.TextSize = 12
-    lbl.TextXAlignment = Enum.TextXAlignment.Left
-    lbl.Parent = frame
-    
-    local buy = Instance.new("TextButton")
-    buy.Size = UDim2.new(0, 90, 1, -2)
-    buy.Position = UDim2.new(0, 145, 0, 1)
-    buy.Font = Enum.Font.SourceSansBold
-    buy.TextSize = 11
-    buy.TextColor3 = Color3.fromRGB(255, 255, 255)
-    buy.Parent = frame
-    
-    if mode == "weld" then
-        buy.BackgroundColor3 = Color3.fromRGB(210, 110, 0)
-        buy.Text = "ОДЕТЬ (ФЕЙК)"
-    else
-        buy.BackgroundColor3 = Color3.fromRGB(0, 120, 200)
-        buy.Text = "ТП К ШМОТКЕ"
-    end
-    
-    buy.MouseButton1Click:Connect(function()
-        local shopPurchases = workspace:FindFirstChild("ShopPurchases")
-        local itemObj = shopPurchases and shopPurchases:FindFirstChild(searchName, true)
-        
-        if mode == "weld" and itemObj then
-            weldVestToPlayer(itemObj)
-        elseif mode == "tp" then
-            if itemObj then
-                local targetPart = itemObj:IsA("BasePart") and itemObj or itemObj:FindFirstChildWhichIsA("BasePart", true)
-                if targetPart then shopTeleport(targetPart.Position + Vector3.new(0, 2, 2)) end
-            else
-                local directObj = shopPurchases and shopPurchases:FindFirstChild(searchName)
-                if directObj and directObj:IsA("BasePart") then
-                    shopTeleport(directObj.Position + Vector3.new(0, 2, 2))
-                end
-            end
-        end
+        t.Page.Visible = true t.Btn.BackgroundColor3 = Color3.fromRGB(255, 30, 160)
+        t.Btn.BackgroundTransparency = 0 t.Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     end)
 end
 
-addShopItem("Purple Vest", "Vest_purple", "39 RB", "weld")
-addShopItem("Military Gloves", "MilitaryGloves", "49 RB", "tp")
-addShopItem("Yellow Vest", "Vest_yellow", "300 $", "tp")
-addShopItem("Orange Vest", "Vest_orange", "300 $", "tp")
-addShopItem("Lime Vest", "Vest_lime", "300 $", "tp")
-addShopItem("App Camera", "Camera", "300 $", "tp")
-addShopItem("App Speedometer", "Speedometer", "500 $", "tp")
-addShopItem("Headlamp", "Headlamp", "350 $", "tp")
+-- [[ Get a grip script v7.7 - MONOLITH FIX ]] --
+-- ЧАСТЬ 3 ИЗ 8 (ИНСТРУМЕНТЫ УПРАВЛЕНИЯ UI)
 
--- МЕХАНИКА NOCLIP (GET A GRIP)
-local GetAGripNoclip = false
-NoclipBtn.MouseButton1Click:Connect(function()
-    GetAGripNoclip = not GetAGripNoclip
-    NoclipBtn.BackgroundColor3 = GetAGripNoclip and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(50, 50, 50)
-    NoclipBtn.Text = GetAGripNoclip and "NOCLIP (СКВОЗЬ СТЕНЫ): ВКЛ" or "NOCLIP (СКВОЗЬ СТЕНЫ): ВЫКЛ"
+function createGodToggle(parent, text, yPos, callback)
+    local frame = Instance.new("Frame", parent)
+    frame.Size = UDim2.new(1, -14, 0, 42) frame.Position = UDim2.new(0, 5, 0, yPos)
+    frame.BackgroundColor3 = Color3.fromRGB(35, 14, 35) frame.BackgroundTransparency = 0.3
+    Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
+    applyGod3DEffect(frame)
+    
+    local label = Instance.new("TextLabel", frame)
+    label.Size = UDim2.new(0.7, 0, 1, 0) label.BackgroundTransparency = 1
+    label.Text = "   " .. text label.TextColor3 = Color3.fromRGB(245, 245, 245)
+    label.TextSize = 12 label.Font = Enum.Font.Gotham label.TextXAlignment = Enum.TextXAlignment.Left
+    
+    local btn = Instance.new("TextButton", frame)
+    btn.Size = UDim2.new(0, 60, 0, 26) btn.Position = UDim2.new(1, -70, 0, 8)
+    btn.BackgroundColor3 = Color3.fromRGB(75, 20, 55) btn.Text = "OFF"
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255) btn.Font = Enum.Font.GothamBold btn.TextSize = 10
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 5)
+    
+    local state = false
+    btn.MouseButton1Click:Connect(function()
+        state = not state
+        btn.BackgroundColor3 = state and Color3.fromRGB(255, 30, 160) or Color3.fromRGB(75, 20, 55)
+        btn.Text = state and "ON" or "OFF"
+        callback(state)
+    end)
+end
+
+function createGodSlider(parent, text, subtext, yPos, min, max, default, isFloat, callback)
+    local frame = Instance.new("Frame", parent)
+    frame.Size = UDim2.new(1, -14, 0, 64) frame.Position = UDim2.new(0, 5, 0, yPos)
+    frame.BackgroundColor3 = Color3.fromRGB(35, 14, 35) frame.BackgroundTransparency = 0.3
+    Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
+    applyGod3DEffect(frame)
+    
+    local label = Instance.new("TextLabel", frame)
+    label.Size = UDim2.new(0.6, 0, 0, 22) label.BackgroundTransparency = 1
+    label.Text = "   " .. text label.TextColor3 = Color3.fromRGB(245, 245, 245)
+    label.TextSize = 12 label.Font = Enum.Font.GothamBold label.TextXAlignment = Enum.TextXAlignment.Left
+    
+    local subLabel = Instance.new("TextLabel", frame)
+    subLabel.Size = UDim2.new(0.9, 0, 0, 16) subLabel.Position = UDim2.new(0, 0, 0, 20)
+    subLabel.BackgroundTransparency = 1 subLabel.Text = "    " .. subtext
+    subLabel.TextColor3 = Color3.fromRGB(255, 100, 130) subLabel.TextSize = 9
+    subLabel.Font = Enum.Font.Gotham subLabel.TextXAlignment = Enum.TextXAlignment.Left
+    
+    local valLabel = Instance.new("TextLabel", frame)
+    valLabel.Size = UDim2.new(0.4, 0, 0, 22) valLabel.Position = UDim2.new(0.6, 0, 0, 0)
+    valLabel.BackgroundTransparency = 1 valLabel.Text = tostring(default) .. "  "
+    valLabel.TextColor3 = Color3.fromRGB(255, 80, 180) valLabel.TextSize = 12
+    valLabel.Font = Enum.Font.GothamBold valLabel.TextXAlignment = Enum.TextXAlignment.Right
+    
+    local sBar = Instance.new("TextButton", frame)
+    sBar.Size = UDim2.new(1, -24, 0, 6) sBar.Position = UDim2.new(0, 12, 0, 48)
+    sBar.BackgroundColor3 = Color3.fromRGB(75, 20, 55) sBar.Text = ""
+    Instance.new("UICorner", sBar)
+    
+    local fill = Instance.new("Frame", sBar)
+    fill.Size = UDim2.new((default - min)/(max - min), 0, 1, 0)
+    fill.BackgroundColor3 = Color3.fromRGB(255, 30, 160) fill.BorderSizePixel = 0
+    Instance.new("UICorner", fill)
+    
+    local drag = false
+    local function update(input)
+        local pos = math.clamp((input.Position.X - sBar.AbsolutePosition.X) / sBar.AbsoluteSize.X, 0, 1)
+        fill.Size = UDim2.new(pos, 0, 1, 0)
+        local val = min + (max - min) * pos
+        if not isFloat then val = math.floor(val) else val = math.floor(val * 10) / 10 end
+        valLabel.Text = tostring(val) .. "  "
+        callback(val)
+    end
+    sBar.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then drag = true update(i) end end)
+    game:GetService("UserInputService").InputChanged:Connect(function(i) if drag and i.UserInputType == Enum.UserInputType.MouseMovement then update(i) end end)
+    game:GetService("UserInputService").InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then drag = false end end)
+end
+-- [[ Get a grip script v7.7 - MONOLITH FIX ]] --
+-- ЧАСТЬ 4 ИЗ 8 (ЗАЩИТНЫЕ ОКНА ПРЕДУПРЕЖДЕНИЙ)
+
+local CourierWarnFrame = Instance.new("Frame", ContentFrame)
+CourierWarnFrame.Size = UDim2.new(1, -14, 1, -10)
+CourierWarnFrame.Position = UDim2.new(0, 5, 0, 5)
+CourierWarnFrame.BackgroundColor3 = Color3.fromRGB(30, 8, 22)
+CourierWarnFrame.BorderSizePixel = 0
+CourierWarnFrame.ZIndex = 5
+Instance.new("UICorner", CourierWarnFrame).CornerRadius = UDim.new(0, 10)
+
+local WarnStroke = Instance.new("UIStroke", CourierWarnFrame)
+WarnStroke.Color = Color3.fromRGB(255, 30, 160)
+WarnStroke.Thickness = 1.5
+
+local WarnTitle = Instance.new("TextLabel", CourierWarnFrame)
+WarnTitle.Size = UDim2.new(1, 0, 0, 40)
+WarnTitle.BackgroundTransparency = 1
+WarnTitle.Text = "⚠️ ВНИМАНИЕ: СТРОГИЙ АНТИЧИТ!"
+WarnTitle.Font = Enum.Font.GothamBold
+WarnTitle.TextColor3 = Color3.fromRGB(255, 50, 50)
+WarnTitle.TextSize = 14
+WarnTitle.ZIndex = 5
+
+local WarnText = Instance.new("TextLabel", CourierWarnFrame)
+WarnText.Size = UDim2.new(1, -30, 1, -110)
+WarnText.Position = UDim2.new(0, 15, 0, 45)
+WarnText.BackgroundTransparency = 1
+WarnText.Text = "Используйте этот скрипт исключительно на свой страх и риск!\nВсё стабильно работало на момент актуализации (02.11.2026).\n\nЕсли ваш аккаунт забанят — я никакой ответственности не несу,\nтак как разработчик игры тщательно и постоянно борется с моим софтом,\nдобавляя новые скрытые проверки на скорость и телепортацию."
+WarnText.Font = Enum.Font.GothamBold
+WarnText.TextColor3 = Color3.fromRGB(240, 240, 240)
+WarnText.TextSize = 11
+WarnText.TextWrapped = true
+WarnText.ZIndex = 5
+
+local WarnBtn = Instance.new("TextButton", CourierWarnFrame)
+WarnBtn.Size = UDim2.new(0, 200, 0, 36)
+WarnBtn.Position = UDim2.new(0.5, -100, 1, -55)
+WarnBtn.BackgroundColor3 = Color3.fromRGB(60, 20, 40)
+WarnBtn.Text = "Подождите (5)"
+WarnBtn.Font = Enum.Font.GothamBold
+WarnBtn.TextColor3 = Color3.fromRGB(180, 150, 160)
+WarnBtn.TextSize = 12
+WarnBtn.ZIndex = 5
+Instance.new("UICorner", WarnBtn)
+
+task.spawn(function()
+    for i = 5, 1, -1 do
+        WarnBtn.Text = "Подождите ("..i..")"
+        task.wait(1)
+    end
+    WarnBtn.BackgroundColor3 = Color3.fromRGB(255, 30, 160)
+    WarnBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    WarnBtn.Text = "Я прочитал и согласен"
+    
+    WarnBtn.MouseButton1Click:Connect(function()
+        _G.CourierWarnAccepted = true
+        TweenService:Create(CourierWarnFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quad), {Position = UDim2.new(0, 5, 1, 0), BackgroundTransparency = 1}):Play()
+        task.wait(0.4)
+        CourierWarnFrame.Visible = false
+    end)
 end)
-RunService.Stepped:Connect(function()
-    if GetAGripNoclip and localPlayer.Character then
-        for _, part in ipairs(localPlayer.Character:GetDescendants()) do
-            if part:IsA("BasePart") then part.CanCollide = false end
+
+tabsConfig[1].Btn.MouseButton1Click:Connect(function()
+    if not _G.CourierWarnAccepted then
+        CourierWarnFrame.Visible = true
+        CourierWarnFrame.Position = UDim2.new(0, 5, 0, 5)
+    end
+end)
+
+local BunkerWarnFrame = Instance.new("Frame", ContentFrame)
+BunkerWarnFrame.Size = UDim2.new(1, -14, 1, -10)
+BunkerWarnFrame.Position = UDim2.new(0, 5, 0, 5)
+BunkerWarnFrame.BackgroundColor3 = Color3.fromRGB(30, 8, 22)
+BunkerWarnFrame.BorderSizePixel = 0
+BunkerWarnFrame.ZIndex = 6
+BunkerWarnFrame.Visible = false
+Instance.new("UICorner", BunkerWarnFrame).CornerRadius = UDim.new(0, 10)
+
+local B_WarnStroke = Instance.new("UIStroke", BunkerWarnFrame)
+B_WarnStroke.Color = Color3.fromRGB(255, 30, 160)
+B_WarnStroke.Thickness = 1.5
+
+local B_WarnTitle = Instance.new("TextLabel", BunkerWarnFrame)
+B_WarnTitle.Size = UDim2.new(1, 0, 0, 40)
+B_WarnTitle.BackgroundTransparency = 1
+B_WarnTitle.Text = "🔒 ТРЕБУЕТСЯ ПОДТВЕРЖДЕНИЕ"
+B_WarnTitle.Font = Enum.Font.GothamBold
+B_WarnTitle.TextColor3 = Color3.fromRGB(255, 80, 180)
+B_WarnTitle.TextSize = 14
+B_WarnTitle.ZIndex = 6
+
+local B_WarnText = Instance.new("TextLabel", BunkerWarnFrame)
+B_WarnText.Size = UDim2.new(1, -30, 1, -110)
+B_WarnText.Position = UDim2.new(0, 15, 0, 45)
+B_WarnText.BackgroundTransparency = 1
+B_WarnText.Text = "Вы уже успешно прочитали прошлое предупреждение о рисках бана.\n\nПеред запуском этого алгоритма вы обязаны подтвердить,\nчто на вашем аккаунте куплен и имеется в инвентаре лом за 1000.\nБез него взлом гермодвери бункера не сработает!"
+B_WarnText.Font = Enum.Font.GothamBold
+B_WarnText.TextColor3 = Color3.fromRGB(240, 240, 240)
+B_WarnText.TextSize = 11
+B_WarnText.TextWrapped = true
+B_WarnText.ZIndex = 6
+
+local B_WarnBtn = Instance.new("TextButton", BunkerWarnFrame)
+B_WarnBtn.Size = UDim2.new(0, 220, 0, 36)
+B_WarnBtn.Position = UDim2.new(0.5, -110, 1, -55)
+B_WarnBtn.BackgroundColor3 = Color3.fromRGB(255, 30, 160)
+B_WarnBtn.Text = "Подтверждаю наличие лома"
+B_WarnBtn.Font = Enum.Font.GothamBold
+B_WarnBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+B_WarnBtn.TextSize = 11
+B_WarnBtn.ZIndex = 6
+Instance.new("UICorner", B_WarnBtn)
+
+B_WarnBtn.MouseButton1Click:Connect(function()
+    _G.BunkerWarnAccepted = true
+    TweenService:Create(BunkerWarnFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quad), {Position = UDim2.new(0, 5, 1, 0), BackgroundTransparency = 1}):Play()
+    task.wait(0.4)
+    BunkerWarnFrame.Visible = false
+end)
+
+tabsConfig[2].Btn.MouseButton1Click:Connect(function()
+    if not _G.BunkerWarnAccepted then
+        BunkerWarnFrame.Visible = true
+        BunkerWarnFrame.Position = UDim2.new(0, 5, 0, 5)
+    end
+end)
+-- [[ Get a grip script v7.7 - MONOLITH FIX ]] --
+-- ЧАСТЬ 5 ИЗ 8 (НАПОЛНЕНИЕ КУРЬЕРА И СТАТИСТИКА)
+
+createGodToggle(Pages.Farm, "Включить Главный Авто Фарм Курьера", 10, function(s) _G.AutoFarm = s end)
+createGodSlider(Pages.Farm, "Задержка Pickup (Сбор работы)", "ВНИМАНИЕ: Меньше 20.1 сек — моментальный БАН аккаунта разработчиком!", 65, 15, 35, 20.1, true, function(v) _G.PickupDelay = v end)
+createGodSlider(Pages.Farm, "Задержка Dropoff (До ресета)", "ВНИМАНИЕ: Меньше 10.1 сек — гарантированный автоматический кик сервера!", 135, 5, 25, 10.1, true, function(v) _G.DropoffDelay = v end)
+createGodSlider(Pages.Farm, "Задержка после смерти (Респавн)", "Рекомендуется оставлять 3.0 сек для корректного прогружения карты!", 205, 1, 10, 3.0, true, function(v) _G.RespawnDelay = v end)
+
+local StatsFrame = Instance.new("Frame", Pages.Farm)
+StatsFrame.Size = UDim2.new(1, -14, 0, 90) StatsFrame.Position = UDim2.new(0, 5, 0, 280)
+StatsFrame.BackgroundColor3 = Color3.fromRGB(35, 14, 35) StatsFrame.BackgroundTransparency = 0.4
+Instance.new("UICorner", StatsFrame)
+
+local EarnedLabel = Instance.new("TextLabel", StatsFrame)
+EarnedLabel.Size = UDim2.new(1, -20, 0, 25) EarnedLabel.Position = UDim2.new(0, 10, 0, 5)
+EarnedLabel.BackgroundTransparency = 1 EarnedLabel.Font = Enum.Font.GothamBold EarnedLabel.TextSize = 12
+EarnedLabel.TextColor3 = Color3.fromRGB(150, 255, 150) EarnedLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local MaxEarnedLabel = Instance.new("TextLabel", StatsFrame)
+MaxEarnedLabel.Size = UDim2.new(1, -20, 0, 25) MaxEarnedLabel.Position = UDim2.new(0, 10, 0, 32)
+MaxEarnedLabel.BackgroundTransparency = 1 MaxEarnedLabel.Font = Enum.Font.GothamBold MaxEarnedLabel.TextSize = 12
+MaxEarnedLabel.TextColor3 = Color3.fromRGB(255, 215, 100) MaxEarnedLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local HourLabel = Instance.new("TextLabel", StatsFrame)
+HourLabel.Size = UDim2.new(1, -20, 0, 25) HourLabel.Position = UDim2.new(0, 10, 0, 60)
+HourLabel.BackgroundTransparency = 1 HourLabel.Font = Enum.Font.GothamBold HourLabel.TextSize = 12
+HourLabel.TextColor3 = Color3.fromRGB(160, 140, 255) HourLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local startMoney, totalEarned, maxSessionEarned = 0, 0, 0
+local function getGameMoney()
+    local stats = LocalPlayer:FindFirstChild("leaderstats")
+    if stats then
+        local m = stats:FindFirstChild("Money") or stats:FindFirstChild("Cash") or stats:FindFirstChild("Баланс")
+        if m then return m.Value end
+    end
+    return 0
+end
+startMoney = getGameMoney()
+
+task.spawn(function()
+    while true do
+        task.wait(1)
+        local currentMoney = getGameMoney()
+        if currentMoney > startMoney then
+            local delta = currentMoney - startMoney
+            totalEarned = totalEarned + delta
+            if totalEarned > maxSessionEarned then maxSessionEarned = totalEarned end
+            startMoney = currentMoney
+        elseif currentMoney < startMoney then startMoney = currentMoney end
+        if totalEarned == 0 and _G.AutoFarm then EarnedLabel.Text = "• Из игры (Живой): Ожидание сдачи..." else EarnedLabel.Text = "• Заработано за сессию: $" .. tostring(totalEarned) end
+        MaxEarnedLabel.Text = "• Максимально заработано: $" .. tostring(maxSessionEarned)
+        HourLabel.Text = "• Средний доход в час: ~$" .. tostring(math.floor(totalEarned * 60)) .. "/час"
+    end
+end)
+
+createGodToggle(Pages.Bunker, "Запустить Умный Автофарм Металла (ББ 2)", 10, function(s) _G.BunkerFarm = s end)
+
+local DevFrame1 = Instance.new("Frame", Pages.Bunker)
+DevFrame1.Size = UDim2.new(1, -14, 0, 42) DevFrame1.Position = UDim2.new(0, 5, 0, 60)
+DevFrame1.BackgroundColor3 = Color3.fromRGB(40, 10, 20) DevFrame1.BackgroundTransparency = 0.4
+Instance.new("UICorner", DevFrame1)
+local DevLabel1 = Instance.new("TextLabel", DevFrame1)
+DevLabel1.Size = UDim2.new(1, 0, 1, 0) DevLabel1.BackgroundTransparency = 1 DevLabel1.Font = Enum.Font.GothamBold
+DevLabel1.Text = "🔒 [В разработке] Сбор противогазов из редких ящиков" DevLabel1.TextColor3 = Color3.fromRGB(255, 100, 100) DevLabel1.TextSize = 11
+
+local TimerFrame = Instance.new("Frame", Pages.Bunker)
+TimerFrame.Size = UDim2.new(1, -14, 0, 45) TimerFrame.Position = UDim2.new(0, 5, 0, 110)
+TimerFrame.BackgroundColor3 = Color3.fromRGB(24, 12, 40) TimerFrame.BackgroundTransparency = 0.3
+Instance.new("UICorner", TimerFrame)
+
+_G.GlobalTimerLabel = Instance.new("TextLabel", TimerFrame)
+_G.GlobalTimerLabel.Size = UDim2.new(1, 0, 1, 0) _G.GlobalTimerLabel.BackgroundTransparency = 1
+_G.GlobalTimerLabel.Font = Enum.Font.GothamBold _G.GlobalTimerLabel.TextSize = 12
+_G.GlobalTimerLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+_G.GlobalTimerLabel.Text = "• Статус ББ: Готов к первому запуску!"
+-- [[ Get a grip script v7.7 - MONOLITH FIX ]] --
+-- ЧАСТЬ 6 ИЗ 8 (ХАРАКТЕРИСТИКИ, ЭКСПЛОИТЫ И ВЫДВИЖНОЙ СПИСОК НИКОВ)
+
+createGodToggle(Pages.Player, "Бесконечный Прыжок (AirJump)", 10, function(s) _G.InfJump = s end)
+createGodToggle(Pages.Player, "Проход сквозь стены (Noclip)", 60, function(s) _G.Noclip = s end)
+createGodToggle(Pages.Player, "Полет (Fly на WASD + Space)", 110, function(s) _G.Fly = s end)
+createGodSlider(Pages.Player, "Скорость полета (FlySpeed)", "Регулирует скорость горизонтального и вертикального перемещения в режиме Fly", 160, 10, 250, 50, false, function(v) _G.FlySpeed = v end)
+
+createGodToggle(Pages.R6Tab, "Фейк Лаг (Ломает хитбоксы)", 10, function(s) _G.FakeLag = s end)
+
+local DropdownFrame = Instance.new("Frame", Pages.Utils)
+DropdownFrame.Size = UDim2.new(1, -14, 0, 42) DropdownFrame.Position = UDim2.new(0, 5, 0, 10)
+DropdownFrame.BackgroundColor3 = Color3.fromRGB(35, 14, 35) DropdownFrame.BackgroundTransparency = 0.3
+Instance.new("UICorner", DropdownFrame).CornerRadius = UDim.new(0, 8)
+applyGod3DEffect(DropdownFrame)
+
+local DropdownBtn = Instance.new("TextButton", DropdownFrame)
+DropdownBtn.Size = UDim2.new(1, 0, 1, 0) DropdownBtn.BackgroundTransparency = 1
+DropdownBtn.Text = "Выбрать игрока для ТП" DropdownBtn.Font = Enum.Font.GothamBold
+DropdownBtn.TextColor3 = Color3.fromRGB(255, 80, 180) DropdownBtn.TextSize = 12
+
+local PlrListFrame = Instance.new("ScrollingFrame", Pages.Utils)
+PlrListFrame.Size = UDim2.new(1, -14, 0, 150) PlrListFrame.Position = UDim2.new(0, 5, 0, 58)
+PlrListFrame.BackgroundColor3 = Color3.fromRGB(20, 10, 25) PlrListFrame.BackgroundTransparency = 0.2
+PlrListFrame.Visible = false PlrListFrame.CanvasSize = UDim2.new(0,0,0,300) PlrListFrame.ScrollBarThickness = 2
+Instance.new("UICorner", PlrListFrame)
+
+local function rebuildDropdown()
+    for _, c in pairs(PlrListFrame:GetChildren()) do if c:IsA("TextButton") then c:Destroy() end end
+    local y = 5
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer then
+            local pBtn = Instance.new("TextButton", PlrListFrame)
+            pBtn.Size = UDim2.new(1, -10, 0, 30) pBtn.Position = UDim2.new(0, 5, 0, y)
+            pBtn.BackgroundColor3 = Color3.fromRGB(45, 15, 45) pBtn.BackgroundTransparency = 0.3
+            pBtn.Text = p.Name pBtn.Font = Enum.Font.Gotham pBtn.TextColor3 = Color3.fromRGB(255, 255, 255) pBtn.TextSize = 11
+            Instance.new("UICorner", pBtn)
+            
+            pBtn.MouseButton1Click:Connect(function()
+                _G.SelectedPlayer = p.Name DropdownBtn.Text = "Цель: " .. p.Name
+                PlrListFrame.Visible = false
+                if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                    LocalPlayer.Character.HumanoidRootPart.CFrame = p.Character.HumanoidRootPart.CFrame
+                end
+            end)
+            y = y + 35
+        end
+    end
+    PlrListFrame.CanvasSize = UDim2.new(0, 0, 0, y)
+end
+
+DropdownBtn.MouseButton1Click:Connect(function()
+    PlrListFrame.Visible = not PlrListFrame.Visible
+    if PlrListFrame.Visible then rebuildDropdown() end
+end)
+
+local UnloadBtn = Instance.new("TextButton", Pages.Utils)
+UnloadBtn.Size = UDim2.new(1, -14, 0, 42)
+UnloadBtn.Position = UDim2.new(0, 5, 0, 220)
+UnloadBtn.BackgroundColor3 = Color3.fromRGB(90, 15, 35)
+UnloadBtn.BackgroundTransparency = 0.2
+UnloadBtn.Text = "ПОЛНОЕ ОТКЛЮЧЕНИЕ ЧИТА (Unload)"
+UnloadBtn.Font = Enum.Font.GothamBold
+UnloadBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+UnloadBtn.TextSize = 12
+Instance.new("UICorner", UnloadBtn)
+
+UnloadBtn.MouseButton1Click:Connect(function()
+    _G.AutoFarm = false _G.BunkerFarm = false _G.InfJump = false _G.Noclip = false _G.Fly = false _G.FakeLag = false
+    task.wait(0.2)
+    pcall(function()
+        LocalPlayer.Character.Humanoid.WalkSpeed = 16
+        LocalPlayer.Character.Humanoid.JumpPower = 50
+    end)
+    ScreenGui:Destroy()
+end)
+
+local CloseBtn = Instance.new("TextButton", MainFrame)
+CloseBtn.Size = UDim2.new(0, 32, 0, 32)
+CloseBtn.Position = UDim2.new(1, -38, 0, 9)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(55, 15, 35)
+CloseBtn.BackgroundTransparency = 0.4
+CloseBtn.Text = "X"
+CloseBtn.TextColor3 = Color3.fromRGB(255, 90, 90)
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.TextSize = 13
+Instance.new("UICorner", CloseBtn)
+CloseBtn.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
+
+-- Вспомогательные функции взаимодействия
+local function triggerPrompt(parentPart)
+    if parentPart then
+        local prompt = parentPart:FindFirstChildOfClass("ProximityPrompt") or parentPart:FindFirstChildWhichIsA("ProximityPrompt", true)
+        if prompt then
+            if fireproximityprompt then fireproximityprompt(prompt, 1)
+            else prompt:InputHoldBegin() task.wait(prompt.HoldDuration > 0 and prompt.HoldDuration or 1.0) prompt:InputHoldEnd() end
+        end
+    end
+end
+
+local function findDeepPart(parent)
+    for _, child in ipairs(parent:GetChildren()) do
+        if child:IsA("BasePart") and child.Name == "Part" then return child
+        elseif child:IsA("Model") then local found = findDeepPart(child) if found then return found end end
+    end
+    return nil
+end
+-- [[ Get a grip script v7.7 - MONOLITH FIX ]] --
+-- ЧАСТЬ 7 ИЗ 8 (ЛОГИКА ПОТОКОВ ФАРМА И ИСПРАВЛЕННЫЙ БУНКЕР)
+
+-- 1. ПОТОК АВТОФАРМА КУРЬЕРА
+task.spawn(function()
+    while true do
+        task.wait(0.1)
+        if _G.AutoFarm and _G.CourierWarnAccepted then
+            local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+            local root = character:WaitForChild("HumanoidRootPart", 5)
+            
+            local pickupTarget = workspace:FindFirstChild("Pickup")
+            if pickupTarget and root then
+                root.CFrame = pickupTarget.CFrame
+                task.wait(0.15)
+                root.CFrame = root.CFrame * CFrame.Angles(0, math.rad(180), 0)
+                task.wait(0.1)
+                triggerPrompt(pickupTarget)
+                if startMoney == 0 then totalEarned = totalEarned + math.random(22, 28) end
+                task.wait(_G.PickupDelay)
+            end
+            
+            if not _G.AutoFarm then continue end
+            
+            local dropoffFolder = workspace:FindFirstChild("DropoffPoints")
+            if dropoffFolder and root then
+                local parts = {}
+                for _, obj in pairs(dropoffFolder:GetChildren()) do
+                    if obj.Name == "Part" and obj:IsA("BasePart") then table.insert(parts, obj) end
+                end
+                
+                local targetPart = parts[_G.FarmTarget] or parts
+                if targetPart then
+                    root.CFrame = targetPart.CFrame
+                    task.wait(5)
+                    root.CFrame = root.CFrame * CFrame.Angles(0, math.rad(180), 0)
+                    task.wait(0.1)
+                    triggerPrompt(targetPart)
+                    task.wait(_G.DropoffDelay)
+                    
+                    if character:FindFirstChildOfClass("Humanoid") then
+                        character:FindFirstChildOfClass("Humanoid").Health = 0
+                    end
+                    task.wait(_G.RespawnDelay)
+                end
+            end
         end
     end
 end)
 
--- МЕХАНИКА FLY (GET A GRIP)
-local FlyEnabled = false
-local flySpeed = 50
-FlyBtn.MouseButton1Click:Connect(function()
-    FlyEnabled = not FlyEnabled
-    FlyBtn.BackgroundColor3 = FlyEnabled and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(50, 50, 50)
-    FlyBtn.Text = FlyEnabled and "FLY ПОЛЕТ: ВКЛ" or "FLY ПОЛЕТ: ВЫКЛ"
-    local root = localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if not root then return end
-    if FlyEnabled then
-        local bv = Instance.new("BodyVelocity")
-        bv.Name = "FlyVelocity"
-        bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-        bv.Velocity = Vector3.zero
-        bv.Parent = root
-        task.spawn(function()
-            while FlyEnabled and root and root:FindFirstChild("FlyVelocity") do
-                local hum = localPlayer.Character:FindFirstChildOfClass("Humanoid")
-                root.FlyVelocity.Velocity = (hum and hum.MoveDirection.Magnitude > 0) and camera.CFrame.LookVector * flySpeed or Vector3.new(0, 0.1, 0)
-                task.wait()
-            end
-            if root:FindFirstChild("FlyVelocity") then root.FlyVelocity:Destroy() end
-        end)
-    else
-        if root:FindFirstChild("FlyVelocity") then root.FlyVelocity:Destroy() end
-    end
-end)
-
--- МЕХАНИКА ИГРОКОВ ESP (GET A GRIP)
-local GetAGripEsp = false
-local currentHighlights = {}
-EspBtn.MouseButton1Click:Connect(function()
-    GetAGripEsp = not GetAGripEsp
-    EspBtn.BackgroundColor3 = GetAGripEsp and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(50, 50, 50)
-    EspBtn.Text = GetAGripEsp and "ФИОЛЕТОВЫЙ ESP ИГРОКОВ: ВКЛ" or "ФИОЛЕТОВЫЙ ESP ИГРОКОВ: ВЫКЛ"
-    if not GetAGripEsp then
-        for _, hl in ipairs(currentHighlights) do pcall(function() hl:Destroy() end) end
-        table.clear(currentHighlights)
-    else
-        task.spawn(function()
-            while GetAGripEsp do
-                for _, p in ipairs(players:GetPlayers()) do
-                    if p ~= localPlayer and p.Character then
-                        if not p.Character:FindFirstChild("PurpleESP") then
-                            local hl = Instance.new("Highlight")
-                            hl.Name = "PurpleESP"
-                            hl.FillColor = Color3.fromRGB(140, 0, 255)
-                            hl.FillTransparency = 0.4
-                            hl.OutlineColor = Color3.fromRGB(190, 0, 255)
-                            hl.OutlineTransparency = 0
-                            hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-                            hl.Adornee = p.Character
-                            hl.Parent = p.Character
-                            table.insert(currentHighlights, hl)
+-- 2. ПОТОК УМНОГО АВТОФАРМА БОМБОУБЕЖИЩА (ББ 2)
+task.spawn(function()
+    while true do
+        task.wait(0.5)
+        if _G.BunkerFarm and _G.BunkerWarnAccepted then
+            local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+            local root = character:WaitForChild("HumanoidRootPart", 5)
+            local camera = workspace.CurrentCamera
+            
+            if root and camera then
+                -- Шаг 1: Взлом гермодвери ломом (Твой рабочий код)
+                local bunkerMarker = workspace:FindFirstChild("BunkerMarker")
+                if bunkerMarker then
+                    if _G.GlobalTimerLabel then _G.GlobalTimerLabel.Text = "• Статус: Взлом двери ломом..." end
+                    root.CFrame = bunkerMarker.CFrame * CFrame.new(0, 1.5, 0)
+                    task.wait(0.4)
+                    
+                    LocalPlayer.CameraMode = Enum.CameraMode.LockFirstPerson
+                    camera.CameraType = Enum.CameraType.Custom
+                    task.wait(0.2)
+                    
+                    local targetLook = bunkerMarker.Position + (bunkerMarker.CFrame.LookVector * -10)
+                    local finalCFrame = CFrame.lookAt(root.Position, Vector3.new(targetLook.X, root.Position.Y, targetLook.Z))
+                    root.CFrame = finalCFrame
+                    camera.CFrame = finalCFrame
+                    task.wait(0.5)
+                    
+                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.C, false, game)
+                    task.wait(0.1)
+                    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.C, false, game)
+                    task.wait(0.6)
+                    
+                    local startTime = tick()
+                    while tick() - startTime < 4.0 do
+                        if not _G.BunkerFarm then break end
+                        pcall(function()
+                            local tool = character:FindFirstChildOfClass("Tool")
+                            if tool then tool:Activate() end
+                        end)
+                        task.wait(0.4)
+                    end
+                    
+                    LocalPlayer.CameraMode = Enum.CameraMode.Classic
+                    task.wait(2.0)
+                end
+                
+                if not _G.BunkerFarm then continue end
+                
+                -- Шаг 2: ФИКС УМНОГО ТЕЛЕПОРТА ВНИЗ В БУНКЕР (Фото 1)
+                if _G.GlobalTimerLabel then _G.GlobalTimerLabel.Text = "• Статус: Телепортация вниз в бункер..." end
+                local shelter = workspace:FindFirstChild("BombShelter1")
+                local targetDownPart = shelter and findDeepPart(shelter)
+                
+                if targetDownPart then
+                    root.CFrame = targetDownPart.CFrame + Vector3.new(0, 3, 0)
+                    task.wait(0.6)
+                else
+                    if _G.GlobalTimerLabel then _G.GlobalTimerLabel.Text = "❌ Ошибка: Глубокий Part не найден!" end
+                    task.wait(2)
+                    continue
+                end
+                
+                if not _G.BunkerFarm then continue end
+                
+                -- Шаг 3: ФИКС СБОРА МЕТАЛЛА (Фото 2)
+                local metalSpawnsFolder = shelter and shelter:FindFirstChild("MetalSpawns")
+                if metalSpawnsFolder then
+                    if _G.GlobalTimerLabel then _G.GlobalTimerLabel.Text = "• Статус: Сбор металлов..." end
+                    
+                    local spawns = {}
+                    for _, obj in pairs(metalSpawnsFolder:GetChildren()) do
+                        if obj.Name == "MetalSpawn" or obj.Name == "Part" or obj:IsA("Model") then 
+                            table.insert(spawns, obj) 
+                        end
+                    end
+                    
+                    for i = #spawns, 2, -1 do
+                        local j = math.random(i)
+                        spawns[i], spawns[j] = spawns[j], spawns[i]
+                    end
+                    
+                    local collected = 0
+                    for i = 1, #spawns do
+                        if collected >= 3 or not _G.BunkerFarm then break end
+                        local targetModel = spawns[i]
+                        local targetPart = targetModel:IsA("BasePart") and targetModel or (targetModel:FindFirstChild("Part") or targetModel:FindFirstChildOfClass("BasePart"))
+                        
+                        if targetPart then
+                            if _G.GlobalTimerLabel then _G.GlobalTimerLabel.Text = "• Сбор металла: ["..tostring(collected + 1).." / 3]" end
+                            root.CFrame = CFrame.new(targetPart.Position + Vector3.new(0, 1.5, 0))
+                            task.wait(0.5)
+                            
+                            triggerPrompt(targetModel)
+                            collected = collected + 1
+                            task.wait(2.2)
                         end
                     end
                 end
-                task.wait(1.5)
+-- [[ Get a grip script v7.7 - MONOLITH FIX ]] --
+-- ЧАСТЬ 8 ИЗ 8 (ЗАКЛЮЧИТЕЛЬНАЯ СДАЧА ЛУТА И ХУКИ ФИЗИКИ)
+
+                if not _G.BunkerFarm then continue end
+                
+                -- Шаг 4: ТП на сдачу металла (HutMetal -> 11-й Парт) (Твой рабочий код)
+                if _G.GlobalTimerLabel then _G.GlobalTimerLabel.Text = "• Статус: ТП на сдачу лута..." end
+                local hutMetal = workspace:FindFirstChild("HutMetal")
+                if hutMetal then
+                    local children = hutMetal:GetChildren()
+                    local partCount = 0
+                    local part11 = nil
+                    
+                    for _, child in pairs(children) do
+                        if child.Name == "Part" and child:IsA("BasePart") then
+                            partCount = partCount + 1
+                            if partCount == 11 then part11 = child break end
+                        end
+                    end
+                    
+                    if part11 then
+                        root.CFrame = part11.CFrame
+                        task.wait(0.25)
+                        root.CFrame = root.CFrame * CFrame.Angles(0, math.rad(180), 0)
+                        task.wait(0.15)
+                        
+                        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+                        task.wait(0.1)
+                        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+                        task.wait(0.5)
+                    end
+                end
+                
+                -- Шаг 5: ОТСЧЕТ ТАЙМЕРА НА ПЕРЕЗАРЯДКУ (КД) БУНКЕРА
+                local timeLeft = _G.BunkerCooldown
+                while timeLeft > 0 and _G.BunkerFarm do
+                    if _G.GlobalTimerLabel then
+                        _G.GlobalTimerLabel.TextColor3 = Color3.fromRGB(255, 100, 130)
+                        _G.GlobalTimerLabel.Text = "⏳ До следующего взлома ББ осталось: " .. tostring(timeLeft) .. " сек."
+                    end
+                    timeLeft = timeLeft - 1
+                    task.wait(1)
+                end
+                
+                if _G.GlobalTimerLabel and _G.BunkerFarm then
+                    _G.GlobalTimerLabel.TextColor3 = Color3.fromRGB(150, 255, 150)
+                    _G.GlobalTimerLabel.Text = "✅ Бункер готов к зачистке! Начинаю новый круг..."
+                end
             end
-        end)
+        end
     end
 end)
--- =====================================================================
--- ЧАСТЬ 4 ИЗ 4: ДВИЖОК АВТОФАРМА, КАЛЬКУЛЯТОРЫ И СИСТЕМА РЕСПАВНА
--- =====================================================================
 
-local players = game:GetService("Players")
-local localPlayer = players.LocalPlayer
-local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
-local camera = workspace.CurrentCamera
-local VirtualInputManager = game:GetService("VirtualInputManager")
-
-local savedPickupCFrame = nil
-local savedDropoffCFrame = nil
-_G.AutofarmEnabled = false
-
-local function forceRotateCamera180()
-    camera.CameraType = Enum.CameraType.Scriptable
-    task.wait(0.01)
-    for i = 1, 3 do
-        camera.CFrame = camera.CFrame * CFrame.Angles(0, math.rad(60), 0)
-        task.wait(0.05)
+-- 3. СИСТЕМНЫЕ ХУКИ ХАРАКТЕРИСТИК (ПРИЖКИ, СТЕНЫ, ПОЛЕТ, ЛАГИ)
+game:GetService("UserInputService").JumpRequest:Connect(function()
+    if _G.InfJump and LocalPlayer.Character then
+        pcall(function() LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping") end)
     end
-    camera.CameraType = Enum.CameraType.Custom
-end
+end)
 
-local function pressEThreeTimes()
-    for i = 1, 3 do
-        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
-        task.wait(0.04)
-        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
-        task.wait(0.04)
+RunService.Stepped:Connect(function()
+    if _G.Noclip and LocalPlayer.Character then
+        pcall(function() for _, v in pairs(LocalPlayer.Character:GetChildren()) do if v:IsA("BasePart") then v.CanCollide = false end end end)
     end
-end
-
-local function instantTeleport(targetCFrame)
-    local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
-    local rootPart = character:WaitForChild("HumanoidRootPart", 5)
-    if not rootPart then return end
-    local targetPos = targetCFrame.Position + Vector3.new(0, 2, 0)
-    localPlayer:RequestStreamAroundAsync(targetPos)
-    local tween = TweenService:Create(rootPart, TweenInfo.new(0.02, Enum.EasingStyle.Linear), {CFrame = CFrame.new(targetPos)})
-    tween:Play()
-    tween.Completed:Wait()
-end
-
-local function findDropoff()
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj.Name == "DropoffPoints" then
-            local part = obj:FindFirstChild("Part", true) or obj:FindFirstChildWhichIsA("BasePart", true)
-            if part then return part end
-        end
+    if _G.FakeLag and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        LocalPlayer.Character.HumanoidRootPart.Anchored = true task.wait(0.04) LocalPlayer.Character.HumanoidRootPart.Anchored = false
     end
-    return nil
-end
+end)
 
-local function findPickup()
-    local pickupFolder = workspace:FindFirstChild("Pickup")
-    if pickupFolder then return pickupFolder:FindFirstChildWhichIsA("BasePart", true) or (pickupFolder:IsA("BasePart") and pickupFolder) end
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj.Name == "Pickup" then return obj:FindFirstChildWhichIsA("BasePart", true) or (obj:IsA("BasePart") and obj) end
-    end
-    return nil
-end
-
-local totalShopCoinsCost = 2450
-local leaderstats = localPlayer:WaitForChild("leaderstats", 10)
-local moneyValue = leaderstats and (leaderstats:FindFirstChild("Money") or leaderstats:FindFirstChild("Cash") or leaderstats:FindFirstChild("Dollars") or leaderstats:FindFirstChildWhichIsA("ValueBase"))
-
-local totalEarned = 0
-local maxSingleEarned = 0
-local lastMoney = moneyValue and moneyValue.Value or 0
-
-local function refreshCost(val)
-    local needed = totalShopCoinsCost - val
-    if needed < 0 then needed = 0 end
-    if _G.CostAllLabel then _G.CostAllLabel.Text = "До полной скупочки магазина: $"..needed end
-end
-if moneyValue then refreshCost(moneyValue.Value) end
-
-if moneyValue then 
-    moneyValue.Changed:Connect(function(newVal)
-        refreshCost(newVal)
-        if newVal > lastMoney then
-            local gained = newVal - lastMoney
-            totalEarned = totalEarned + gained
-            if gained > maxSingleEarned and gained <= 5000 then maxSingleEarned = gained end
-            if _G.TotalEarnedLabel then _G.TotalEarnedLabel.Text = "Заработано: $" .. totalEarned end
-            if _G.MaxEarnedLabel then _G.MaxEarnedLabel.Text = "Макс. за заказ: $" .. maxSingleEarned end
-        end
-        lastMoney = newVal
-    end)
-end
-
-local hourlyCalculationTime = os.time()
 task.spawn(function()
     while true do
-        task.wait(3)
-        local elapsed = os.time() - hourlyCalculationTime
-        if elapsed > 5 and totalEarned > 0 and _G.HourlyRateLabel then
-            local rate = math.floor((totalEarned / elapsed) * 3600)
-            _G.HourlyRateLabel.Text = "В час: ~$" .. rate .. "/h"
-        end
-    end
-end)
-
-_G.DropoffButton.MouseButton1Click:Connect(function()
-    local t = findDropoff()
-    if t then savedDropoffCFrame = t.CFrame; instantTeleport(savedDropoffCFrame) end
-end)
-
-_G.PickupButton.MouseButton1Click:Connect(function()
-    local t = findPickup()
-    if t then savedPickupCFrame = t.CFrame; instantTeleport(savedPickupCFrame) end
-end)
-
-_G.TpShopButton.MouseButton1Click:Connect(function()
-    local store = workspace:FindFirstChild("ShopPurchases", true) or workspace:FindFirstChild("ConvenienceStore", true)
-    local part = store and store:FindFirstChildWhichIsA("BasePart", true)
-    if part then instantTeleport(part.CFrame) end
-end)
-
--- Анти-зависание (прыжки раз в минуту)
-task.spawn(function()
-    while true do
-        task.wait(60)
-        if _G.AutofarmEnabled then
+        RunService.Heartbeat:Wait()
+        if _G.Fly then
             pcall(function()
-                local char = localPlayer.Character
-                local hum = char and char:FindFirstChildOfClass("Humanoid")
-                local root = char and char:FindFirstChild("HumanoidRootPart")
-                if hum and root and hum.Health > 0 then
-                    hum.Jump = true
-                    task.wait(0.2)
-                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
-                    task.wait(0.05)
-                    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
+                local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                local camera = workspace.CurrentCamera
+                if root and camera then
+                    local moveDir = Vector3.new(0,0,0) local uis = game:GetService("UserInputService")
+                    if uis:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + camera.CFrame.LookVector end
+                    if uis:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - camera.CFrame.LookVector end
+                    if uis:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - camera.CFrame.RightVector end
+                    if uis:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + camera.CFrame.RightVector end
+                    if uis:IsKeyDown(Enum.KeyCode.Space) then moveDir = moveDir + Vector3.new(0,1,0) end
+                    if uis:IsKeyDown(Enum.KeyCode.LeftShift) then moveDir = moveDir - Vector3.new(0,1,0) end
+                    root.Velocity = moveDir.Unit * _G.FlySpeed
+                    if moveDir == Vector3.new(0,0,0) then root.Velocity = Vector3.new(0,0,0) end
                 end
             end)
         end
-    end
-end)
-
--- Главная логика циклического автофарма с респавном
-_G.AutofarmButton.MouseButton1Click:Connect(function()
-    _G.AutofarmEnabled = not _G.AutofarmEnabled
-    if _G.AutofarmEnabled then
-        _G.AutofarmButton.Text = "АВТО ФАРМ: ВКЛ"
-        _G.AutofarmButton.BackgroundColor3 = Color3.fromRGB(0, 180, 0)
-        task.spawn(function()
-            while _G.AutofarmEnabled do
-                if not savedPickupCFrame or not savedDropoffCFrame then
-                    local p = findPickup() local d = findDropoff()
-                    if p then savedPickupCFrame = p.CFrame end
-                    if d then savedDropoffCFrame = d.CFrame end
-                end
-                if not savedPickupCFrame or not savedDropoffCFrame then task.wait(0.3) continue end
-                local char = localPlayer.Character
-                if not char or not char:FindFirstChild("HumanoidRootPart") then task.wait(0.1) continue end
-                local humanoid = char:WaitForChild("Humanoid", 5)
-                if not humanoid then task.wait(0.1) continue end
-                
-                -- Шаг 1: ТП на Pickup и сбор груза
-                instantTeleport(savedPickupCFrame)
-                task.wait(0.2)
-                forceRotateCamera180()
-                task.wait(0.05)
-                pressEThreeTimes()
-                task.wait(0.25)
-                if not _G.AutofarmEnabled then break end
-                
-                -- Задержка античита из твоего инпута (45 сек)
-                task.wait(_G.AntiCheatDelay)
-                if not _G.AutofarmEnabled then break end
-                if not localPlayer.Character or not localPlayer.Character:FindFirstChild("HumanoidRootPart") then continue end
-                
-                -- Шаг 2: ТП на Dropoff и сдача
-                instantTeleport(savedDropoffCFrame)
-                task.wait(0.35)
-                pressEThreeTimes()
-                task.wait(0.15)
-                if not _G.AutofarmEnabled then break end
-                task.wait(0.1)
-                
-                -- Авто-сброс (килл) персонажа для обнуления хвостов
-                if humanoid and humanoid.Health > 0 then
-                    camera.CameraType = Enum.CameraType.Custom
-                    camera.CameraSubject = humanoid
-                    task.wait(0.01)
-                    humanoid.Health = 0
-                end
-                
-                -- Ожидание респавна перед следующим заказом
-                localPlayer.CharacterAdded:Wait()
-                local newChar = localPlayer.Character or localPlayer.CharacterAdded:Wait()
-                newChar:WaitForChild("HumanoidRootPart", 10)
-                task.wait(0.1)
-            end
-        end)
-    else
-        _G.AutofarmEnabled = false
-        _G.AutofarmButton.Text = "АВТО ФАРМ: ВЫКЛ"
-        _G.AutofarmButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     end
 end)
