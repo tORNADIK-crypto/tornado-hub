@@ -564,34 +564,73 @@ task.spawn(function()
         if _G.AutoFarm and _G.CourierWarnAccepted then
             local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
             local root = character:WaitForChild("HumanoidRootPart", 5)
+            local camera = workspace.CurrentCamera
             
+            -- ПИКАП: Первое лицо + взгляд вниз + удержание E
             local pickupTarget = workspace:FindFirstChild("Pickup")
-            if pickupTarget and root then
-                root.CFrame = pickupTarget.CFrame
-                task.wait(0.15)
-                root.CFrame = root.CFrame * CFrame.Angles(0, math.rad(180), 0)
+            if pickupTarget and root and camera then
+                -- Становимся чуть выше пикапа, чтобы смотреть на него сверху вниз
+                root.CFrame = pickupTarget.CFrame * CFrame.new(0, 1.5, 0)
+                task.wait(0.3)
+                
+                -- Включаем первое лицо
+                LocalPlayer.CameraMode = Enum.CameraMode.LockFirstPerson
+                camera.CameraType = Enum.CameraType.Custom
                 task.wait(0.1)
-                triggerPrompt(pickupTarget)
+                
+                -- Направляем камеру строго вниз на точку взятия работы
+                local targetLook = pickupTarget.Position
+                local finalCFrame = CFrame.lookAt(camera.CFrame.Position, targetLook - Vector3.new(0, 2, 0))
+                camera.CFrame = finalCFrame
+                task.wait(0.2)
+                
+                -- Зажимаем E на 1.2 секунды для взятия работы
+                VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+                task.wait(1.2)
+                VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+                
+                -- Возвращаем обычную камеру назад
+                LocalPlayer.CameraMode = Enum.CameraMode.Classic
+                
                 if startMoney == 0 then totalEarned = totalEarned + math.random(22, 28) end
                 task.wait(_G.PickupDelay)
             end
             
             if not _G.AutoFarm then continue end
             
+            -- ДРОПОФФ: Первое лицо + взгляд вниз + удержание E
             local dropoffFolder = workspace:FindFirstChild("DropoffPoints")
-            if dropoffFolder and root then
+            if dropoffFolder and root and camera then
                 local parts = {}
                 for _, obj in pairs(dropoffFolder:GetChildren()) do
                     if obj.Name == "Part" and obj:IsA("BasePart") then table.insert(parts, obj) end
                 end
                 
-                local targetPart = parts[_G.FarmTarget] or parts
+                -- Жесткая фиксация на ПЕРВОМ парте
+                local targetPart = parts[1]
                 if targetPart then
-                    root.CFrame = targetPart.CFrame
-                    task.wait(5)
-                    root.CFrame = root.CFrame * CFrame.Angles(0, math.rad(180), 0)
+                    -- Становимся чуть выше парта
+                    root.CFrame = targetPart.CFrame * CFrame.new(0, 1.5, 0)
+                    task.wait(0.3)
+                    
+                    -- Включаем первое лицо
+                    LocalPlayer.CameraMode = Enum.CameraMode.LockFirstPerson
+                    camera.CameraType = Enum.CameraType.Custom
                     task.wait(0.1)
-                    triggerPrompt(targetPart)
+                    
+                    -- Направляем камеру строго вниз на парт сдачи посылки
+                    local targetLook = targetPart.Position
+                    local finalCFrame = CFrame.lookAt(camera.CFrame.Position, targetLook - Vector3.new(0, 2, 0))
+                    camera.CFrame = finalCFrame
+                    task.wait(0.2)
+                    
+                    -- Зажимаем E на 1.2 секунды
+                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+                    task.wait(1.2)
+                    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+                    
+                    -- Возвращаем обычную камеру назад
+                    LocalPlayer.CameraMode = Enum.CameraMode.Classic
                     task.wait(_G.DropoffDelay)
                     
                     if character:FindFirstChildOfClass("Humanoid") then
@@ -696,13 +735,12 @@ task.spawn(function()
                             root.CFrame = CFrame.new(targetPart.Position + Vector3.new(0, 1.5, 0))
                             task.wait(0.5)
                             
-                            -- Эмуляция зажатия клавиши E на 1 секунду
                             VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
                             task.wait(1.0)
                             VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
                             
                             collected = collected + 1
-                            task.wait(1.5) -- Задержка между сбором предметов
+                            task.wait(1.5)
                         end
                     end
                 end
@@ -718,43 +756,39 @@ task.spawn(function()
                     local part11 = nil
                     
                     for _, child in pairs(children) do
-                        if child.Name == "Part" and child:IsA("BasePart") then
-                            partCount = partCount + 1
-                            if partCount == 11 then part11 = child break end
-                        end
-                    end
-                    
-                    if part11 then
-                        root.CFrame = part11.CFrame
-                        task.wait(0.25)
-                        root.CFrame = root.CFrame * CFrame.Angles(0, math.rad(180), 0)
-                        task.wait(0.15)
-                        
-                        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
-                        task.wait(0.1)
-                        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
-                        task.wait(0.5)
-                    end
-                end
-                
-                -- Шаг 5: ОТСЧЕТ ТАЙМЕРА НА ПЕРЕЗАРЯДКУ (КД) БУНКЕРА
-                local timeLeft = _G.BunkerCooldown
-                while timeLeft > 0 and _G.BunkerFarm do
-                    if _G.GlobalTimerLabel then
-                        _G.GlobalTimerLabel.TextColor3 = Color3.fromRGB(255, 100, 130)
-                        _G.GlobalTimerLabel.Text = "⏳ До следующего взлома ББ осталось: " .. tostring(timeLeft) .. " сек."
-                    end
-                    timeLeft = timeLeft - 1
-                    task.wait(1)
-                end
-                
-                if _G.GlobalTimerLabel and _G.BunkerFarm then
-                    _G.GlobalTimerLabel.TextColor3 = Color3.fromRGB(150, 255, 150)
-                    _G.GlobalTimerLabel.Text = "✅ Бункер готов к зачистке! Начинаю новый круг..."
-                end
-            end
-        end
-    end
+if child.Name == "Part" and child:IsA("BasePart") then
+partCount = partCount + 1
+if partCount == 11 then part11 = child break end
+end
+end
+if part11 then
+root.CFrame = part11.CFrame
+task.wait(0.25)
+root.CFrame = root.CFrame * CFrame.Angles(0, math.rad(180), 0)
+task.wait(0.15)
+VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+task.wait(0.1)
+VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+task.wait(0.5)
+end
+end
+-- Шаг 5: ОТСЧЕТ ТАЙМЕРА НА ПЕРЕЗАРЯДКУ (КД) БУНКЕРА
+local timeLeft = _G.BunkerCooldown
+while timeLeft > 0 and _G.BunkerFarm do
+if _G.GlobalTimerLabel then
+_G.GlobalTimerLabel.TextColor3 = Color3.fromRGB(255, 100, 130)
+_G.GlobalTimerLabel.Text = "⏳ До следующего взлома ББ осталось: " .. tostring(timeLeft) .. " сек."
+end
+timeLeft = timeLeft - 1
+task.wait(1)
+end
+if _G.GlobalTimerLabel and _G.BunkerFarm then
+_G.GlobalTimerLabel.TextColor3 = Color3.fromRGB(150, 255, 150)
+_G.GlobalTimerLabel.Text = "✅ Бункер готов к зачистке! Начинаю новый круг..."
+end
+end
+end
+end
 end)
 -- [[ Get a grip script v7.7 - MONOLITH FIX ]] --
 -- ЧАСТЬ 8 ИЗ 8 (ЗАКЛЮЧИТЕЛЬНАЯ СДАЧА ЛУТА, ХУКИ ФИЗИКИ И БИНДЫ)
