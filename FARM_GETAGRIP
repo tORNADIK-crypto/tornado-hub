@@ -49,7 +49,31 @@ MainFrame.Position = UDim2.new(0.5, -370, 0.5, -260)
 MainFrame.BackgroundColor3 = Color3.fromRGB(24, 10, 24)
 MainFrame.BackgroundTransparency = 0.18
 MainFrame.BorderSizePixel = 0
-MainFrame.Active = true MainFrame.Draggable = true
+MainFrame.Active = true
+
+-- Реализация перетаскивания вместо устаревшего Draggable
+local dragging, dragInput, dragStart, startPos
+MainFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then dragging = false end
+        end)
+    end
+end)
+MainFrame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+game:GetService("UserInputService").InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - dragStart
+        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
 
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 16)
 
@@ -144,7 +168,6 @@ for _, t in pairs(tabsConfig) do
         t.Btn.BackgroundTransparency = 0 t.Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     end)
 end
-
 -- [[ Get a grip script v7.7 - MONOLITH FIX ]] --
 -- ЧАСТЬ 3 ИЗ 8 (ИНСТРУМЕНТЫ УПРАВЛЕНИЯ UI)
 
@@ -591,7 +614,7 @@ task.spawn(function()
             local camera = workspace.CurrentCamera
             
             if root and camera then
-                -- Шаг 1: Взлом гермодвери ломом (Твой рабочий код)
+                -- Шаг 1: Взлом гермодвери ломом
                 local bunkerMarker = workspace:FindFirstChild("BunkerMarker")
                 if bunkerMarker then
                     if _G.GlobalTimerLabel then _G.GlobalTimerLabel.Text = "• Статус: Взлом двери ломом..." end
@@ -629,7 +652,7 @@ task.spawn(function()
                 
                 if not _G.BunkerFarm then continue end
                 
-                -- Шаг 2: ФИКС УМНОГО ТЕЛЕПОРТА ВНИЗ В БУНКЕР (Фото 1)
+                -- Шаг 2: ФИКС УМНОГО ТЕЛЕПОРТА ВНИЗ В БУНКЕР
                 if _G.GlobalTimerLabel then _G.GlobalTimerLabel.Text = "• Статус: Телепортация вниз в бункер..." end
                 local shelter = workspace:FindFirstChild("BombShelter1")
                 local targetDownPart = shelter and findDeepPart(shelter)
@@ -645,7 +668,7 @@ task.spawn(function()
                 
                 if not _G.BunkerFarm then continue end
                 
-                -- Шаг 3: ФИКС СБОРА МЕТАЛЛА (Фото 2)
+                -- Шаг 3: ФИКС СБОРА МЕТАЛЛА (УДЕРЖАНИЕ КЛАВИШИ E НА 1 СЕКУНДУ И ЗАДЕРЖКА)
                 local metalSpawnsFolder = shelter and shelter:FindFirstChild("MetalSpawns")
                 if metalSpawnsFolder then
                     if _G.GlobalTimerLabel then _G.GlobalTimerLabel.Text = "• Статус: Сбор металлов..." end
@@ -673,18 +696,20 @@ task.spawn(function()
                             root.CFrame = CFrame.new(targetPart.Position + Vector3.new(0, 1.5, 0))
                             task.wait(0.5)
                             
-                            triggerPrompt(targetModel)
+                            -- Эмуляция зажатия клавиши E на 1 секунду
+                            VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+                            task.wait(1.0)
+                            VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+                            
                             collected = collected + 1
-                            task.wait(2.2)
+                            task.wait(1.5) -- Задержка между сбором предметов
                         end
                     end
                 end
--- [[ Get a grip script v7.7 - MONOLITH FIX ]] --
--- ЧАСТЬ 8 ИЗ 8 (ЗАКЛЮЧИТЕЛЬНАЯ СДАЧА ЛУТА И ХУКИ ФИЗИКИ)
 
                 if not _G.BunkerFarm then continue end
                 
-                -- Шаг 4: ТП на сдачу металла (HutMetal -> 11-й Парт) (Твой рабочий код)
+                -- Шаг 4: ТП на сдачу металла (HutMetal -> 11-й Парт)
                 if _G.GlobalTimerLabel then _G.GlobalTimerLabel.Text = "• Статус: ТП на сдачу лута..." end
                 local hutMetal = workspace:FindFirstChild("HutMetal")
                 if hutMetal then
@@ -731,6 +756,8 @@ task.spawn(function()
         end
     end
 end)
+-- [[ Get a grip script v7.7 - MONOLITH FIX ]] --
+-- ЧАСТЬ 8 ИЗ 8 (ЗАКЛЮЧИТЕЛЬНАЯ СДАЧА ЛУТА, ХУКИ ФИЗИКИ И БИНДЫ)
 
 -- 3. СИСТЕМНЫЕ ХУКИ ХАРАКТЕРИСТИК (ПРИЖКИ, СТЕНЫ, ПОЛЕТ, ЛАГИ)
 game:GetService("UserInputService").JumpRequest:Connect(function()
@@ -768,5 +795,12 @@ task.spawn(function()
                 end
             end)
         end
+    end
+end)
+
+-- ХУК ДЛЯ СКРЫТИЯ ИНТЕРФЕЙСА НА КЛАВИШУ INSERT
+game:GetService("UserInputService").InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.Insert and MainFrame then
+        MainFrame.Visible = not MainFrame.Visible
     end
 end)
