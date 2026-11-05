@@ -223,12 +223,12 @@ local function registerHubTab(name, titleText, descText, scriptUrl)
 end
 
 -- РЕГИСТРАЦИЯ ИГРОВЫХ ВКЛАДОК (1 - 5)
-registerHubTab("GET A GRIP", "GET A GRIP (АВТОФАРМ)", "Лицензионный оригинальный скрипт от CHO_NAX4.\nВнутренние системы оптимизированы, баги отрисовки и обходы исправлены.\nНажмите кнопку ниже для инжекта во внутреннюю память сессии.", "https://githubusercontent.com")
+registerHubTab("GET A GRIP", "GET A GRIP (АВТОФАРМ)", "Лицензионный оригинальный скрипт от CHO_NAX4.\nВнутренние системы оптимизированы, баги отрисовки и обходы исправлены.\nНажмите кнопку ниже для инжекта во внутреннюю память сессии.", "https://raw.githubusercontent.com/tORNADIK-crypto/tornado-hub/refs/heads/main/FARM_GETAGRIP")
 
-registerHubTab("BROOKHAVEN", "BROOKHAVEN (CANDY COLLECTOR)", "Лицензионный оригинальный скрипт от CHO_NAX4.\nВнутренние системы оптимизированы, баги отрисовки и обходы исправлены.\nНажмите кнопку ниже для инжекта во внутреннюю память сессии.", "https://githubusercontent.com")
+registerHubTab("BROOKHAVEN", "BROOKHAVEN (CANDY COLLECTOR)", "Лицензионный оригинальный скрипт от CHO_NAX4.\nВнутренние системы оптимизированы, баги отрисовки и обходы исправлены.\nНажмите кнопку ниже для инжекта во внутреннюю память сессии.", "https://raw.githubusercontent.com/tORNADIK-crypto/tornado-hub/refs/heads/main/candy%20brookhaven")
 
-registerHubTab("STICKERS! KONTRAA", "STICKERS! KONTRAA (SMART ESP)", "Лицензионный оригинальный скрипт от CHO_NAX4.\nВнутренние системы оптимизированы, баги отрисовки и обходы исправлены.\nНажмите кнопку ниже для инжекта во внутреннюю память сессии.", "githubusercontent.com")
-registerHubTab("FPV DRONE BATTLEFIELD", "FPV DRONE BATTLEFIELD (TWKS AIM/ESP)", "Лицензионный оригинальный скрипт от CHO_NAX4.\nВнутренние системы оптимизированы, баги отрисовки и обходы исправлены.\nНажмите кнопку ниже для инжекта во внутреннюю память сессии.", "githubusercontent.com")
+registerHubTab("STICKERS! KONTRAA", "STICKERS! KONTRAA (SMART ESP)", "Лицензионный оригинальный скрипт от CHO_NAX4.\nВнутренние системы оптимизированы, баги отрисовки и обходы исправлены.\nНажмите кнопку ниже для инжекта во внутреннюю память сессии.", "https://raw.githubusercontent.com/tORNADIK-crypto/tornado-hub/refs/heads/main/spooky%20kontra")
+registerHubTab("FPV DRONE BATTLEFIELD", "FPV DRONE BATTLEFIELD (TWKS AIM/ESP)", "Лицензионный оригинальный скрипт от CHO_NAX4.\nВнутренние системы оптимизированы, баги отрисовки и обходы исправлены.\nНажмите кнопку ниже для инжекта во внутреннюю память сессии.", "https://raw.githubusercontent.com/tORNADIK-crypto/tornado-hub/refs/heads/main/FPV%20DRONE%20BATTLEFIELD.lua")
 registerHubTab("RAILSIDE", "RAILSIDE SCRIPT (PREMIUM HUB)", "Скрипт содержит ЕСП игроков (Транспортная Безопасность, Анти-присяд, Граждане), ЕСП полезных предметов (Аптечки АИ-2, Противогазы ГП-5).\n\n⚠️ ВНИМАНИЕ: Функции персонажа (Спидхак, Ноклип и Инф. Прыжок) вызывают частые автоматические баны! Используйте их максимально аккуратно и на свой страх и риск.", "https://raw.githubusercontent.com/tORNADIK-crypto/tornado-hub/refs/heads/main/railside")
 -- ВКЛАДКА 6: О РАЗРАБОТЧИКЕ (БЕЗОПАСНОСТЬ)
 local AboutPage = Instance.new("Frame", ContentWindow)
