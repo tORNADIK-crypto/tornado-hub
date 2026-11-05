@@ -1,0 +1,319 @@
+-- =====================================================================
+-- 🌪️ TORNADO NEXT-GEN MULTI-HUB v5 (NEO-PREMIUM EDITION)
+-- 🔒 РАЗРАБОТЧИК: CHO_NAX4 | 📱 TIKTOK: 6TORNADIKS7
+-- =====================================================================
+
+local CoreGui = game:GetService("CoreGui")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+
+-- Тотальная очистка старого интерфейса и конфликтующих оверлеев
+local guisToDestroy = {"GameChooserHub", "DoubleTpHub", "CandyCollectorGui", "Kontra_Standalone_ESP_System", "CandyESP", "TwksEspMenu", "RailsideScriptMenu"}
+for _, guiName in ipairs(guisToDestroy) do
+    local oldGui = CoreGui:FindFirstChild(guiName)
+    if oldGui then pcall(function() oldGui:Destroy() end) end
+end
+for _, oldGui in ipairs(CoreGui:GetChildren()) do
+    if oldGui.Name:match("^DoubleTpMenu") then pcall(function() oldGui:Destroy() end) end
+end
+task.wait(0.05)
+
+-- ИНИЦИАЛИЗАЦИЯ НЕО-ИНТЕРФЕЙСА
+local ModernHubGui = Instance.new("ScreenGui")
+ModernHubGui.Name = "GameChooserHub"
+ModernHubGui.Parent = CoreGui
+ModernHubGui.ResetOnSpawn = false
+
+-- ГЛАВНЫЙ КОНТЕЙНЕР (Студийный тёмный Неон)
+local MainContainer = Instance.new("Frame")
+MainContainer.Name = "MainContainer"
+MainContainer.Size = UDim2.new(0, 680, 0, 420)
+MainContainer.Position = UDim2.new(0.5, -340, 0.5, -210)
+MainContainer.BackgroundColor3 = Color3.fromRGB(13, 13, 18)
+MainContainer.Active = true
+MainContainer.Parent = ModernHubGui
+
+local CornerRadius = Instance.new("UICorner", MainContainer)
+CornerRadius.CornerRadius = UDim.new(0, 14)
+
+local GlowStroke = Instance.new("UIStroke", MainContainer)
+GlowStroke.Thickness = 2
+GlowStroke.Color = Color3.fromRGB(157, 0, 255)
+
+-- Реализация плавного перетаскивания (Драггинг без багов)
+local dragging, dragInput, dragStart, startPos
+MainContainer.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainContainer.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then dragging = false end
+        end)
+    end
+end)
+MainContainer.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - dragStart
+        MainContainer.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+-- БОКОВАЯ НАВИГАЦИОННАЯ ПАНЕЛЬ (TAB PANEL)
+local NavigationBar = Instance.new("Frame", MainContainer)
+NavigationBar.Name = "NavigationBar"
+NavigationBar.Size = UDim2.new(0, 210, 1, 0)
+NavigationBar.BackgroundColor3 = Color3.fromRGB(9, 9, 12)
+Instance.new("UICorner", NavigationBar).CornerRadius = UDim.new(0, 14)
+
+local NavLine = Instance.new("Frame", NavigationBar)
+NavLine.Size = UDim2.new(0, 2, 1, -40)
+NavLine.Position = UDim2.new(1, -2, 0, 20)
+NavLine.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+NavLine.BorderSizePixel = 0
+
+-- ЛОГОТИП И БРЕНДИНГ
+local LogoLabel = Instance.new("TextLabel", NavigationBar)
+LogoLabel.Size = UDim2.new(1, 0, 0, 45)
+LogoLabel.Position = UDim2.new(0, 0, 0, 15)
+LogoLabel.BackgroundTransparency = 1
+LogoLabel.Text = " 🌪️ TORNADO HUB v5"
+LogoLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+LogoLabel.Font = Enum.Font.GothamBold
+LogoLabel.TextSize = 18
+LogoLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+-- ОСНОВНОЙ КОНТЕНТ-ФРЕЙМ
+local ContentWindow = Instance.new("Frame", MainContainer)
+ContentWindow.Name = "ContentWindow"
+ContentWindow.Size = UDim2.new(1, -230, 1, -30)
+ContentWindow.Position = UDim2.new(0, 220, 0, 15)
+ContentWindow.BackgroundTransparency = 1
+
+local Pages = {}
+local Buttons = {}
+local activePage = nil
+
+-- ФУНКЦИЯ ДЛЯ СУПЕР-КРАСИВЫХ АНИМАЦИЙ КНОПОК
+local function applyNeonEffects(btn, isTabBtn)
+    local stroke = Instance.new("UIStroke", btn)
+    stroke.Thickness = 1.2
+    stroke.Color = isTabBtn and Color3.fromRGB(35, 35, 45) or Color3.fromRGB(157, 0, 255)
+    
+    local defaultColor = btn.BackgroundColor3
+    local hoverColor = isTabBtn and Color3.fromRGB(24, 24, 32) or Color3.fromRGB(180, 30, 255)
+    local pressColor = isTabBtn and Color3.fromRGB(32, 32, 45) or Color3.fromRGB(130, 0, 220)
+    
+    btn.MouseEnter:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.25, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {
+            BackgroundColor3 = hoverColor,
+            Size = btn.Size + UDim2.fromOffset(4, 0)
+        }):Play()
+        if isTabBtn then
+            TweenService:Create(stroke, TweenInfo.new(0.2), {Color = Color3.fromRGB(157, 0, 255)}):Play()
+        end
+    end)
+    
+    btn.MouseLeave:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            BackgroundColor3 = btn:GetAttribute("Active") and Color3.fromRGB(157, 0, 255) or defaultColor,
+            Size = btn.Size - UDim2.fromOffset(4, 0)
+        }):Play()
+        if isTabBtn and not btn:GetAttribute("Active") then
+            TweenService:Create(stroke, TweenInfo.new(0.2), {Color = Color3.fromRGB(35, 35, 45)}):Play()
+        end
+    end)
+    
+    btn.MouseButton1Down:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.1), {BackgroundColor3 = pressColor}):Play()
+    end)
+end
+
+-- КОНСТРУКТОР ВКЛАДОК ДЛЯ ИГР
+local function registerHubTab(name, titleText, descText, scriptUrl)
+    -- Окно страницы
+    local newPage = Instance.new("Frame", ContentWindow)
+    newPage.Size = UDim2.new(1, 0, 1, 0)
+    newPage.BackgroundTransparency = 1
+    newPage.Visible = false
+    Pages[name] = newPage
+    
+    -- Заголовок игры на странице
+    local pageTitle = Instance.new("TextLabel", newPage)
+    pageTitle.Size = UDim2.new(1, 0, 0, 40)
+    pageTitle.BackgroundTransparency = 1
+    pageTitle.Text = titleText
+    pageTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    pageTitle.Font = Enum.Font.GothamBold
+    pageTitle.TextSize = 22
+    pageTitle.TextXAlignment = Enum.TextXAlignment.Left
+    
+    -- Описание
+    local pageDesc = Instance.new("TextLabel", newPage)
+    pageDesc.Size = UDim2.new(1, 0, 0, 80)
+    pageDesc.Position = UDim2.new(0, 0, 0, 45)
+    pageDesc.BackgroundTransparency = 1
+    pageDesc.Text = descText
+    pageDesc.TextColor3 = Color3.fromRGB(150, 150, 160)
+    pageDesc.Font = Enum.Font.Gotham
+    pageDesc.TextSize = 13
+    pageDesc.TextWrapped = true
+    pageDesc.TextXAlignment = Enum.TextXAlignment.Left
+    
+    -- Огромная неоновая кнопка запуска
+    local runBtn = Instance.new("TextButton", newPage)
+    runBtn.Size = UDim2.new(0, 300, 0, 48)
+    runBtn.Position = UDim2.new(0, 0, 0, 150)
+    runBtn.BackgroundColor3 = Color3.fromRGB(157, 0, 255)
+    runBtn.Text = "🔥 ЗАПУСТИТЬ ХАБ ИГРЫ"
+    runBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    runBtn.Font = Enum.Font.GothamBold
+    runBtn.TextSize = 14
+    Instance.new("UICorner", runBtn).CornerRadius = UDim.new(0, 8)
+    applyNeonEffects(runBtn, false)
+    
+    runBtn.MouseButton1Click:Connect(function()
+        ModernHubGui:Destroy()
+        if scriptUrl then
+            loadstring(game:HttpGet(scriptUrl))()
+        end
+    end)
+    
+    -- Кнопка переключения вкладки слева
+    local tabIdx = #Buttons + 1
+    local tabBtn = Instance.new("TextButton", NavigationBar)
+    tabBtn.Size = UDim2.new(1, -24, 0, 36)
+    tabBtn.Position = UDim2.new(0, 12, 0, 65 + (tabIdx - 1) * 44)
+    tabBtn.BackgroundColor3 = Color3.fromRGB(16, 16, 22)
+    tabBtn.Text = "  " .. name
+    tabBtn.TextColor3 = Color3.fromRGB(200, 200, 205)
+    tabBtn.Font = Enum.Font.GothamBold
+    tabBtn.TextSize = 12
+    tabBtn.TextXAlignment = Enum.TextXAlignment.Left
+    Instance.new("UICorner", tabBtn).CornerRadius = UDim.new(0, 6)
+    applyNeonEffects(tabBtn, true)
+    
+    tabBtn.MouseButton1Click:Connect(function()
+        for _, b in pairs(Buttons) do
+            b:SetAttribute("Active", false)
+            b.BackgroundColor3 = Color3.fromRGB(16, 16, 22)
+            b.TextColor3 = Color3.fromRGB(200, 200, 205)
+            local st = b:FindFirstChildOfClass("UIStroke")
+            if st then st.Color = Color3.fromRGB(35, 35, 45) end
+        end
+        for _, p in pairs(Pages) do p.Visible = false end
+        
+        tabBtn.BackgroundColor3 = Color3.fromRGB(157, 0, 255)
+        tabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        tabBtn:SetAttribute("Active", true)
+        local st = tabBtn:FindFirstChildOfClass("UIStroke")
+        if st then st.Color = Color3.fromRGB(200, 50, 255) end
+        
+        newPage.Visible = true
+        activePage = name
+    end)
+    
+    table.insert(Buttons, tabBtn)
+end
+
+-- РЕГИСТРАЦИЯ ИГРОВЫХ ВКЛАДОК (1 - 5)
+registerHubTab("GET A GRIP", "GET A GRIP (АВТОФАРМ)", "Лицензионный оригинальный скрипт от CHO_NAX4.\nВнутренние системы оптимизированы, баги отрисовки и обходы исправлены.\nНажмите кнопку ниже для инжекта во внутреннюю память сессии.", "https://githubusercontent.com")
+
+registerHubTab("BROOKHAVEN", "BROOKHAVEN (CANDY COLLECTOR)", "Лицензионный оригинальный скрипт от CHO_NAX4.\nВнутренние системы оптимизированы, баги отрисовки и обходы исправлены.\nНажмите кнопку ниже для инжекта во внутреннюю память сессии.", "https://githubusercontent.com")
+
+registerHubTab("STICKERS! KONTRAA", "STICKERS! KONTRAA (SMART ESP)", "Лицензионный оригинальный скрипт от CHO_NAX4.\nВнутренние системы оптимизированы, баги отрисовки и обходы исправлены.\nНажмите кнопку ниже для инжекта во внутреннюю память сессии.", "githubusercontent.com")
+registerHubTab("FPV DRONE BATTLEFIELD", "FPV DRONE BATTLEFIELD (TWKS AIM/ESP)", "Лицензионный оригинальный скрипт от CHO_NAX4.\nВнутренние системы оптимизированы, баги отрисовки и обходы исправлены.\nНажмите кнопку ниже для инжекта во внутреннюю память сессии.", "githubusercontent.com")
+registerHubTab("RAILSIDE", "RAILSIDE SCRIPT (PREMIUM HUB)", "Скрипт содержит ЕСП игроков (Транспортная Безопасность, Анти-присяд, Граждане), ЕСП полезных предметов (Аптечки АИ-2, Противогазы ГП-5).\n\n⚠️ ВНИМАНИЕ: Функции персонажа (Спидхак, Ноклип и Инф. Прыжок) вызывают частые автоматические баны! Используйте их максимально аккуратно и на свой страх и риск.", "https://raw.githubusercontent.com/tORNADIK-crypto/tornado-hub/refs/heads/main/railside")
+-- ВКЛАДКА 6: О РАЗРАБОТЧИКЕ (БЕЗОПАСНОСТЬ)
+local AboutPage = Instance.new("Frame", ContentWindow)
+AboutPage.Size = UDim2.new(1, 0, 1, 0)
+AboutPage.BackgroundTransparency = 1
+AboutPage.Visible = false
+Pages["ABOUT"] = AboutPage
+local AboutTitle = Instance.new("TextLabel", AboutPage)
+AboutTitle.Size = UDim2.new(1, 0, 0, 40)
+AboutTitle.BackgroundTransparency = 1
+AboutTitle.Text = "👑 ОФИЦИАЛЬНЫЙ РАЗРАБОТЧИК"
+AboutTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+AboutTitle.Font = Enum.Font.GothamBold
+AboutTitle.TextSize = 22
+AboutTitle.TextXAlignment = Enum.TextXAlignment.Left
+local InfoCard = Instance.new("Frame", AboutPage)
+InfoCard.Size = UDim2.new(1, -10, 0, 100)
+InfoCard.Position = UDim2.new(0, 0, 0, 50)
+InfoCard.BackgroundColor3 = Color3.fromRGB(16, 16, 24)
+Instance.new("UICorner", InfoCard).CornerRadius = UDim.new(0, 8)
+local CardStr = Instance.new("UIStroke", InfoCard)
+CardStr.Color = Color3.fromRGB(45, 45, 60)
+local InfoText = Instance.new("TextLabel", InfoCard)
+InfoText.Size = UDim2.new(1, -20, 1, -20)
+InfoText.Position = UDim2.new(0, 10, 0, 10)
+InfoText.BackgroundTransparency = 1
+InfoText.Text = "⚡ ROBLOX: cho_nax4\n📱 TIKTOK: 6tornadiks7\n\n⚠️ ВНИМАНИЕ: Все остальные аккаунты, фейки и каналы — МОШЕННИКИ! Мои оригинальные скрипты полностью бесплатны, открыты и не требуют платных ключей."
+InfoText.TextColor3 = Color3.fromRGB(230, 230, 240)
+InfoText.Font = Enum.Font.GothamBold
+InfoText.TextSize = 12
+InfoText.TextWrapped = true
+InfoText.TextXAlignment = Enum.TextXAlignment.Left
+local DisclaimerText = Instance.new("TextLabel", AboutPage)
+DisclaimerText.Size = UDim2.new(1, -10, 0, 80)
+DisclaimerText.Position = UDim2.new(0, 0, 0, 165)
+DisclaimerText.BackgroundTransparency = 1
+DisclaimerText.Text = "📋 ОТКАЗ ОТ ОТВЕТСТВЕННОСТИ:\nМой софт находится в полном открытом доступе, мне не стыдно публиковать свой чистый код. Помните: если вас забанят в какой-либо игре из-за действий античита — я не несу за это ответственности. Играйте с умом!"
+DisclaimerText.TextColor3 = Color3.fromRGB(255, 100, 100)
+DisclaimerText.Font = Enum.Font.Gotham
+DisclaimerText.TextSize = 12
+DisclaimerText.TextWrapped = true
+DisclaimerText.TextXAlignment = Enum.TextXAlignment.Left
+local AboutTabBtn = Instance.new("TextButton", NavigationBar)
+AboutTabBtn.Size = UDim2.new(1, -24, 0, 36)
+AboutTabBtn.Position = UDim2.new(0, 12, 0, 65 + 5 * 44)
+AboutTabBtn.BackgroundColor3 = Color3.fromRGB(16, 16, 22)
+AboutTabBtn.Text = "  👑 Обо мне"
+AboutTabBtn.TextColor3 = Color3.fromRGB(200, 200, 205)
+AboutTabBtn.Font = Enum.Font.GothamBold
+AboutTabBtn.TextSize = 12
+AboutTabBtn.TextXAlignment = Enum.TextXAlignment.Left
+Instance.new("UICorner", AboutTabBtn).CornerRadius = UDim.new(0, 6)
+applyNeonEffects(AboutTabBtn, true)
+AboutTabBtn.MouseButton1Click:Connect(function()
+for _, b in pairs(Buttons) do
+b:SetAttribute("Active", false)
+b.BackgroundColor3 = Color3.fromRGB(16, 16, 22)
+b.TextColor3 = Color3.fromRGB(200, 200, 205)
+local st = b:FindFirstChildOfClass("UIStroke")
+if st then st.Color = Color3.fromRGB(35, 35, 45) end
+end
+for _, p in pairs(Pages) do p.Visible = false end
+AboutTabBtn.BackgroundColor3 = Color3.fromRGB(157, 0, 255)
+AboutTabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+AboutTabBtn:SetAttribute("Active", true)
+local st = AboutTabBtn:FindFirstChildOfClass("UIStroke")
+if st then st.Color = Color3.fromRGB(200, 50, 255) end
+AboutPage.Visible = true
+activePage = "ABOUT"
+end)
+table.insert(Buttons, AboutTabBtn)
+-- АВТОМАТИЧЕСКИЙ СТАРТ НА ПЕРВОЙ ВКЛАДКЕ
+if Buttons[1] then
+Buttons[1].BackgroundColor3 = Color3.fromRGB(157, 0, 255)
+Buttons[1].TextColor3 = Color3.fromRGB(255, 255, 255)
+Buttons[1]:SetAttribute("Active", true)
+local st = Buttons[1]:FindFirstChildOfClass("UIStroke")
+if st then st.Color = Color3.fromRGB(200, 50, 255) end
+Pages["GET A GRIP"].Visible = true
+activePage = "GET A GRIP"
+end
+-- КНОПКА СВЕРНУТЬ/РАЗВЕРНУТЬ НА КЛАВИШУ INSERT
+UserInputService.InputBegan:Connect(function(input, processed)
+if not processed and input.KeyCode == Enum.KeyCode.Insert then
+MainContainer.Visible = not MainContainer.Visible
+end
+end)
+print("[🌪️ TORNADO HUB]: Премиальная мульти-панель успешно обновлена. Вкладка Railside добавлена.")
