@@ -1,0 +1,475 @@
+-- =========================================================
+-- RAILSIDE SCRIPT — ULTRA PREMIUM (MONOLITH FULL VERSION)
+-- =========================================================
+
+-- Глобальные переменные состояний читов
+_G.EspAI2 = false
+_G.EspGP5 = false
+_G.EspCitizen = false
+_G.EspTB = false
+_G.EspAntics = false
+_G.Noclip = false
+
+local TweenService = game:GetService("TweenService")
+local UIS = game:GetService("UserInputService")
+local CoreGui = game:GetService("CoreGui")
+
+-- [ТОТАЛЬНАЯ ОЧИСТКА]: Находит и полностью уничтожает ВСЕ старые запущенные меню
+for _, child in pairs(CoreGui:GetChildren()) do
+    if child.Name == "RailsideScriptMenu" then
+        child:Destroy()
+    end
+end
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "RailsideScriptMenu"
+ScreenGui.Parent = CoreGui
+ScreenGui.ResetOnSpawn = false
+
+local function animate(object, info, propertyTable)
+    local tween = TweenService:Create(object, info, propertyTable)
+    tween:Play()
+    return tween
+end
+
+-- =========================================================
+-- КНОПКА-КРУЖОЧЕК ДЛЯ СВЕРТЫВАНИЯ (МОБИЛКИ И ПК ИНСЕРТ)
+-- =========================================================
+local ToggleCircle = Instance.new("TextButton")
+ToggleCircle.Name = "ToggleCircle"
+ToggleCircle.Size = UDim2.new(0, 55, 0, 55)
+ToggleCircle.Position = UDim2.new(0, 20, 0, 20)
+ToggleCircle.BackgroundColor3 = Color3.fromRGB(110, 30, 150)
+ToggleCircle.Text = "🌌"
+ToggleCircle.TextSize = 26
+ToggleCircle.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleCircle.Visible = false
+ToggleCircle.Active = true
+ToggleCircle.Draggable = true
+ToggleCircle.Parent = ScreenGui
+
+local CircleCorner = Instance.new("UICorner")
+CircleCorner.CornerRadius = UDim.new(1, 0)
+CircleCorner.Parent = ToggleCircle
+
+local CircleStroke = Instance.new("UIStroke")
+CircleStroke.Thickness = 2
+CircleStroke.Color = Color3.fromRGB(255, 100, 255)
+CircleStroke.Parent = ToggleCircle
+
+-- =========================================================
+-- ГЛАВНОЕ ОКНО И ИНТЕРФЕЙС
+-- =========================================================
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 580, 0, 380)
+MainFrame.Position = UDim2.new(0.5, -290, 0.5, -190)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 10, 30)
+MainFrame.BackgroundTransparency = 0.25 -- Полупрозрачный премиум-стиль
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.ClipsDescendants = true
+MainFrame.Parent = ScreenGui
+
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 16)
+MainCorner.Parent = MainFrame
+
+local MainStroke = Instance.new("UIStroke")
+MainStroke.Thickness = 2
+MainStroke.Color = Color3.fromRGB(150, 50, 220)
+MainStroke.Parent = MainFrame
+
+local LeftPanel = Instance.new("Frame")
+LeftPanel.Name = "LeftPanel"
+LeftPanel.Size = UDim2.new(0, 390, 0, 380)
+LeftPanel.BackgroundColor3 = Color3.fromRGB(40, 15, 60)
+LeftPanel.BackgroundTransparency = 0.35
+LeftPanel.BorderSizePixel = 0
+LeftPanel.Parent = MainFrame
+
+local LeftCorner = Instance.new("UICorner")
+LeftCorner.CornerRadius = UDim.new(0, 16)
+LeftCorner.Parent = LeftPanel
+
+local Title = Instance.new("TextLabel")
+Title.Name = "Title"
+Title.Size = UDim2.new(0, 250, 0, 40)
+Title.Position = UDim2.new(0, 20, 0, 15)
+Title.BackgroundTransparency = 1
+Title.Text = "RAILSIDE SCRIPT 🌌"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 22
+Title.Font = Enum.Font.GothamBold
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = LeftPanel
+
+-- Кнопка Минус "—" под названием рядом с правым краем панели
+local MinimizeButton = Instance.new("TextButton")
+MinimizeButton.Name = "MinimizeButton"
+MinimizeButton.Size = UDim2.new(0, 30, 0, 30)
+MinimizeButton.Position = UDim2.new(0, 340, 0, 15)
+MinimizeButton.BackgroundColor3 = Color3.fromRGB(60, 20, 90)
+MinimizeButton.Text = "—"
+MinimizeButton.TextColor3 = Color3.fromRGB(255, 100, 255)
+MinimizeButton.TextSize = 18
+MinimizeButton.Font = Enum.Font.GothamBold
+MinimizeButton.Parent = LeftPanel
+
+local MinCorner = Instance.new("UICorner")
+MinCorner.CornerRadius = UDim.new(0, 8)
+MinCorner.Parent = MinimizeButton
+
+local ContentContainer = Instance.new("Frame")
+ContentContainer.Name = "ContentContainer"
+ContentContainer.Size = UDim2.new(0, 360, 0, 290)
+ContentContainer.Position = UDim2.new(0, 20, 0, 65)
+ContentContainer.BackgroundTransparency = 1
+ContentContainer.Parent = LeftPanel
+
+local RightPanel = Instance.new("Frame")
+RightPanel.Name = "RightPanel"
+RightPanel.Size = UDim2.new(0, 190, 0, 380)
+RightPanel.Position = UDim2.new(1, -190, 0, 0)
+RightPanel.BackgroundColor3 = Color3.fromRGB(75, 20, 110)
+RightPanel.BackgroundTransparency = 0.2
+RightPanel.BorderSizePixel = 0
+RightPanel.Parent = MainFrame
+
+local RightCorner = Instance.new("UICorner")
+RightCorner.CornerRadius = UDim.new(0, 16)
+RightCorner.Parent = RightPanel
+
+local TabListLayout = Instance.new("UIListLayout")
+TabListLayout.Parent = RightPanel
+TabListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+TabListLayout.Padding = UDim.new(0, 10)
+
+local TabPadding = Instance.new("UIPadding")
+TabPadding.PaddingTop = UDim.new(0, 20)
+TabPadding.PaddingLeft = UDim.new(0, 12)
+TabPadding.PaddingRight = UDim.new(0, 12)
+TabPadding.Parent = RightPanel
+
+-- Логика плавного скрытия / открытия
+local menuVisible = true
+local function toggleMenu()
+    menuVisible = not menuVisible
+    if menuVisible then
+        MainFrame.Visible = true
+        animate(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Size = UDim2.new(0, 580, 0, 380), BackgroundTransparency = 0.25})
+        ToggleCircle.Visible = false
+    else
+        animate(MainFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {Size = UDim2.new(0, 580, 0, 0), BackgroundTransparency = 1})
+        task.delay(0.2, function() 
+            if not menuVisible then 
+                MainFrame.Visible = false 
+                ToggleCircle.Visible = true
+            end 
+        end)
+    end
+end
+
+MinimizeButton.MouseButton1Click:Connect(toggleMenu)
+ToggleCircle.MouseButton1Click:Connect(toggleMenu)
+
+-- Логика скрытия на клавишу Insert на ПК
+UIS.InputBegan:Connect(function(input, gpe)
+    if not gpe and input.KeyCode == Enum.KeyCode.Insert then
+        toggleMenu()
+    end
+end)
+
+-- Эффекты красивого наведения и нажатия
+local function applyButtonEffects(button, defaultColor, hoverColor, clickColor)
+    button.MouseEnter:Connect(function() animate(button, TweenInfo.new(0.2), {BackgroundColor3 = hoverColor}) end)
+    button.MouseLeave:Connect(function() animate(button, TweenInfo.new(0.2), {BackgroundColor3 = defaultColor}) end)
+    button.MouseButton1Down:Connect(function() animate(button, TweenInfo.new(0.1), {BackgroundColor3 = clickColor}) end)
+end
+
+applyButtonEffects(MinimizeButton, Color3.fromRGB(60, 20, 90), Color3.fromRGB(90, 30, 130), Color3.fromRGB(130, 40, 180))
+applyButtonEffects(ToggleCircle, Color3.fromRGB(110, 30, 150), Color3.fromRGB(140, 40, 190), Color3.fromRGB(170, 50, 220))
+
+local pages = {}
+local tabButtons = {}
+
+local function CreateTab(name, order)
+    local Page = Instance.new("ScrollingFrame")
+    Page.Name = name .. "Page"
+    Page.Size = UDim2.new(1, 0, 1, 0)
+    Page.BackgroundTransparency = 1
+    Page.BorderSizePixel = 0
+    Page.Visible = false
+    Page.ScrollBarThickness = 4
+    Page.CanvasSize = UDim2.new(0, 0, 0, 0)
+    Page.Parent = ContentContainer
+    
+    local PageLayout = Instance.new("UIListLayout")
+    PageLayout.Parent = Page
+    PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    PageLayout.Padding = UDim.new(0, 12)
+    
+    PageLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        Page.CanvasSize = UDim2.new(0, 0, 0, PageLayout.AbsoluteContentSize.Y + 20)
+    end)
+
+    local TabButton = Instance.new("TextButton")
+    TabButton.Name = name .. "Tab"
+    TabButton.Size = UDim2.new(1, 0, 0, 42)
+    TabButton.BackgroundColor3 = Color3.fromRGB(100, 30, 140)
+    TabButton.Text = name
+    TabButton.TextColor3 = Color3.fromRGB(230, 230, 230)
+    TabButton.TextSize = 13
+    TabButton.Font = Enum.Font.GothamBold
+    TabButton.LayoutOrder = order
+    TabButton.Parent = RightPanel
+    
+    local ButtonCorner = Instance.new("UICorner")
+    ButtonCorner.CornerRadius = UDim.new(0, 10)
+    ButtonCorner.Parent = TabButton
+    
+    local TabStroke = Instance.new("UIStroke")
+    TabStroke.Thickness = 1
+    TabStroke.Color = Color3.fromRGB(140, 50, 190)
+    TabStroke.Parent = TabButton
+
+    applyButtonEffects(TabButton, Color3.fromRGB(100, 30, 140), Color3.fromRGB(130, 40, 180), Color3.fromRGB(160, 50, 210))
+    
+    TabButton.MouseButton1Click:Connect(function()
+        for _, p in pairs(pages) do p.Visible = false end
+        for _, btn in pairs(tabButtons) do 
+            btn.BackgroundColor3 = Color3.fromRGB(100, 30, 140) 
+            btn.UIStroke.Color = Color3.fromRGB(140, 50, 190)
+        end
+        Page.Visible = true
+        TabButton.BackgroundColor3 = Color3.fromRGB(150, 45, 200)
+        TabButton.UIStroke.Color = Color3.fromRGB(255, 100, 255)
+    end)
+    
+    pages[name] = Page
+    table.insert(tabButtons, TabButton)
+    return Page
+end
+
+local function AddParagraph(page, titleText, contentText, color)
+    local Frame = Instance.new("Frame")
+    Frame.Size = UDim2.new(1, -15, 0, 65)
+    Frame.BackgroundColor3 = Color3.fromRGB(45, 15, 65)
+    Frame.BackgroundTransparency = 0.4
+    Frame.Parent = page
+    local FC = Instance.new("UICorner") FC.CornerRadius = UDim.new(0, 8) FC.Parent = Frame
+    local FS = Instance.new("UIStroke") FS.Thickness = 1 FS.Color = Color3.fromRGB(80, 30, 110) FS.Parent = Frame
+    local TitleLabel = Instance.new("TextLabel")
+    TitleLabel.Size = UDim2.new(1, -20, 0, 20)
+    TitleLabel.Position = UDim2.new(0, 10, 0, 8)
+    TitleLabel.BackgroundTransparency = 1
+    TitleLabel.Text = titleText
+    TitleLabel.TextColor3 = color or Color3.fromRGB(255, 255, 255)
+    TitleLabel.TextSize = 13
+    TitleLabel.Font = Enum.Font.GothamBold
+TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+TitleLabel.Parent = Frame
+local ContentLabel = Instance.new("TextLabel")
+ContentLabel.Size = UDim2.new(1, -20, 0, 35)
+ContentLabel.Position = UDim2.new(0, 10, 0, 26)
+ContentLabel.BackgroundTransparency = 1
+ContentLabel.Text = contentText
+ContentLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+ContentLabel.TextSize = 11
+ContentLabel.Font = Enum.Font.Gotham
+ContentLabel.TextWrapped = true
+ContentLabel.TextXAlignment = Enum.TextXAlignment.Left
+ContentLabel.Parent = Frame
+end
+local function AddToggle(page, text, textColor, callback)
+local ToggleButton = Instance.new("TextButton")
+ToggleButton.Size = UDim2.new(1, -15, 0, 42)
+ToggleButton.BackgroundColor3 = Color3.fromRGB(45, 15, 65)
+ToggleButton.BackgroundTransparency = 0.3
+ToggleButton.Text = "   ❌  " .. text
+ToggleButton.TextColor3 = textColor
+ToggleButton.TextSize = 13
+ToggleButton.Font = Enum.Font.GothamBold
+ToggleButton.TextXAlignment = Enum.TextXAlignment.Left
+ToggleButton.Parent = page
+local ToggleCorner = Instance.new("UICorner") ToggleCorner.CornerRadius = UDim.new(0, 10) ToggleCorner.Parent = ToggleButton
+local TS = Instance.new("UIStroke") TS.Thickness = 1 TS.Color = Color3.fromRGB(80, 30, 110) TS.Parent = ToggleButton
+local enabled = false
+applyButtonEffects(ToggleButton, Color3.fromRGB(45, 15, 65), Color3.fromRGB(65, 25, 95), Color3.fromRGB(85, 35, 125))
+ToggleButton.MouseButton1Click:Connect(function()
+enabled = not enabled
+if enabled then ToggleButton.Text = "   ✅  " .. text TS.Color = textColor else ToggleButton.Text = "   ❌  " .. text TS.Color = Color3.fromRGB(80, 30, 110) end
+callback(enabled)
+end)
+end
+local function AddSlider(page, text, min, max, default, callback)
+local SliderFrame = Instance.new("Frame")
+SliderFrame.Size = UDim2.new(1, -15, 0, 55)
+SliderFrame.BackgroundColor3 = Color3.fromRGB(45, 15, 65)
+SliderFrame.BackgroundTransparency = 0.3
+SliderFrame.Parent = page
+local SliderCorner = Instance.new("UICorner") SliderCorner.CornerRadius = UDim.new(0, 10) SliderCorner.Parent = SliderFrame
+local SS = Instance.new("UIStroke") SS.Thickness = 1 SS.Color = Color3.fromRGB(80, 30, 110) SS.Parent = SliderFrame
+local SliderLabel = Instance.new("TextLabel")
+SliderLabel.Size = UDim2.new(1, -20, 0, 20)
+SliderLabel.Position = UDim2.new(0, 12, 0, 6)
+SliderLabel.BackgroundTransparency = 1
+SliderLabel.Text = text .. ": " .. tostring(default)
+SliderLabel.TextColor3 = Color3.fromRGB(238, 130, 238)
+SliderLabel.TextSize = 12
+SliderLabel.Font = Enum.Font.GothamBold
+SliderLabel.TextXAlignment = Enum.TextXAlignment.Left
+SliderLabel.Parent = SliderFrame
+local SliderBar = Instance.new("TextButton")
+SliderBar.Size = UDim2.new(1, -24, 0, 6)
+SliderBar.Position = UDim2.new(0, 12, 0, 36)
+SliderBar.BackgroundColor3 = Color3.fromRGB(25, 10, 40)
+SliderBar.Text = ""
+SliderBar.Parent = SliderFrame
+local BarCorner = Instance.new("UICorner") BarCorner.CornerRadius = UDim.new(1, 0) BarCorner.Parent = SliderBar
+local Fill = Instance.new("Frame")
+Fill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
+Fill.BackgroundColor3 = Color3.fromRGB(200, 50, 255)
+Fill.BorderSizePixel = 0
+Fill.Parent = SliderBar
+local BarCorner2 = Instance.new("UICorner") BarCorner2.CornerRadius = UDim.new(1, 0) BarCorner2.Parent = Fill
+local holding = false
+local function update()
+local mousePos = UIS:GetMouseLocation().X
+local barPos = SliderBar.AbsolutePosition.X
+local barWidth = SliderBar.AbsoluteSize.X
+local percentage = math.clamp((mousePos - barPos) / barWidth, 0, 1)
+local value = math.floor(min + (max - min) * percentage)
+Fill.Size = UDim2.new(percentage, 0, 1, 0)
+SliderLabel.Text = text .. ": " .. tostring(value)
+callback(value)
+end
+SliderBar.MouseButton1Down:Connect(function() holding = true update() end)
+UIS.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then holding = false end end)
+UIS.InputChanged:Connect(function(input) if holding and input.UserInputType == Enum.UserInputType.MouseMovement then update() end end)
+end
+-- =========================================================
+-- НАПОЛНЕНИЕ ВКЛАДОК
+-- =========================================================
+-- Вкладка 1: Обо мне
+local AboutPage = CreateTab("ℹ️ Обо мне", 1)
+AddParagraph(AboutPage, "🎵 TikTok: @6TORNADIKS7", "Официальный аккаунт. Остерегайтесь подделок! Мои работы лежат исключительно в открытом доступе.", Color3.fromRGB(255, 105, 180))
+AddParagraph(AboutPage, "🎮 Roblox Nick:", "CHO_NAX4 (Других нет)", Color3.fromRGB(186, 85, 211))
+AddParagraph(AboutPage, "⚠️ ОТВЕТСТВЕННОСТЬ:", "За любые баны со стороны администрации вы несете ответственность сами!", Color3.fromRGB(255, 50, 50))
+AddParagraph(AboutPage, "☣️ КРИТИЧЕСКИЙ РИСК:", "Функции Ноклипа, Спидхака и Инф. Прыжка вызывают баны чаще всего!", Color3.fromRGB(255, 165, 0))
+-- Вкладка 2: ЕСП Предметов
+local ItemsPage = CreateTab("🎒 ЕСП Предметов", 2)
+local itemHighlights = {}
+-- [БЕСКОНЕЧНЫЙ ЕСП]: Виден сквозь всю карту на любых расстояниях за счет AlwaysOnTop
+local function updateItemESP()
+for _, hl in pairs(itemHighlights) do if hl then hl:Destroy() end end
+table.clear(itemHighlights)
+if not _G.EspAI2 and not _G.EspGP5 then return end
+local bombar = workspace:FindFirstChild("Bombar_Shelter")
+local habar = bombar and bombar:FindFirstChild("Хабар")
+if habar then
+for _, obj in pairs(habar:GetChildren()) do
+local isAI = string.match(obj.Name, "АИ%-2")
+local isGP = string.match(obj.Name, "ГП%-5")
+if (isAI and _G.EspAI2) or (isGP and _G.EspGP5) then
+local hl = Instance.new("Highlight")
+hl.FillTransparency = 0.4
+hl.OutlineTransparency = 0
+hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop -- Максимальная дистанция
+hl.Adornee = obj
+hl.Parent = obj
+if isAI then
+hl.FillColor = Color3.fromRGB(255, 110, 0) -- Красивый оранжевый
+hl.OutlineColor = Color3.fromRGB(255, 220, 100)
+else
+hl.FillColor = Color3.fromRGB(0, 230, 100) -- Красивый зеленый
+hl.OutlineColor = Color3.fromRGB(180, 255, 180)
+end
+table.insert(itemHighlights, hl)
+end
+end
+end
+end
+AddToggle(ItemsPage, "ЕСП: Аптечки АИ-2", Color3.fromRGB(255, 140, 0), function(state) _G.EspAI2 = state updateItemESP() end)
+AddToggle(ItemsPage, "ЕСП: Противогазы ГП-5", Color3.fromRGB(50, 205, 50), function(state) _G.EspGP5 = state updateItemESP() end)
+-- Вкладка 3: ЕСП Игроков (Команды строго по фото)
+local PlayersPage = CreateTab("👥 ЕСП Игроков", 3)
+local playerHighlights = {}
+local function updatePlayerESP()
+for _, hl in pairs(playerHighlights) do if hl then hl:Destroy() end end
+table.clear(playerHighlights)
+local lp = game.Players.LocalPlayer
+for _, p in pairs(game.Players:GetPlayers()) do
+if p ~= lp and p.Character and p.Team then
+local tName = p.Team.Name
+local display = false
+local col = Color3.fromRGB(255, 255, 255)
+if tName == "Граждане" and _G.EspCitizen then
+display = true; col = Color3.fromRGB(0, 150, 255) -- Синий
+elseif tName == "Транспортная безопасность" and _G.EspTB then
+display = true; col = Color3.fromRGB(255, 200, 0) -- Желтый
+elseif tName == "Анти-присяд" and _G.EspAntics then
+display = true; col = Color3.fromRGB(255, 30, 50) -- Красный
+end
+if display and p.Character:FindFirstChild("HumanoidRootPart") then
+local hl = Instance.new("Highlight")
+hl.FillTransparency = 0.4
+hl.OutlineTransparency = 0
+hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+hl.FillColor = col
+hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+hl.Adornee = p.Character
+hl.Parent = p.Character
+table.insert(playerHighlights, hl)
+end
+end
+end
+end
+AddToggle(PlayersPage, "Команда: Граждане", Color3.fromRGB(30, 144, 255), function(state) _G.EspCitizen = state updatePlayerESP() end)
+AddToggle(PlayersPage, "Команда: Транспортная Б-сть", Color3.fromRGB(255, 215, 0), function(state) _G.EspTB = state updatePlayerESP() end)
+AddToggle(PlayersPage, "Команда: Анти-присяд", Color3.fromRGB(255, 50, 50), function(state) _G.EspAntics = state updatePlayerESP() end)
+-- Вкладка 4: Функции Персонажа
+local LocalPlayerPage = CreateTab("⚡ Игрок", 4)
+AddSlider(LocalPlayerPage, "Спидхак (Макс. 24)", 16, 24, 16, function(val)
+if game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Humanoid") then
+game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = val
+end
+end)
+local NoclipLoop
+AddToggle(LocalPlayerPage, "Ноклип", Color3.fromRGB(255, 255, 255), function(state)
+_G.Noclip = state
+if state then
+NoclipLoop = game:GetService("RunService").Stepped:Connect(function()
+if _G.Noclip and game.Players.LocalPlayer.Character then
+for _, part in pairs(game.Players.LocalPlayer.Character:GetDescendants()) do
+if part:IsA("BasePart") then part.CanCollide = false end
+end
+end
+end)
+else
+if NoclipLoop then NoclipLoop:Disconnect() end
+end
+end)
+local InfJumpConnection
+AddToggle(LocalPlayerPage, "Инф. Прыжок", Color3.fromRGB(255, 255, 255), function(state)
+if state then
+InfJumpConnection = game:GetService("UserInputService").JumpRequest:Connect(function()
+if game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
+end
+end)
+else
+if InfJumpConnection then InfJumpConnection:Disconnect() end
+end
+end)
+-- Постоянное фоновое обновление ЕСП в цикле
+task.spawn(function()
+while task.wait(1.5) do
+updateItemESP()
+updatePlayerESP()
+end
+end)
+-- Активация первой вкладки по умолчанию
+pages["ℹ️ Обо мне"].Visible = true
+RightPanel:FindFirstChild("ℹ️ Обо мнеTab").BackgroundColor3 = Color3.fromRGB(150, 45, 200)
+RightPanel:FindFirstChild("ℹ️ Обо мнеTab").UIStroke.Color = Color3.fromRGB(255, 100, 255)
