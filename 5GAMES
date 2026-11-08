@@ -101,7 +101,7 @@ LogoLabel.Font = Enum.Font.GothamBold
 LogoLabel.TextSize = isMobile and 14 or 18
 LogoLabel.TextXAlignment = Enum.TextXAlignment.Left
 
--- Скролл-контейнер для вкладок (Защита от переполнения списка на телефонах)
+-- Скролл-контейнер для вкладок
 local TabScroll = Instance.new("ScrollingFrame", NavigationBar)
 TabScroll.Size = UDim2.new(1, -4, 1, isMobile and -55 or -70)
 TabScroll.Position = UDim2.new(0, 2, 0, isMobile and 50 or 65)
@@ -165,14 +165,12 @@ end
 
 -- КОНСТРУКТОР ВКЛАДОК ДЛЯ ИГР
 local function registerHubTab(name, titleText, descText, scriptUrl, isGate, correctKey)
-    -- Окно страницы
     local newPage = Instance.new("Frame", ContentWindow)
     newPage.Size = UDim2.new(1, 0, 1, 0)
     newPage.BackgroundTransparency = 1
     newPage.Visible = false
     Pages[name] = newPage
     
-    -- Заголовок игры на странице
     local pageTitle = Instance.new("TextLabel", newPage)
     pageTitle.Size = UDim2.new(1, 0, 0, isMobile and 25 or 40)
     pageTitle.BackgroundTransparency = 1
@@ -182,7 +180,6 @@ local function registerHubTab(name, titleText, descText, scriptUrl, isGate, corr
     pageTitle.TextSize = isMobile and 15 or 22
     pageTitle.TextXAlignment = Enum.TextXAlignment.Left
     
-    -- Описание
     local pageDesc = Instance.new("TextLabel", newPage)
     pageDesc.Size = UDim2.new(1, 0, 0, isMobile and 85 or 120)
     pageDesc.Position = UDim2.new(0, 0, 0, isMobile and 30 or 45)
@@ -212,7 +209,6 @@ local function registerHubTab(name, titleText, descText, scriptUrl, isGate, corr
         Instance.new("UIStroke", keyTextBox).Color = Color3.fromRGB(45, 45, 60)
     end
 
-    -- Огромная неоновая кнопка запуска
     local runBtn = Instance.new("TextButton", newPage)
     runBtn.Size = UDim2.new(0, isMobile and 210 or 300, 0, isMobile and 36 or 48)
     runBtn.Position = UDim2.new(0, 0, 0, isGate and (isMobile and 150 or 215) or (isMobile and 120 or 175))
@@ -222,10 +218,11 @@ local function registerHubTab(name, titleText, descText, scriptUrl, isGate, corr
     runBtn.Font = Enum.Font.GothamBold
     runBtn.TextSize = isMobile and 12 or 14
     Instance.new("UICorner", runBtn).CornerRadius = UDim.new(0, 8)
-applyNeonEffects(runBtn, false)
-runBtn.MouseButton1Click:Connect(function()
-if isGate and keyTextBox then
-if keyTextBox.Text == correctKey then
+    applyNeonEffects(runBtn, false)
+    
+    runBtn.MouseButton1Click:Connect(function()
+        if isGate and keyTextBox then
+        if keyTextBox.Text == correctKey then
 _G.AnimalsHubForcedTier = "PREMIUM"
 else
 _G.AnimalsHubForcedTier = "FREE"
@@ -236,8 +233,6 @@ if scriptUrl then
 loadstring(game:HttpGet(scriptUrl))()
 end
 end)
--- Кнопка переключения вкладки слева
-local tabIdx = #Buttons + 1
 local tabBtn = Instance.new("TextButton", TabScroll)
 tabBtn.Size = UDim2.new(1, -12, 0, isMobile and 32 or 36)
 tabBtn.BackgroundColor3 = Color3.fromRGB(16, 16, 22)
@@ -267,7 +262,7 @@ activePage = name
 end)
 table.insert(Buttons, tabBtn)
 end
--- РЕГИСТРАЦИЯ ИГРОВЫХ ВКЛАДОК (1 - 7)
+-- РЕГИСТРАЦИЯ ИГРОВЫХ ВКЛАДОК (1 - 8)
 registerHubTab("GET A GRIP", "GET A GRIP (АВТОФАРМ)", "Лицензионный оригинальный скрипт от CHO_NAX4.\nВнутренние системы оптимизированы, баги отрисовки и обходы исправлены.\nНажмите кнопку ниже для инжекта во внутреннюю память сессии.", "https://raw.githubusercontent.com/tORNADIK-crypto/tornado-hub/refs/heads/main/FARM_GETAGRIP")
 registerHubTab("BROOKHAVEN", "BROOKHAVEN (CANDY COLLECTOR)", "Лицензионный оригинальный скрипт от CHO_NAX4.\nВнутренние системы оптимизированы, баги отрисовки и обходы исправлены.\nНажмите кнопку ниже для инжекта во внутреннюю память сессии.", "https://raw.githubusercontent.com/tORNADIK-crypto/tornado-hub/refs/heads/main/candy%20brookhaven")
 registerHubTab("STICKERS! KONTRAA", "STICKERS! KONTRAA (SMART ESP)", "Лицензионный оригинальный скрипт от CHO_NAX4.\nВнутренние системы оптимизированы, баги отрисовки и обходы исправлены.\nНажмите кнопку ниже для инжекта во внутреннюю память сессии.", "https://raw.githubusercontent.com/tORNADIK-crypto/tornado-hub/refs/heads/main/spooky%20kontra")
@@ -275,6 +270,9 @@ registerHubTab("FPV DRONE BATTLEFIELD", "FPV DRONE BATTLEFIELD (TWKS AIM/ESP)", 
 registerHubTab("RAILSIDE", "RAILSIDE SCRIPT (PREMIUM HUB)", "Скрипт содержит ЕСП игроков (Транспортная Безопасность, Анти-присяд, Граждане), ЕСП полезных предметов (Аптечки АИ-2, Противогазы ГП-5).\n\n⚠️ ВНИМАНИЕ: Функции персонажа (Спидхак, Ноклип и Инф. Прыжок) вызывают частые автоматические баны! Используйте их максимально аккуратно и на свой страх и риск.", "https://raw.githubusercontent.com/tORNADIK-crypto/tornado-hub/refs/heads/main/railside")
 registerHubTab("LOST FRONT", "LOST FRONT (ROSE ESP)", "Новейший хаб для Lost Front!\nСкрипт активирует продвинутое низкоуровневое меню с отрисовкой линий, 2D хитбоксов и скелетов.\n\n🔥 ОСОБЕННОСТЬ: ESP абсолютно всех игроков на карте окрашено в премиальный Розовый цвет для лучшей видимости.", "https://raw.githubusercontent.com/tORNADIK-crypto/tornado-hub/refs/heads/main/Lostfront")
 registerHubTab("FIND THE ANIMALS", "FIND THE ANIMALS 283 (FREE & PREM)", "🐾 Топовый скрипт для поиска животных на карте!\nДоступен продвинутый авто-сбор, ESP на все 283 питомца и полет.\n\n🎁 Подарок подписчикам! Введите ключ XENOXANIMALS для активации Premium-версии совершенно бесплатно и играйте в удовольствие!", "https://raw.githubusercontent.com/tORNADIK-crypto/tornado-hub/refs/heads/main/FIND%20THE%20ANIMALS%20280", true, "XENOXANIMALS")
+-- ВКЛАДКА: О РАЗРАБОТЧИКЕ (БЕЗОПАСНОСТЬ)
+-- ВСТРОЕННАЯ ПРЕМИАЛЬНАЯ ВКЛАДКА НАШЕГО С ТОБОЙ BLOX STRIKE ESP!
+registerHubTab("BLOX STRIKE ESP", "BLOX STRIKE (ROSE CHAMS)", "🐾 Наш совместный приватный чит-пак для Blox Strike!\nПолная розовая анатомическая подсветка тела (Chams) с золотым контуром силуэтов и белые никнеймы.\n\n🔥 ОСОБЕННОСТЬ: Полностью защищён от сброса раундов, сносит мёртвые коробки при смерти и сканирует Debris на наличие пушек и бомбы с эмодзи!", "https://raw.githubusercontent.com/tORNADIK-crypto/tornado-hub/refs/heads/main/bloxstrikeesp", false, "")
 -- ВКЛАДКА: О РАЗРАБОТЧИКЕ (БЕЗОПАСНОСТЬ)
 local AboutPage = Instance.new("Frame", ContentWindow)
 AboutPage.Size = UDim2.new(1, 0, 1, 0)
@@ -300,12 +298,13 @@ local InfoText = Instance.new("TextLabel", InfoCard)
 InfoText.Size = UDim2.new(1, -20, 1, -10)
 InfoText.Position = UDim2.new(0, 10, 0, 5)
 InfoText.BackgroundTransparency = 1
-InfoText.Text = "⚡ ROBLOX: cho_nax4\n📱 TIKTOK: 6tornadiks7\n\n⚠️ ВНИМАНИЕ: Все остальные аккаунты, фейки и каналы — МОШЕННИКИ! Мои оригинальные скрипты полностью бесплатны, открыты и не требуют платных ключей."
-InfoText.TextColor3 = Color3.fromRGB(230, 230, 240)
-InfoText.Font = Enum.Font.GothamBold
+InfoText.Font = Enum.Font.Gotham
 InfoText.TextSize = isMobile and 10 or 12
+InfoText.TextColor3 = Color3.fromRGB(230, 230, 240)
 InfoText.TextWrapped = true
 InfoText.TextXAlignment = Enum.TextXAlignment.Left
+InfoText.Text = "⚡ ROBLOX: cho_nax4\n📱 TIKTOK: 6tornadiks7\n\n⚠️ ВНИМАНИЕ: Все остальные аккаунты, фейки и каналы — МОШЕННИКИ! Мои оригинальные скрипты полностью бесплатны, открыты и не требуют платных ключей."
+InfoText.Parent = InfoCard
 local DisclaimerText = Instance.new("TextLabel", AboutPage)
 DisclaimerText.Size = UDim2.new(1, -10, 0, isMobile and 65 or 80)
 DisclaimerText.Position = UDim2.new(0, 0, 0, isMobile and 115 or 165)
