@@ -1,0 +1,93 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+
+_G.espEnabled = true
+
+-- Полная зачистка старого хлама из памяти перед стартом
+local legacyGuis = {"TsunderePremium_VIP", "TsundereESP_Core", "SimpleESP_Monolith", "TsundereSimple_Menu", "SimpleESP_Monolith_v2"}
+for _, guiName in pairs(legacyGuis) do
+    if LocalPlayer.PlayerGui:FindFirstChild(guiName) then LocalPlayer.PlayerGui[guiName]:Destroy() end
+end
+
+-- Создаем чистый ScreenGui прямо в PlayerGui
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "TsundereSimple_Menu"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.IgnoreGuiInset = true
+ScreenGui.DisplayOrder = -1
+ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+-- Функция ПОЛНОГО физического уничтожения визуала игрока
+local function removePlayerVisuals(playerName, character)
+    local box = ScreenGui:FindFirstChild(playerName .. "_ESP")
+    if box then box:Destroy() end
+    if character and character:FindFirstChild("TsundereChams") then
+        character.TsundereChams:Destroy()
+    end
+end
+
+-- Базовая логика 2D боксов, белого никнейма и розовой заливки тела
+_G.updatePlayerESP = function(character)
+    if not _G.espEnabled or character.Name == LocalPlayer.Name then 
+        removePlayerVisuals(character.Name, character)
+        return 
+    end
+
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    if character and rootPart then
+        local screenPos, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
+
+        -- Динамическая проверка здоровья
+        local currentHealth = 100
+        local animController = character:FindFirstChild("AnimationController")
+        local internalHp = character:FindFirstChild("Health") or character:FindFirstChild("HealthValue") or character:FindFirstChild("hp")
+        
+        if internalHp and internalHp:IsA("ValueBase") then
+            currentHealth = internalHp.Value
+        elseif animController and animController:FindFirstChild("Health") then
+            currentHealth = animController.Health.Value
+        end
+
+        -- ФИКС СМЕРТИ: Если игрок мертв или улетел под текстуры — жестко стираем бокс!
+        if currentHealth <= 0 or rootPart.Position.Y < -500 then
+            removePlayerVisuals(character.Name, character)
+            return
+        end
+
+        -- ФИКС ОТВОРОТА КАМЕРЫ: Если игрок за экраном — мгновенно прячем бокс!
+        if not onScreen or screenPos.Z <= 0 then
+            local box = ScreenGui:FindFirstChild(character.Name .. "_ESP")
+            if box then box.Visible = false end
+            if character:FindFirstChild("TsundereChams") then character.TsundereChams.Enabled = false end
+            return
+        end
+
+        -- Рассчитываем размер 2D-бокса по дистанции
+        local distance = (Camera.CFrame.Position - rootPart.Position).Magnitude
+        if distance < 1 then distance = 1 end
+        
+        local sizeX = math.clamp(1400 / distance, 12, 150)
+        local sizeY = math.clamp(2000 / distance, 18, 210)
+
+        -- Создаем или обновляем 2D-бокс и БЕЛЫЙ никнейм на экране
+        local espBox = ScreenGui:FindFirstChild(character.Name .. "_ESP")
+        if not espBox then
+            espBox = Instance.new("Frame")
+            espBox.Name = character.Name .. "_ESP"
+            espBox.BackgroundTransparency = 1
+            
+            local stroke = Instance.new("UIStroke")
+            stroke.Thickness = 2
+            stroke.Color = Color3.fromRGB(255, 215, 0) -- Жёлтый контур
+            stroke.Parent = espBox
+
+            local nameLabel = Instance.new("TextLabel")
+            nameLabel.Size = UDim2.new(1, 0, 0, 15)
+            nameLabel.Position = UDim2.new(0, 0, 0, -18)
+            nameLabel.BackgroundTransparency = 1
+            nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255) -- Белый ник
+            nameLabel.TextStrokeTransparency = 0 -- Чёрный контур букв
+            nameLabel.Text
