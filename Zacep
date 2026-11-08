@@ -1,0 +1,423 @@
+-- [[ BROOK MULTIHACK V4.0 - ULTRA COMPACT CORE ]]
+local players = game:GetService("Players")
+local lplayer = players.LocalPlayer
+local runService = game:GetService("RunService")
+local coreGui = game:GetService("CoreGui")
+local uis = game:GetService("UserInputService")
+local workspace = game:GetService("Workspace")
+local debris = game:GetService("Debris")
+
+-- Очистка старых интерфейсов
+if coreGui:FindFirstChild("ZaceperV2") then coreGui.ZaceperV2:Destroy() end
+if coreGui:FindFirstChild("BrookSpeedUnlocker") then coreGui.BrookSpeedUnlocker:Destroy() end
+
+-- Основные переменные состояния
+local platActive = false
+local magnActive = false
+local carEspActive = false
+local plrEspActive = false
+local infJumpActive = false
+local speedUnlockActive = false
+
+-- Технические переменные для зацепа
+local targetVehicle = nil
+local relativeCFrame = nil
+local lastPlatformPos = Vector3.new()
+local carHighlights = {}
+local plrHighlights = {}
+local lastPlrCheck = 0
+
+-- Технические переменные для разгона
+local targetSpeed = 55
+local currentSpeed = 0
+local dragging = false
+
+-- Создание основы премиального интерфейса
+local sg = Instance.new("ScreenGui", coreGui)
+sg.Name = "ZaceperV2"
+sg.ResetOnSpawn = false
+
+local frame = Instance.new("Frame", sg)
+frame.Size = UDim2.new(0, 260, 0, 360)
+frame.Position = UDim2.new(0.05, 0, 0.3, 0)
+frame.BackgroundColor3 = Color3.fromRGB(10, 10, 13)
+frame.BorderSizePixel = 0
+frame.Active = true
+frame.Draggable = true
+
+-- Скругление углов главного меню
+local frameCorner = Instance.new("UICorner", frame)
+frameCorner.CornerRadius = UDim.new(0, 12)
+
+-- Стильная неоновая обводка меню
+local frameStroke = Instance.new("UIStroke", frame)
+frameStroke.Color = Color3.fromRGB(35, 35, 45)
+frameStroke.Thickness = 1.5
+frameStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+-- Шапка интерфейса
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1, 0, 0, 45)
+title.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+title.Text = "   BROOK MULTIHACK v4.0"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.TextSize = 14
+title.Font = Enum.Font.GothamBold
+title.TextXAlignment = Enum.TextXAlignment.Left
+
+local titleCorner = Instance.new("UICorner", title)
+titleCorner.CornerRadius = UDim.new(0, 12)
+
+-- Линия разделения шапки
+local titleLine = Instance.new("Frame", frame)
+titleLine.Size = UDim2.new(1, 0, 0, 1)
+titleLine.Position = UDim2.new(0, 0, 0, 44)
+titleLine.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+titleLine.BorderSizePixel = 0
+
+-- Контейнер со скроллом для функций
+local scroll = Instance.new("ScrollingFrame", frame)
+scroll.Size = UDim2.new(1, -10, 1, -55)
+scroll.Position = UDim2.new(0, 5, 0, 50)
+scroll.BackgroundTransparency = 1
+scroll.BorderSizePixel = 0
+scroll.CanvasSize = UDim2.new(0, 0, 0, 430)
+scroll.ScrollBarThickness = 4
+scroll.ScrollBarImageColor3 = Color3.fromRGB(50, 50, 60)
+
+local layout = Instance.new("UIListLayout", scroll)
+layout.SortOrder = Enum.SortOrder.LayoutOrder
+layout.Padding = UDim.new(0, 8)
+
+-- Функция создания премиальных кнопок-переключателей
+local function createBtn(text, order, callback)
+    local container = Instance.new("Frame", scroll)
+    container.Size = UDim2.new(0.96, 0, 0, 42)
+    container.BackgroundTransparency = 1
+    container.LayoutOrder = order
+
+    local btn = Instance.new("TextButton", container)
+    btn.Size = UDim2.new(1, 0, 1, 0)
+    btn.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+    btn.Text = "  " .. text .. ": OFF"
+    btn.TextColor3 = Color3.fromRGB(180, 180, 190)
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 11
+    btn.TextXAlignment = Enum.TextXAlignment.Left
+    btn.BorderSizePixel = 0
+    
+    local btnCorner = Instance.new("UICorner", btn)
+    btnCorner.CornerRadius = UDim.new(0, 8)
+    
+    local btnStroke = Instance.new("UIStroke", btn)
+    btnStroke.Color = Color3.fromRGB(30, 30, 38)
+    btnStroke.Thickness = 1
+
+    local state = false
+    btn.MouseButton1Click:Connect(function()
+        state = not state
+        btn.Text = "  " .. text .. (state and ": ON" or ": OFF")
+        btn.TextColor3 = state and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(180, 180, 190)
+        btn.BackgroundColor3 = state and Color3.fromRGB(235, 65, 65) or Color3.fromRGB(20, 20, 25)
+        btnStroke.Color = state and Color3.fromRGB(255, 100, 100) or Color3.fromRGB(30, 30, 38)
+        callback(state)
+    end)
+    return btn
+end
+
+-- [[ ИНИЦИАЛИЗАЦИЯ КНОПОК ИЗ СЦЕНАРИЯ ЗАЦЕПА ]]
+
+createBtn("ДИНАМИЧЕСКАЯ ПЛАТФОРМА", 1, function(val)
+    platActive = val
+end)
+
+createBtn("АГРЕССИВНЫЙ ЗАЦЕП", 2, function(val)
+    magnActive = val
+    if not magnActive then
+        targetVehicle = nil
+        relativeCFrame = nil
+        local char = lplayer.Character
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        if hum then hum:ChangeState(Enum.HumanoidStateType.Running) end
+    end
+end)
+
+createBtn("ESP ТРАНСПОРТ", 3, function(val)
+    carEspActive = val
+    if not carEspActive then
+        for model, hl in pairs(carHighlights) do
+            if hl then hl:Destroy() end
+        end
+        carHighlights = {}
+    end
+end)
+
+createBtn("ESP ИГРОКИ", 4, function(val)
+    plrEspActive = val
+    if not plrEspActive then
+        for char, hl in pairs(plrHighlights) do
+            if hl then hl:Destroy() end
+        end
+        plrHighlights = {}
+    end
+end)
+
+createBtn("БЕСКОНЕЧНЫЙ ПРЫЖОК", 5, function(val)
+    infJumpActive = val
+end)
+
+-- [[ ИНИЦИАЛИЗАЦИЯ КОМПОНЕНТОВ СКОРОСТИ (ДОБАВЛЕНО ПОВЕРХ СТАРЫХ ФУНКЦИЙ) ]]
+
+local speedBtn = createBtn("АНЛОК СКОРОСТИ", 6, function(val)
+    speedUnlockActive = val
+    if not speedUnlockActive then currentSpeed = 0 end
+end)
+
+-- Контейнер кастомного ползунка скорости
+local sliderContainer = Instance.new("Frame", scroll)
+sliderContainer.Size = UDim2.new(0.96, 0, 0, 55)
+sliderContainer.BackgroundColor3 = Color3.fromRGB(16, 16, 22)
+sliderContainer.BorderSizePixel = 0
+sliderContainer.LayoutOrder = 7
+
+local sliderCorner = Instance.new("UICorner", sliderContainer)
+sliderCorner.CornerRadius = UDim.new(0, 8)
+
+local sliderStroke = Instance.new("UIStroke", sliderContainer)
+sliderStroke.Color = Color3.fromRGB(30, 30, 38)
+sliderStroke.Thickness = 1
+
+local sliderLabel = Instance.new("TextLabel", sliderContainer)
+sliderLabel.Size = UDim2.new(1, -20, 0, 25)
+sliderLabel.Position = UDim2.new(0, 10, 0, 5)
+sliderLabel.BackgroundTransparency = 1
+sliderLabel.Text = "ВЫБЕРИ СКОРОСТЬ: 55 км/ч"
+sliderLabel.TextColor3 = Color3.fromRGB(160, 160, 170)
+sliderLabel.TextSize = 11
+sliderLabel.Font = Enum.Font.GothamBold
+sliderLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local sliderFrame = Instance.new("Frame", sliderContainer)
+sliderFrame.Size = UDim2.new(1, -20, 0, 6)
+sliderFrame.Position = UDim2.new(0, 10, 0, 36)
+sliderFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+sliderFrame.BorderSizePixel = 0
+
+local sliderFrameCorner = Instance.new("UICorner", sliderFrame)
+sliderFrameCorner.CornerRadius = UDim.new(0, 3)
+
+local sliderBtn = Instance.new("TextButton", sliderFrame)
+sliderBtn.Size = UDim2.new(0, 14, 0, 14)
+sliderBtn.Position = UDim2.new(0, 0, -0.6, 0)
+sliderBtn.BackgroundColor3 = Color3.fromRGB(235, 65, 65)
+sliderBtn.Text = ""
+sliderBtn.BorderSizePixel = 0
+
+local sliderBtnCorner = Instance.new("UICorner", sliderBtn)
+sliderBtnCorner.CornerRadius = UDim.new(1, 0)
+
+-- [[ ЛОГИКА ДИНАМИЧЕСКИХ ПЛАТФОРМ ]]
+runService.Heartbeat:Connect(function()
+    if not platActive then return end
+    local char = lplayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    
+    if (hrp.Position - lastPlatformPos).Magnitude > 3 then
+        local raycastParams = RaycastParams.new()
+        raycastParams.FilterDescendantsInstances = {char}
+        raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+        
+        local hit = workspace:Raycast(hrp.Position, Vector3.new(0, -4, 0), raycastParams)
+        if not hit or hit.Instance.Name ~= "ZacepPad" then
+            local p = Instance.new("Part")
+            p.Name = "ZacepPad"
+            p.Size = Vector3.new(6, 0.5, 6)
+            p.Position = hrp.Position - Vector3.new(0, 3.2, 0)
+            p.Transparency = 0.4
+            p.Color = Color3.fromRGB(235, 70, 70)
+            p.Anchored = true
+            p.Material = Enum.Material.Neon
+            p.Parent = workspace
+            
+            lastPlatformPos = p.Position
+            debris:AddItem(p, 2)
+        end
+    end
+end)
+
+-- [[ ЛОГИКА СИСТЕМЫ ЗАЦЕПА ]]
+runService.Heartbeat:Connect(function()
+    local char = lplayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    if not hrp or not hum then return end
+    
+    if magnActive then
+        hum:ChangeState(Enum.HumanoidStateType.Physics)
+        if not targetVehicle then
+            local closestPart = nil
+            local minDst = 12
+            
+            local vehiclesFolder = workspace:FindFirstChild("Vehicles")
+            local searchIn = vehiclesFolder and vehiclesFolder:GetDescendants() or workspace:GetDescendants()
+            
+            for _, obj in pairs(searchIn) do
+                if obj:IsA("BasePart") and (obj.Name == "Body" or obj.Parent:FindFirstChild("VehicleSeat")) then
+                    local dst = (hrp.Position - obj.Position).Magnitude
+                    if dst < minDst then
+                        minDst = dst
+                        closestPart = obj
+                    end
+                end
+            end
+            
+            if closestPart then
+                targetVehicle = closestPart
+                relativeCFrame = targetVehicle.CFrame:ToObjectSpace(hrp.CFrame)
+            end
+        else
+            hrp.CFrame = targetVehicle.CFrame:ToWorldSpace(relativeCFrame)
+            hrp.AssemblyLinearVelocity = Vector3.zero
+            hrp.AssemblyAngularVelocity = Vector3.zero
+        end
+    end
+end)
+
+-- [[ ДОПОЛНИТЕЛЬНАЯ ФУНКЦИЯ ESP ТРАНСПОРТА ]]
+local function addCarEsp(vehicleModel)
+if not vehicleModel:IsA("Model") then return end
+if carHighlights[vehicleModel] then return end
+local hl = Instance.new("Highlight")
+hl.FillColor = Color3.fromRGB(0, 160, 255)
+hl.FillTransparency = 0.5
+hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+hl.OutlineTransparency = 0
+hl.Adornee = vehicleModel
+hl.Parent = coreGui
+carHighlights[vehicleModel] = hl
+end
+-- [[ ЦИКЛЫ ОБНОВЛЕНИЯ ESP (ТРАНСПОРТ И ИГРОКИ) ]]
+runService.Heartbeat:Connect(function()
+if carEspActive then
+local vehiclesFolder = workspace:FindFirstChild("Vehicles")
+if vehiclesFolder then
+for _, model in pairs(vehiclesFolder:GetChildren()) do
+if model:IsA("Model") and not carHighlights[model] then
+addCarEsp(model)
+end
+end
+end
+end
+for model, hl in pairs(carHighlights) do
+if not model or not model.Parent or not carEspActive then
+if hl then hl:Destroy() end
+carHighlights[model] = nil
+end
+end
+if not plrEspActive then return end
+if os.clock() - lastPlrCheck > 0.5 then
+lastPlrCheck = os.clock()
+for _, p in pairs(players:GetPlayers()) do
+if p ~= lplayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+local char = p.Character
+if not plrHighlights[char] then
+local hl = Instance.new("Highlight")
+hl.FillColor = Color3.fromRGB(255, 70, 70)
+hl.FillTransparency = 0.5
+hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+hl.OutlineTransparency = 0
+hl.Adornee = char
+hl.Parent = coreGui
+plrHighlights[char] = hl
+end
+end
+end
+end
+for char, hl in pairs(plrHighlights) do
+if not char or not char.Parent or not char:FindFirstChild("HumanoidRootPart") or not char:FindFirstChildOfClass("Humanoid") then
+if hl then hl:Destroy() end
+plrHighlights[char] = nil
+end
+end
+end)
+-- [[ ОБРАБОТКА ПОЛЗУНКА СКОРОСТИ ]]
+sliderBtn.InputBegan:Connect(function(input)
+if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true end
+end)
+uis.InputEnded:Connect(function(input)
+if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
+end)
+runService.Heartbeat:Connect(function()
+if dragging then
+local mousePos = uis:GetMouseLocation().X
+local sliderX = sliderFrame.AbsolutePosition.X
+local sliderWidth = sliderFrame.AbsoluteSize.X
+local percentage = math.clamp((mousePos - sliderX) / sliderWidth, 0, 1)
+sliderBtn.Position = UDim2.new(percentage, -7, -0.6, 0)
+targetSpeed = math.floor(55 + (percentage * (200 - 55)))
+sliderLabel.Text = "ВЫБЕРИ СКОРОСТЬ: " .. tostring(targetSpeed) .. " км/ч"
+end
+end)
+-- [[ ЛОГИКА АНЛОКА СКОРОСТИ И ПЛАВНОГО РАЗГОНА ]]
+runService.Heartbeat:Connect(function()
+if not speedUnlockActive then return end
+local char = lplayer.Character
+local hum = char and char:FindFirstChildOfClass("Humanoid")
+if hum and hum.SeatPart and hum.SeatPart:IsA("VehicleSeat") then
+local carSeat = hum.SeatPart
+local speedLimit = targetSpeed * 0.6
+if uis:IsKeyDown(Enum.KeyCode.W) then
+currentSpeed = math.clamp(currentSpeed + 0.8, 0, speedLimit)
+local look = carSeat.CFrame.LookVector
+local flatLook = Vector3.new(look.X, 0, look.Z).Unit
+carSeat.AssemblyLinearVelocity = Vector3.new(
+flatLook.X * currentSpeed,
+carSeat.AssemblyLinearVelocity.Y,
+flatLook.Z * currentSpeed
+)
+else
+currentSpeed = math.clamp(currentSpeed - 1.5, 0, speedLimit)
+if currentSpeed > 5 then
+local look = carSeat.CFrame.LookVector
+local flatLook = Vector3.new(look.X, 0, look.Z).Unit
+carSeat.AssemblyLinearVelocity = Vector3.new(
+flatLook.X * currentSpeed,
+carSeat.AssemblyLinearVelocity.Y,
+flatLook.Z * currentSpeed
+)
+end
+end
+else
+currentSpeed = 0
+end
+end)
+-- [[ ОБРАБОТКА ДВИЖЕНИЙ И КЛАВИШИ ПАНИКИ ]]
+uis.JumpRequest:Connect(function()
+if infJumpActive then
+local char = lplayer.Character
+local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+if humanoid then humanoid:ChangeState(Enum.HumanoidStateType.Jumping) end
+end
+end)
+uis.InputBegan:Connect(function(input, gpe)
+if not gpe and input.KeyCode == Enum.KeyCode.E then
+platActive = false
+magnActive = false
+carEspActive = false
+plrEspActive = false
+infJumpActive = false
+speedUnlockActive = false
+targetVehicle = nil
+relativeCFrame = nil
+currentSpeed = 0
+for _, hl in pairs(carHighlights) do if hl then hl:Destroy() end end
+for _, hl in pairs(plrHighlights) do if hl then hl:Destroy() end end
+carHighlights = {}
+plrHighlights = {}
+local char = lplayer.Character
+local hum = char and char:FindFirstChildOfClass("Humanoid")
+if hum then hum:ChangeState(Enum.HumanoidStateType.Running) end
+sg:Destroy()
+end
+end)
