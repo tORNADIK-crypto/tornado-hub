@@ -90,4 +90,175 @@ _G.updatePlayerESP = function(character)
             nameLabel.BackgroundTransparency = 1
             nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255) -- Белый ник
             nameLabel.TextStrokeTransparency = 0 -- Чёрный контур букв
-            nameLabel.Text
+            nameLabel.TextSize = 13
+            nameLabel.Font = Enum.Font.SourceSansBold
+            nameLabel.Text = character.Name
+            nameLabel.Parent = espBox
+
+            espBox.Parent = ScreenGui
+        end
+
+        espBox.Visible = true
+        espBox.Size = UDim2.new(0, sizeX, 0, sizeY)
+        espBox.Position = UDim2.new(0, screenPos.X - sizeX / 2, 0, screenPos.Y - sizeY / 2)
+
+        -- Накатываем РОЗОВУЮ ЗАЛИВКУ (Chams)
+        local chams = character:FindFirstChild("TsundereChams")
+        if not chams or chams.Adornee ~= character then
+            if chams then chams:Destroy() end
+            chams = Instance.new("Highlight")
+            chams.Name = "TsundereChams"
+            chams.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+            chams.FillColor = Color3.fromRGB(255, 105, 180) -- Неоново-розовый
+            chams.FillTransparency = 0.5
+            chams.OutlineColor = Color3.fromRGB(255, 215, 0)
+            chams.OutlineTransparency = 0.1
+            chams.Parent = character
+        end
+        chams.Enabled = true
+        chams.Adornee = character
+    else
+        removePlayerVisuals(character.Name, character)
+    end
+end
+local RunService = game:GetService("RenderStepped") or game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local UserInputService = game:GetService("UserInputService")
+
+local ScreenGui = LocalPlayer:WaitForChild("PlayerGui"):WaitForChild("TsundereSimple_Menu")
+
+-- Автономный легкий ESP для оружия и бомбы на земле (в Debris)
+local function updateItemESP(item, isC4, isGrenade)
+    if not _G.espEnabled then
+        if ScreenGui:FindFirstChild(item.Name .. "_Loot") then
+            ScreenGui[item.Name .. "_Loot"]:Destroy()
+        end
+        return
+    end
+
+    local mainPart = item:IsA("BasePart") and item or item:FindFirstChildOfClass("BasePart")
+    if mainPart then
+        local screenPos, onScreen = Camera:WorldToViewportPoint(mainPart.Position)
+
+        if onScreen and screenPos.Z > 0 then
+            -- 3D заливка предметов лута
+            local highlight = item:FindFirstChild("ItemGlow")
+            if not highlight then
+                highlight = Instance.new("Highlight")
+                highlight.Name = "ItemGlow"
+                highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                highlight.OutlineTransparency = 0
+                highlight.FillTransparency = 0.3
+                highlight.Parent = item
+            end
+
+            local itemLabel = ScreenGui:FindFirstChild(item.Name .. "_Loot")
+            if not itemLabel then
+                itemLabel = Instance.new("TextLabel")
+                itemLabel.Name = "ItemLootLabel"
+                itemLabel.Name = item.Name .. "_Loot"
+                itemLabel.Size = UDim2.new(0, 120, 0, 20)
+                itemLabel.BackgroundTransparency = 1
+                itemLabel.TextStrokeTransparency = 0
+                itemLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                itemLabel.TextSize = 12
+                itemLabel.Font = Enum.Font.SourceSansBold
+                itemLabel.Parent = ScreenGui
+            end
+
+            if isC4 then
+                highlight.FillColor = Color3.fromRGB(255, 0, 0) -- Бомба Красная
+                itemLabel.Text = "💣 C4 BOMB"
+                itemLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
+            elseif isGrenade then
+                highlight.FillColor = Color3.fromRGB(255, 165, 0) -- Гранаты Оранжевые
+                itemLabel.Text = "💥 GRENADE"
+                itemLabel.TextColor3 = Color3.fromRGB(255, 165, 0)
+            else
+                highlight.FillColor = Color3.fromRGB(50, 255, 50) -- Оружие Зеленое
+                itemLabel.Text = "🔫 WEAPON"
+                itemLabel.TextColor3 = Color3.fromRGB(50, 255, 50)
+            end
+
+            itemLabel.Visible = true
+            itemLabel.Position = UDim2.new(0, screenPos.X - 60, 0, screenPos.Y - 10)
+        else
+            if ScreenGui:FindFirstChild(item.Name .. "_Loot") then ScreenGui[item.Name .. "_Loot"].Visible = false end
+            if item:FindFirstChild("ItemGlow") then item.ItemGlow:Destroy() end
+        end
+    else
+        if ScreenGui:FindFirstChild(item.Name .. "_Loot") then ScreenGui[item.Name .. "_Loot"]:Destroy() end
+    end
+end
+
+-- Основной глобальный цикл рендера (сканирует актуальные папки на лету каждый кадр)
+RunService.RenderStepped:Connect(function()
+    -- Потоковый скан Игроков через глобальную функцию из Части 1
+    local charFolder = workspace:FindFirstChild("Characters")
+    if charFolder and _G.updatePlayerESP then
+        -- Список текущих живых моделей в Characters
+        local currentChars = {}
+        for _, child in pairs(charFolder:GetChildren()) do
+            if child:IsA("Model") then
+                currentChars[child.Name] = true
+                _G.updatePlayerESP(child)
+            end
+        end
+        -- Принудительно чистим тех, кто исчез из папки Characters (смерть/респавн раунда)
+        for _, guiChild in pairs(ScreenGui:GetChildren()) do
+            if string.find(guiChild.Name, "_ESP") then
+                local pName = string.gsub(guiChild.Name, "_ESP", "")
+                if not currentChars[pName] then
+                    guiChild:Destroy()
+                end
+            end
+        end
+    end
+
+    -- Потоковый скан Предметов в Debris
+    local debrisFolder = workspace:FindFirstChild("Debris")
+    if debrisFolder and ScreenGui then
+        local currentLoot = {}
+        for _, item in pairs(debrisFolder:GetChildren()) do
+            local isC4 = item.Name == "C4" or string.find(string.lower(item.Name), "c4") or item:FindFirstChild("C4")
+            local isWeapon = item:FindFirstChild("Weapon") or string.find(string.lower(item.Name), "weapon")
+            local isGrenade = string.find(string.lower(item.Name), "grenade") or string.find(string.lower(item.Name), "projectile")
+
+            if isC4 or isWeapon or isGrenade then
+                currentLoot[item.Name .. "_Loot"] = true
+                updateItemESP(item, isC4, isGrenade)
+            end
+        end
+
+        -- Зачищаем с экрана текст пушек, которые подобрали
+        for _, guiChild in pairs(ScreenGui:GetChildren()) do
+            if string.find(guiChild.Name, "_Loot") and not currentLoot[guiChild.Name] then
+                guiChild:Destroy()
+            end
+        end
+    end
+end)
+
+-- Переключатель ESP на кнопку Y
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end 
+
+    if input.KeyCode == Enum.KeyCode.Y then
+        _G.espEnabled = not _G.espEnabled
+        if not _G.espEnabled then
+            local charFolder = workspace:FindFirstChild("Characters")
+            if charFolder then
+                for _, child in pairs(charFolder:GetChildren()) do
+                    if ScreenGui:FindFirstChild(child.Name .. "_ESP") then ScreenGui[child.Name .. "_ESP"]:Destroy() end
+                    if child:FindFirstChild("TsundereChams") then child.TsundereChams:Destroy() end
+                end
+            end
+            for _, guiChild in pairs(ScreenGui:GetChildren()) do
+                if string.find(guiChild.Name, "_Loot") then guiChild:Destroy() end
+            end
+        end
+    end
+end)
