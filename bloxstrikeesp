@@ -1,3 +1,4 @@
+
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -121,13 +122,6 @@ _G.updatePlayerESP = function(character)
         removePlayerVisuals(character.Name, character)
     end
 end
-local RunService = game:GetService("RenderStepped") or game:GetService("RunService")
-local Camera = workspace.CurrentCamera
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local UserInputService = game:GetService("UserInputService")
-
-local ScreenGui = LocalPlayer:WaitForChild("PlayerGui"):WaitForChild("TsundereSimple_Menu")
 
 -- Автономный легкий ESP для оружия и бомбы на земле (в Debris)
 local function updateItemESP(item, isC4, isGrenade)
@@ -158,7 +152,6 @@ local function updateItemESP(item, isC4, isGrenade)
             local itemLabel = ScreenGui:FindFirstChild(item.Name .. "_Loot")
             if not itemLabel then
                 itemLabel = Instance.new("TextLabel")
-                itemLabel.Name = "ItemLootLabel"
                 itemLabel.Name = item.Name .. "_Loot"
                 itemLabel.Size = UDim2.new(0, 120, 0, 20)
                 itemLabel.BackgroundTransparency = 1
@@ -196,10 +189,9 @@ end
 
 -- Основной глобальный цикл рендера (сканирует актуальные папки на лету каждый кадр)
 RunService.RenderStepped:Connect(function()
-    -- Потоковый скан Игроков через глобальную функцию из Части 1
+    -- Потоковый скан Игроков через глобальную функцию
     local charFolder = workspace:FindFirstChild("Characters")
     if charFolder and _G.updatePlayerESP then
-        -- Список текущих живых моделей в Characters
         local currentChars = {}
         for _, child in pairs(charFolder:GetChildren()) do
             if child:IsA("Model") then
@@ -234,31 +226,29 @@ RunService.RenderStepped:Connect(function()
         end
 
         -- Зачищаем с экрана текст пушек, которые подобрали
-        for _, guiChild in pairs(ScreenGui:GetChildren()) do
-            if string.find(guiChild.Name, "_Loot") and not currentLoot[guiChild.Name] then
-                guiChild:Destroy()
-            end
-        end
-    end
+for _, guiChild in pairs(ScreenGui:GetChildren()) do
+if string.find(guiChild.Name, "_Loot") and not currentLoot[guiChild.Name] then
+guiChild:Destroy()
+end
+end
+end
 end)
-
 -- Переключатель ESP на кнопку Y
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end 
-
-    if input.KeyCode == Enum.KeyCode.Y then
-        _G.espEnabled = not _G.espEnabled
-        if not _G.espEnabled then
-            local charFolder = workspace:FindFirstChild("Characters")
-            if charFolder then
-                for _, child in pairs(charFolder:GetChildren()) do
-                    if ScreenGui:FindFirstChild(child.Name .. "_ESP") then ScreenGui[child.Name .. "_ESP"]:Destroy() end
-                    if child:FindFirstChild("TsundereChams") then child.TsundereChams:Destroy() end
-                end
-            end
-            for _, guiChild in pairs(ScreenGui:GetChildren()) do
-                if string.find(guiChild.Name, "_Loot") then guiChild:Destroy() end
-            end
-        end
-    end
+if gameProcessed then return end
+if input.KeyCode == Enum.KeyCode.Y then
+_G.espEnabled = not _G.espEnabled
+if not _G.espEnabled then
+local charFolder = workspace:FindFirstChild("Characters")
+if charFolder then
+for _, child in pairs(charFolder:GetChildren()) do
+if ScreenGui:FindFirstChild(child.Name .. "_ESP") then ScreenGui[child.Name .. "_ESP"]:Destroy() end
+if child:FindFirstChild("TsundereChams") then child.TsundereChams:Destroy() end
+end
+end
+for _, guiChild in pairs(ScreenGui:GetChildren()) do
+if string.find(guiChild.Name, "_Loot") then guiChild:Destroy() end
+end
+end
+end
 end)
