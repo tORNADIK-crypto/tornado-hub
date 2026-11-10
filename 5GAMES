@@ -28,7 +28,7 @@ local isMobile = UserInputService.TouchEnabled or screenSize.X < 800
 
 -- Константы размеров корпуса под текущее устройство
 local mainWidth = isMobile and 460 or 680
-local mainHeight = isMobile and 310 or 440
+local mainHeight = isMobile and 290 or 420
 local navWidth = isMobile and 150 or 220
 local textPadding = isMobile and 10 or 18
 
@@ -254,17 +254,16 @@ end)
 table.insert(Buttons, tabBtn)
 end
 -- =====================================================================
--- 📂 РЕГИСТРАЦИЯ ИГРОВЫХ ВКЛАДОК (СВЕРХУ ВНИЗ С УДАЛЕННЫМ ДРОНОМ)
+-- 📂 РЕГИСТРАЦИЯ ИГРОВЫХ ВКЛАДОК (ОТФИЛЬТРОВАННЫЙ СПИСОК)
 -- =====================================================================
-registerHubTab("GET A GRIP", "GET A GRIP (АВТОФАРМ)", "Лицензионный оригинальный скрипт от CHO_NAX4.\nВнутренние системы оптимизированы, баги отрисовки и обходы исправлены.\nНажмите кнопку ниже для инжекта во внутреннюю память сессии.", "https://raw.githubusercontent.com/tORNADIK-crypto/tornado-hub/refs/heads/main/FARM_GETAGRIP")
-registerHubTab("BROOKHAVEN", "BROOKHAVEN (CANDY COLLECTOR)", "Лицензионный оригинальный скрипт от CHO_NAX4.\nВнутренние системы оптимизированы, баги отрисовки и обходы исправлены.\nНажмите кнопку ниже для инжекта во внутреннюю память сессии.", "https://raw.githubusercontent.com/tORNADIK-crypto/tornado-hub/refs/heads/main/candy%20brookhaven")
-registerHubTab("STICKERS! KONTRAA", "STICKERS! KONTRAA (SMART ESP)", "Лицензионный оригинальный скрипт от CHO_NAX4.\nВнутренние системы оптимизированы, баги отрисовки и обходы исправлены.\nНажмите кнопку ниже для инжекта во внутреннюю память сессии.", "https://raw.githubusercontent.com/tORNADIK-crypto/tornado-hub/refs/heads/main/spooky%20kontra")
-registerHubTab("RAILSIDE", "RAILSIDE SCRIPT (PREMIUM HUB)", "Скрипт содержит ЕСП игроков (Транспортная Безопасность, Анти-присяд, Граждане), ЕСП полезных предметов (Аптечки АИ-2, Противогазы ГП-5).\n\n⚠️ ВНИМАНИЕ: Функции персонажа (Спидхак, Ноклип и Инф. Прыжок) вызывают частые автоматические баны! Используйте их максимально аккуратно и на свой страх и риск.", "https://raw.githubusercontent.com/tORNADIK-crypto/tornado-hub/refs/heads/main/railside")
-registerHubTab("LOST FRONT", "LOST FRONT (ROSE ESP)", "Новейший хаб для Lost Front!\nСкрипт активирует продвинутое низкоуровневое меню с отрисовкой линий, 2D хитбоксов и скелетов.\n\n🔥 ОСОБЕННОСТЬ: ESP абсолютно всех игроков на карте окрашено в премиальный Розовый цвет для лучшей видимости.", "https://raw.githubusercontent.com/tORNADIK-crypto/tornado-hub/refs/heads/main/Lostfront")
-registerHubTab("FIND THE ANIMALS", "FIND THE ANIMALS 283 (FREE & PREM)", "🐾 Топовый скрипт для поиска животных на карте!\nДоступен продвинутый авто-сбор, ESP на все 283 питомца и полет.\n\n🎁 Подарок подписчикам! Введите ключ XENOXANIMALS для активации Premium-версии совершенно бесплатно и играйте в удовольствие!", "https://raw.githubusercontent.com/tORNADIK-crypto/tornado-hub/refs/heads/main/FIND%20THE%20ANIMALS%20280", true, "XENOXANIMALS")
-registerHubTab("BLOX STRIKE ESP", "BLOX STRIKE (ROSE CHAMS)", "🐾 Наш совместный приватный чит-пак для Blox Strike!\nПолная розовая анатомическая подсветка тела (Chams) с золотым контуром силуэтов и белые никнеймы.\n\n🔥 ОСОБЕННОСТЬ: Полностью защищён от сброса раундов, сносит мёртвые коробки при смерти и сканирует Debris на наличие пушек и бомбы с эмодзи!", "https://raw.githubusercontent.com/tORNADIK-crypto/tornado-hub/refs/heads/main/bloxstrikeesp", false, "")
-registerHubTab("BROOK ZACEP V2", "BROOKHAVEN (ZACEP & SPEED)", "🌪️ Эксклюзивный приватный хаб зацепа для Брукхейвена!\nСодержит агрессивный зацеп, неоновые платформы под ногами, бесконечный прыжок, ESP на игроков и анлок скорости машин до 200 км/ч.", "https://raw.githubusercontent.com/tORNADIK-crypto/tornado-hub/refs/heads/main/Zacep", false, "")
--- ВКЛАДКА 9 (БЫВШАЯ 10): О РАЗРАБОТЧИКЕ (БЕЗОПАСНОСТЬ)
+registerHubTab("GET A GRIP", "GET A GRIP (АВТОФАРМ)", "Лицензионный оригинальный скрипт от CHO_NAX4.\nВнутренние системы оптимизированы, баги отрисовки и обходы исправлены.\nНажмите кнопку ниже для инжекта во внутреннюю память сессии.", "githubusercontent.com")
+registerHubTab("STICKERS! KONTRAA", "STICKERS! KONTRAA (SMART ESP)", "Лицензионный оригинальный скрипт от CHO_NAX4.\nВнутренние системы оптимизированы, баги отрисовки и обходы исправлены.\nНажмите кнопку ниже для инжекта во внутреннюю память сессии.", "githubusercontent.com")
+registerHubTab("RAILSIDE", "RAILSIDE SCRIPT (PREMIUM HUB)", "Скрипт содержит ЕСП игроков (Транспортная Безопасность, Анти-присяд, Граждане), ЕСП полезных предметов (Аптечки АИ-2, Противогазы ГП-5).\n\n⚠️ ВНИМАНИЕ: Функции персонажа (Спидхак, Ноклип и Инф. Прыжок) вызывают частые автоматические баны! Используйте их максимально аккуратно и на свой страх и риск.", "githubusercontent.com")
+registerHubTab("LOST FRONT", "LOST FRONT (ROSE ESP)", "Новейший хаб для Lost Front!\nСкрипт активирует продвинутое низкоуровневое меню с отрисовкой линий, 2D хитбоксов и скелетов.\n\n🔥 ОСОБЕННОСТЬ: ESP абсолютно всех игроков на карте окрашено в премиальный Розовый цвет для лучшей видимости.", "githubusercontent.com")
+registerHubTab("FIND THE ANIMALS", "FIND THE ANIMALS 283 (FREE & PREM)", "🐾 Топовый скрипт для поиска животных на карте!\nДоступен продвинутый авто-сбор, ESP на все 283 питомца и полет.\n\n🎁 Подарок подписчикам! Введите ключ XENOXANIMALS для активации Premium-версии совершенно бесплатно и играйте в удовольствие!", "githubusercontent.com", true, "XENOXANIMALS")
+registerHubTab("BLOX STRIKE ESP", "BLOX STRIKE (ROSE CHAMS)", "🐾 Наш совместный приватный чит-пак для Blox Strike!\nПолная розовая анатомическая подсветка тела (Chams) с золотым контуром силуэтов и белые никнеймы.\n\n🔥 ОСОБЕННОСТЬ: Полностью защищён от сброса раундов, сносит мёртвые коробки при смерти и сканирует Debris на наличие пушек и бомбы с эмодзи!", "githubusercontent.com", false, "")
+registerHubTab("BROOK ZACEP V2", "BROOKHAVEN (ZACEP & SPEED)", "🌪️ Эксклюзивный приватный хаб зацепа для Брукхейвена!\nСодержит агрессивный зацеп, неоновые платформы под ногами, бесконечный прыжок, ESP на игроков и анлок скорости машин до 200 км/ч.", "githubusercontent.com", false, "")
+-- ВКЛАДКА О РАЗРАБОТЧИКЕ (БЕЗОПАСНОСТЬ)
 AboutPage = Instance.new("Frame", ContentWindow)
 AboutPage.Name = "AboutPage"
 AboutPage.Size = UDim2.new(1, 0, 1, 0)
@@ -337,11 +336,11 @@ activePage = "ABOUT"
 end)
 table.insert(Buttons, AboutTabBtn)
 -- АВТОМАТИЧЕСКИЙ СТАРТ НА ПЕРВОЙ ВКЛАДКЕ
-if Buttons[1] then
-Buttons[1].BackgroundColor3 = _G.ESP_COLOR
-Buttons[1].TextColor3 = Color3.fromRGB(255, 255, 255)
-Buttons[1]:SetAttribute("Active", true)
-local st = Buttons[1]:FindFirstChildOfClass("UIStroke")
+if Buttons then
+Buttons.BackgroundColor3 = _G.ESP_COLOR
+Buttons.TextColor3 = Color3.fromRGB(255, 255, 255)
+Buttons:SetAttribute("Active", true)
+local st = Buttons:FindFirstChildOfClass("UIStroke")
 if st then st.Color = Color3.fromRGB(255, 150, 210) end
 Pages["GET A GRIP"].Visible = true
 activePage = "GET A GRIP"
@@ -457,4 +456,4 @@ for _, b in pairs(data.Bones) do b.Visible = false end
 end
 end
 end)
-print("[🌪️ TORNADO HUB]: Все восемь игровых вкладок успешно запущены! Нажми Insert.")
+print("[🌪️ TORNADO HUB]: Вкладка Brookhaven (Candy Collector) полностью удалена. Нажми Insert.")
