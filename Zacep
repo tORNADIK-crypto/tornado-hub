@@ -1,4 +1,4 @@
--- [[ BROOK TORNADOZACEP V5.0 - BRUTAL EDITION ]]
+-- [[ BROOK TORNADOZACEP V5.2 - BRUTAL EDITION + STAND COUCH BRING/KILL ]]
 local players = game:GetService("Players")
 local lplayer = players.LocalPlayer
 local runService = game:GetService("RunService")
@@ -7,6 +7,7 @@ local uis = game:GetService("UserInputService")
 local tweenService = game:GetService("TweenService")
 local workspace = game:GetService("Workspace")
 local debris = game:GetService("Debris")
+local vim = game:GetService("VirtualInputManager")
 
 -- Очистка старых интерфейсов
 for _, name in ipairs({"ZaceperV2", "BrookSpeedUnlocker", "TornadoBrutalV5"}) do
@@ -26,7 +27,7 @@ local state = {
     flyActive = false,
     noclipActive = false,
     menuVisible = true,
-    unloaded = false
+    actionBusy = false
 }
 
 -- Технические переменные
@@ -38,22 +39,36 @@ local plrHighlights = {}
 local lastPlrCheck = 0
 local connections = {}
 
+-- Переменные выбора цели
+local playerList = {}
+local selectedIndex = 1
+local selectedTarget = nil
+
 -- Параметры скорости и дрифта
 local targetSpeed = 55
 local maxSpeedLimit = 100000
 local currentSpeed = 0
-local driftFactor = 1.0 -- Норма: 1.0 | Мин: 0.1 | Макс: 1.5
+local driftFactor = 1.0
 local flySpeed = 80
 
 -- Объекты полёта
 local flyBV = nil
 local flyBG = nil
 
--- Хелпер для подключения событий с автоочисткой при Home
+-- Хелпер подключения событий
 local function bind(signal, fn)
     local conn = signal:Connect(fn)
     table.insert(connections, conn)
     return conn
+end
+
+-- Быстрое нажатие клавиши
+local function tapKey(keyCode)
+    pcall(function()
+        vim:SendKeyEvent(true, keyCode, false, game)
+        task.wait(0.015)
+        vim:SendKeyEvent(false, keyCode, false, game)
+    end)
 end
 
 -- [[ СОЗДАНИЕ БРУТАЛЬНОГО ПРЕМИУМ ИНТЕРФЕЙСА ]]
@@ -63,16 +78,14 @@ sg.ResetOnSpawn = false
 sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 sg.Parent = coreGui
 
--- Компактный HUD-индикатор дрифта и статуса на экране
+-- Верхний HUD-индикатор
 local hudFrame = Instance.new("Frame", sg)
-hudFrame.Size = UDim2.new(0, 390, 0, 34)
-hudFrame.Position = UDim2.new(0.5, -195, 0.015, 0)
+hudFrame.Size = UDim2.new(0, 420, 0, 34)
+hudFrame.Position = UDim2.new(0.5, -210, 0.015, 0)
 hudFrame.BackgroundColor3 = Color3.fromRGB(11, 11, 15)
 hudFrame.BackgroundTransparency = 0.15
 hudFrame.BorderSizePixel = 0
-
-local hudCorner = Instance.new("UICorner", hudFrame)
-hudCorner.CornerRadius = UDim.new(0, 8)
+Instance.new("UICorner", hudFrame).CornerRadius = UDim.new(0, 8)
 
 local hudStroke = Instance.new("UIStroke", hudFrame)
 hudStroke.Color = Color3.fromRGB(220, 45, 55)
@@ -89,21 +102,18 @@ hudText.TextSize = 10
 
 -- Главное окно
 local frame = Instance.new("Frame", sg)
-frame.Size = UDim2.new(0, 320, 0, 490)
-frame.Position = UDim2.new(0.04, 0, 0.22, 0)
+frame.Size = UDim2.new(0, 330, 0, 520)
+frame.Position = UDim2.new(0.04, 0, 0.2, 0)
 frame.BackgroundColor3 = Color3.fromRGB(9, 9, 12)
 frame.BorderSizePixel = 0
 frame.Active = true
 frame.Draggable = true
-
-local frameCorner = Instance.new("UICorner", frame)
-frameCorner.CornerRadius = UDim.new(0, 14)
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 14)
 
 local frameStroke = Instance.new("UIStroke", frame)
 frameStroke.Color = Color3.fromRGB(225, 45, 55)
 frameStroke.Thickness = 1.8
 
--- Градиент фона главного окна
 local bgGrad = Instance.new("UIGradient", frame)
 bgGrad.Color = ColorSequence.new{
     ColorSequenceKeypoint.new(0, Color3.fromRGB(18, 18, 24)),
@@ -116,9 +126,7 @@ local header = Instance.new("Frame", frame)
 header.Size = UDim2.new(1, 0, 0, 52)
 header.BackgroundColor3 = Color3.fromRGB(14, 14, 19)
 header.BorderSizePixel = 0
-
-local headerCorner = Instance.new("UICorner", header)
-headerCorner.CornerRadius = UDim.new(0, 14)
+Instance.new("UICorner", header).CornerRadius = UDim.new(0, 14)
 
 local accentBar = Instance.new("Frame", header)
 accentBar.Size = UDim2.new(0, 4, 0, 26)
@@ -131,7 +139,7 @@ local title = Instance.new("TextLabel", header)
 title.Size = UDim2.new(1, -30, 0, 22)
 title.Position = UDim2.new(0, 24, 0, 7)
 title.BackgroundTransparency = 1
-title.Text = "TORNADO ZACEP // BRUTAL V5"
+title.Text = "TORNADO ZACEP // BRUTAL V5.2"
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
 title.TextSize = 14
 title.Font = Enum.Font.GothamBlack
@@ -159,7 +167,7 @@ scroll.Size = UDim2.new(1, -14, 1, -64)
 scroll.Position = UDim2.new(0, 7, 0, 58)
 scroll.BackgroundTransparency = 1
 scroll.BorderSizePixel = 0
-scroll.CanvasSize = UDim2.new(0, 0, 0, 620)
+scroll.CanvasSize = UDim2.new(0, 0, 0, 770)
 scroll.ScrollBarThickness = 3
 scroll.ScrollBarImageColor3 = Color3.fromRGB(235, 45, 55)
 
@@ -175,9 +183,7 @@ local function createToggle(text, tag, order, callback)
     btn.Text = ""
     btn.AutoButtonColor = false
     btn.LayoutOrder = order
-
-    local corner = Instance.new("UICorner", btn)
-    corner.CornerRadius = UDim.new(0, 9)
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 9)
 
     local stroke = Instance.new("UIStroke", btn)
     stroke.Color = Color3.fromRGB(34, 34, 44)
@@ -246,7 +252,6 @@ local function createSlider(titleText, minVal, maxVal, defaultVal, decimals, ord
     lbl.TextSize = 11
     lbl.TextXAlignment = Enum.TextXAlignment.Left
 
-    -- Поле точного ввода значения
     local inputBox = Instance.new("TextBox", box)
     inputBox.Size = UDim2.new(0, 82, 0, 22)
     inputBox.Position = UDim2.new(1, -92, 0, 7)
@@ -277,10 +282,9 @@ local function createSlider(titleText, minVal, maxVal, defaultVal, decimals, ord
     knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     knob.Text = ""
     knob.AutoButtonColor = false
-    Instance.new("UICorner", knob).CornerRadius = UDim.new(1, 0)
-
-    local isDragging = false
-    local function setValue(rawVal)
+Instance.new("UICorner", knob).CornerRadius = UDim.new(1, 0)
+local isDragging = false
+local function setValue(rawVal)
 local clamped = math.clamp(rawVal, minVal, maxVal)
 if decimals then
 clamped = math.floor(clamped * 10 + 0.5) / 10
@@ -319,11 +323,322 @@ end
 end)
 return setValue
 end
--- [[ ИНИЦИАЛИЗАЦИЯ ВСЕХ ФУНКЦИЙ В МЕНЮ ]]
-createToggle("ДИНАМИЧЕСКАЯ ПЛАТФОРМА", "OFF", 1, function(v)
+-- [[ БЛОК ВЫБОРА ИГРОКА + STAND BRING / KILL ЧЕРЕЗ ДИВАН ]]
+local targetBox = Instance.new("Frame", scroll)
+targetBox.Size = UDim2.new(0.97, 0, 0, 128)
+targetBox.BackgroundColor3 = Color3.fromRGB(16, 14, 20)
+targetBox.LayoutOrder = 1
+Instance.new("UICorner", targetBox).CornerRadius = UDim.new(0, 10)
+local targetStroke = Instance.new("UIStroke", targetBox)
+targetStroke.Color = Color3.fromRGB(220, 45, 55)
+targetStroke.Thickness = 1.3
+local targetHeader = Instance.new("TextLabel", targetBox)
+targetHeader.Size = UDim2.new(1, -20, 0, 20)
+targetHeader.Position = UDim2.new(0, 10, 0, 6)
+targetHeader.BackgroundTransparency = 1
+targetHeader.Text = "ЦЕЛЬ НА СЕРВЕРЕ (STAND-ЗАХВАТ ДИВАНОМ)"
+targetHeader.TextColor3 = Color3.fromRGB(235, 75, 85)
+targetHeader.Font = Enum.Font.GothamBlack
+targetHeader.TextSize = 10
+targetHeader.TextXAlignment = Enum.TextXAlignment.Left
+local selectorFrame = Instance.new("Frame", targetBox)
+selectorFrame.Size = UDim2.new(1, -20, 0, 32)
+selectorFrame.Position = UDim2.new(0, 10, 0, 28)
+selectorFrame.BackgroundColor3 = Color3.fromRGB(23, 23, 31)
+Instance.new("UICorner", selectorFrame).CornerRadius = UDim.new(0, 7)
+local prevBtn = Instance.new("TextButton", selectorFrame)
+prevBtn.Size = UDim2.new(0, 34, 1, 0)
+prevBtn.BackgroundColor3 = Color3.fromRGB(32, 32, 42)
+prevBtn.Text = "◀"
+prevBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+prevBtn.Font = Enum.Font.GothamBlack
+prevBtn.TextSize = 12
+Instance.new("UICorner", prevBtn).CornerRadius = UDim.new(0, 7)
+local nextBtn = Instance.new("TextButton", selectorFrame)
+nextBtn.Size = UDim2.new(0, 34, 1, 0)
+nextBtn.Position = UDim2.new(1, -34, 0, 0)
+nextBtn.BackgroundColor3 = Color3.fromRGB(32, 32, 42)
+nextBtn.Text = "▶"
+nextBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+nextBtn.Font = Enum.Font.GothamBlack
+nextBtn.TextSize = 12
+Instance.new("UICorner", nextBtn).CornerRadius = UDim.new(0, 7)
+local targetNameLbl = Instance.new("TextLabel", selectorFrame)
+targetNameLbl.Size = UDim2.new(1, -76, 1, 0)
+targetNameLbl.Position = UDim2.new(0, 38, 0, 0)
+targetNameLbl.BackgroundTransparency = 1
+targetNameLbl.Text = "Нет игроков"
+targetNameLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
+targetNameLbl.Font = Enum.Font.GothamBold
+targetNameLbl.TextSize = 11
+targetNameLbl.TextTruncate = Enum.TextTruncate.AtEnd
+local actionStatus = Instance.new("TextLabel", targetBox)
+actionStatus.Size = UDim2.new(1, -20, 0, 16)
+actionStatus.Position = UDim2.new(0, 10, 0, 63)
+actionStatus.BackgroundTransparency = 1
+actionStatus.Text = "Режим: Орбита вокруг цели + спам F до посадки"
+actionStatus.TextColor3 = Color3.fromRGB(150, 150, 165)
+actionStatus.Font = Enum.Font.GothamSemibold
+actionStatus.TextSize = 9
+actionStatus.TextXAlignment = Enum.TextXAlignment.Left
+local bringBtn = Instance.new("TextButton", targetBox)
+bringBtn.Size = UDim2.new(0.47, 0, 0, 34)
+bringBtn.Position = UDim2.new(0, 10, 0, 84)
+bringBtn.BackgroundColor3 = Color3.fromRGB(30, 110, 210)
+bringBtn.Text = "BRING (ПРИТЯНУТЬ)"
+bringBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+bringBtn.Font = Enum.Font.GothamBlack
+bringBtn.TextSize = 10
+Instance.new("UICorner", bringBtn).CornerRadius = UDim.new(0, 7)
+local killBtn = Instance.new("TextButton", targetBox)
+killBtn.Size = UDim2.new(0.47, 0, 0, 34)
+killBtn.Position = UDim2.new(0.53, -10, 0, 84)
+killBtn.BackgroundColor3 = Color3.fromRGB(220, 40, 50)
+killBtn.Text = "KILL (ПОД ЗЕМЛЮ)"
+killBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+killBtn.Font = Enum.Font.GothamBlack
+killBtn.TextSize = 10
+Instance.new("UICorner", killBtn).CornerRadius = UDim.new(0, 7)
+-- Обновление списка игроков
+local function refreshPlayerList()
+local oldTarget = selectedTarget
+playerList = {}
+for _, plr in ipairs(players:GetPlayers()) do
+if plr ~= lplayer then
+table.insert(playerList, plr)
+end
+end
+if #playerList == 0 then
+selectedIndex = 1
+selectedTarget = nil
+targetNameLbl.Text = "Нет других игроков"
+return
+end
+local foundIdx = nil
+if oldTarget then
+for i, plr in ipairs(playerList) do
+if plr == oldTarget then
+foundIdx = i
+break
+end
+end
+end
+selectedIndex = foundIdx or math.clamp(selectedIndex, 1, #playerList)
+selectedTarget = playerList[selectedIndex]
+targetNameLbl.Text = string.format("[%d/%d] %s (@%s)", selectedIndex, #playerList, selectedTarget.DisplayName, selectedTarget.Name)
+end
+prevBtn.MouseButton1Click:Connect(function()
+if #playerList == 0 then return end
+selectedIndex -= 1
+if selectedIndex < 1 then selectedIndex = #playerList end
+selectedTarget = playerList[selectedIndex]
+targetNameLbl.Text = string.format("[%d/%d] %s (@%s)", selectedIndex, #playerList, selectedTarget.DisplayName, selectedTarget.Name)
+end)
+nextBtn.MouseButton1Click:Connect(function()
+if #playerList == 0 then return end
+selectedIndex += 1
+if selectedIndex > #playerList then selectedIndex = 1 end
+selectedTarget = playerList[selectedIndex]
+targetNameLbl.Text = string.format("[%d/%d] %s (@%s)", selectedIndex, #playerList, selectedTarget.DisplayName, selectedTarget.Name)
+end)
+bind(players.PlayerAdded, refreshPlayerList)
+bind(players.PlayerRemoving, refreshPlayerList)
+refreshPlayerList()
+-- Получение и экипировка дивана
+local function getAndEquipCouch()
+local char = lplayer.Character
+local hrp = char and char:FindFirstChild("HumanoidRootPart")
+local hum = char and char:FindFirstChildOfClass("Humanoid")
+local backpack = lplayer:FindFirstChild("Backpack")
+if not hrp or not hum then return nil end
+local function findCouchTool()
+for _, item in ipairs(char:GetChildren()) do
+if item:IsA("Tool") and (item.Name:lower():find("couch") or item.Name:lower():find("диван")) then
+return item
+end
+end
+if backpack then
+for _, item in ipairs(backpack:GetChildren()) do
+if item:IsA("Tool") and (item.Name:lower():find("couch") or item.Name:lower():find("диван")) then
+return item
+end
+end
+end
+return nil
+end
+local couch = findCouchTool()
+if not couch then
+local wsCom = workspace:FindFirstChild("WorkspaceCom")
+local giveToolModel = (wsCom and wsCom:FindFirstChild("003_CouchGiveTool")) or workspace:FindFirstChild("003_CouchGiveTool", true)
+if not giveToolModel then
+actionStatus.Text = "Ошибка: 003_CouchGiveTool не найден!"
+return nil
+end
+local seat = giveToolModel:FindFirstChild("Seat1") or giveToolModel:FindFirstChild("Seat2") or giveToolModel:FindFirstChildWhichIsA("Seat", true)
+if not seat then
+actionStatus.Text = "Ошибка: Seat1/Seat2 не найдены!"
+return nil
+end
+actionStatus.Text = "Беру диван в 003_CouchGiveTool..."
+hrp.CFrame = seat.CFrame + Vector3.new(0, 1.5, 0)
+task.wait(0.12)
+pcall(function() seat:Sit(hum) end)
+for _ = 1, 20 do
+couch = findCouchTool()
+if couch then break end
+task.wait(0.05)
+end
+hum.Jump = true
+hum:ChangeState(Enum.HumanoidStateType.Jumping)
+task.wait(0.15)
+end
+if couch and couch.Parent ~= char then
+hum:EquipTool(couch)
+task.wait(0.1)
+end
+return findCouchTool()
+end
+-- Проверка, села ли цель на диван
+local function isTargetSeatedOnCouch(targetChar, couchTool)
+local targetHum = targetChar and targetChar:FindFirstChildOfClass("Humanoid")
+if not targetHum then return false end
+-- Проверяем сиденья внутри самого инструмента-дивана
+if couchTool then
+for _, desc in ipairs(couchTool:GetDescendants()) do
+if (desc:IsA("Seat") or desc:IsA("VehicleSeat")) and desc.Occupant == targetHum then
+return true
+end
+end
+end
+-- Дополнительная проверка: цель перешла в состояние Sit вплотную к нам
+if targetHum.Sit and targetHum.SeatPart then
+local seatParent = targetHum.SeatPart.Parent
+if seatParent and (seatParent == couchTool or seatParent:IsDescendantOf(lplayer.Character)) then
+return true
+end
+end
+return false
+end
+-- Выполнение Bring / Kill в режиме Stand-преследования
+local function executeCouchAction(mode)
+if state.actionBusy then return end
+if not selectedTarget or not selectedTarget.Parent then
+actionStatus.Text = "Выберите игрока из списка!"
+return
+end
+local char = lplayer.Character
+local hrp = char and char:FindFirstChild("HumanoidRootPart")
+local targetChar = selectedTarget.Character
+local targetHrp = targetChar and targetChar:FindFirstChild("HumanoidRootPart")
+if not hrp or not targetHrp then
+actionStatus.Text = "Персонаж цели не загружен!"
+return
+end
+state.actionBusy = true
+local savedCFrame = hrp.CFrame
+task.spawn(function()
+local ok = pcall(function()
+local couch = getAndEquipCouch()
+if not couch then
+hrp.CFrame = savedCFrame
+return
+end
+-- Режим "Станд": парим вокруг цели, смотрим на неё и спамим F до посадки
+local grabbed = false
+local timeout = 4.0
+local startTime = os.clock()
+local angle = 0
+local lastKeySpam = 0
+local standConn
+standConn = runService.Heartbeat:Connect(function(dt)
+if not targetHrp or not targetHrp.Parent or not hrp or not hrp.Parent then return end
+-- Вращаемся по плотной орбите вокруг игрока (радиус 1.6 студа), как станд
+angle += dt * 16
+local offset = Vector3.new(math.cos(angle) * 1.6, 0.3, math.sin(angle) * 1.6)
+local targetPos = targetHrp.Position
+local standPos = targetPos + offset
+hrp.CFrame = CFrame.lookAt(standPos, Vector3.new(targetPos.X, standPos.Y, targetPos.Z))
+hrp.AssemblyLinearVelocity = Vector3.zero
+hrp.AssemblyAngularVelocity = Vector3.zero
+end)
+while os.clock() - startTime < timeout do
+if not targetChar or not targetChar.Parent or not targetHrp or not targetHrp.Parent then
+break
+end
+-- Проверяем, сел ли игрок на диван
+if isTargetSeatedOnCouch(targetChar, couch) then
+grabbed = true
+break
+end
+-- Держим диван в руках, если он вдруг убрался
+if couch.Parent ~= char then
+local hum = char:FindFirstChildOfClass("Humanoid")
+if hum then hum:EquipTool(couch) end
+end
+-- Спамим клавишу F и активацию каждые 0.08 сек
+if os.clock() - lastKeySpam >= 0.08 then
+lastKeySpam = os.clock()
+local left = math.max(0, timeout - (os.clock() - startTime))
+actionStatus.Text = string.format("Кружусь и спамлю F... (%.1fс)", left)
+tapKey(Enum.KeyCode.F)
+pcall(function() couch:Activate() end)
+end
+task.wait(0.03)
+end
+if standConn then standConn:Disconnect() end
+if not grabbed then
+actionStatus.Text = "Не сел за 4с — возвращаюсь обратно..."
+hrp.CFrame = savedCFrame
+hrp.AssemblyLinearVelocity = Vector3.zero
+return
+end
+-- Цель успешно села на диван! Выполняем доставку
+task.wait(0.1)
+if mode == "bring" then
+actionStatus.Text = "Поймал! Возврат на точку и сброс (C)..."
+hrp.CFrame = savedCFrame
+hrp.AssemblyLinearVelocity = Vector3.zero
+task.wait(0.15)
+tapKey(Enum.KeyCode.C)
+actionStatus.Text = "Готово: " .. selectedTarget.Name .. " притянут!"
+elseif mode == "kill" then
+actionStatus.Text = "Поймал! Сброс под карту и возврат (C)..."
+local voidPos = Vector3.new(savedCFrame.Position.X, -150, savedCFrame.Position.Z)
+local tempFloor = Instance.new("Part")
+tempFloor.Size = Vector3.new(12, 1, 12)
+tempFloor.Position = voidPos - Vector3.new(0, 3.5, 0)
+tempFloor.Anchored = true
+tempFloor.Transparency = 1
+tempFloor.Parent = workspace
+debris:AddItem(tempFloor, 1.5)
+hrp.CFrame = CFrame.new(voidPos)
+hrp.AssemblyLinearVelocity = Vector3.zero
+task.wait(0.18)
+tapKey(Enum.KeyCode.C)
+task.wait(0.12)
+hrp.CFrame = savedCFrame
+hrp.AssemblyLinearVelocity = Vector3.zero
+actionStatus.Text = "Готово: " .. selectedTarget.Name .. " сброшен вниз!"
+end
+end)
+if not ok then
+actionStatus.Text = "Сбой выполнения, возврат..."
+if hrp and hrp.Parent then hrp.CFrame = savedCFrame end
+end
+state.actionBusy = false
+end)
+end
+bringBtn.MouseButton1Click:Connect(function()
+executeCouchAction("bring")
+end)
+killBtn.MouseButton1Click:Connect(function()
+executeCouchAction("kill")
+end)
+-- [[ ОСТАЛЬНЫЕ ФУНКЦИИ МЕНЮ ]]
+createToggle("ДИНАМИЧЕСКАЯ ПЛАТФОРМА", "OFF", 2, function(v)
 state.platActive = v
 end)
-createToggle("АГРЕССИВНЫЙ ЗАЦЕП", "OFF", 2, function(v)
+createToggle("АГРЕССИВНЫЙ ЗАЦЕП", "OFF", 3, function(v)
 state.magnActive = v
 if not v then
 targetVehicle = nil
@@ -332,38 +647,37 @@ local hum = lplayer.Character and lplayer.Character:FindFirstChildOfClass("Human
 if hum then hum:ChangeState(Enum.HumanoidStateType.Running) end
 end
 end)
-createToggle("ESP ТРАНСПОРТ", "OFF", 3, function(v)
+createToggle("ESP ТРАНСПОРТ", "OFF", 4, function(v)
 state.carEspActive = v
 if not v then
 for _, hl in pairs(carHighlights) do if hl then hl:Destroy() end end
 carHighlights = {}
 end
 end)
-createToggle("ESP ИГРОКИ", "OFF", 4, function(v)
+createToggle("ESP ИГРОКИ", "OFF", 5, function(v)
 state.plrEspActive = v
 if not v then
 for _, hl in pairs(plrHighlights) do if hl then hl:Destroy() end end
 plrHighlights = {}
 end
 end)
-createToggle("БЕСКОНЕЧНЫЙ ПРЫЖОК", "OFF", 5, function(v)
+createToggle("БЕСКОНЕЧНЫЙ ПРЫЖОК", "OFF", 6, function(v)
 state.infJumpActive = v
 end)
--- Новые функции: FLY и NOCLIP
 local function stopFly()
 if flyBV then flyBV:Destroy() flyBV = nil end
 if flyBG then flyBG:Destroy() flyBG = nil end
 local hum = lplayer.Character and lplayer.Character:FindFirstChildOfClass("Humanoid")
 if hum then hum.PlatformStand = false end
 end
-createToggle("ПОЛЁТ (FLY)", "OFF", 6, function(v)
+createToggle("ПОЛЁТ (FLY)", "OFF", 7, function(v)
 state.flyActive = v
 if not v then stopFly() end
 end)
-createSlider("СКОРОСТЬ ПОЛЁТА", 20, 1000, 80, false, 7, function(val)
+createSlider("СКОРОСТЬ ПОЛЁТА", 20, 1000, 80, false, 8, function(val)
 flySpeed = val
 end)
-createToggle("СКВОЗЬ СТЕНЫ (NOCLIP)", "OFF", 8, function(v)
+createToggle("СКВОЗЬ СТЕНЫ (NOCLIP)", "OFF", 9, function(v)
 state.noclipActive = v
 if not v and lplayer.Character then
 for _, part in ipairs(lplayer.Character:GetDescendants()) do
@@ -373,16 +687,14 @@ end
 end
 end
 end)
--- Секция скорости до 100 000 и настройки дрифта
-createToggle("АНЛОК СКОРОСТИ (ДО 100K)", "OFF", 9, function(v)
+createToggle("АНЛОК СКОРОСТИ (ДО 100K)", "OFF", 10, function(v)
 state.speedUnlockActive = v
 if not v then currentSpeed = 0 end
 end)
--- Информационная панель-советник по дрифту прямо в меню
 local driftAdviceBox = Instance.new("Frame", scroll)
 driftAdviceBox.Size = UDim2.new(0.97, 0, 0, 54)
 driftAdviceBox.BackgroundColor3 = Color3.fromRGB(24, 14, 17)
-driftAdviceBox.LayoutOrder = 11
+driftAdviceBox.LayoutOrder = 12
 Instance.new("UICorner", driftAdviceBox).CornerRadius = UDim.new(0, 9)
 local driftAdviceStroke = Instance.new("UIStroke", driftAdviceBox)
 driftAdviceStroke.Color = Color3.fromRGB(160, 40, 50)
@@ -414,16 +726,16 @@ hudText.Text = string.format(
 targetSpeed, driftFactor
 )
 end
-createSlider("СКОРОСТЬ АВТО (55 - 100000)", 55, maxSpeedLimit, 55, false, 10, function(val)
+createSlider("СКОРОСТЬ АВТО (55 - 100000)", 55, maxSpeedLimit, 55, false, 11, function(val)
 targetSpeed = val
 updateDriftAdvice()
 end)
-createSlider("КОЭФФИЦИЕНТ ДРИФТА (0.1 - 1.5)", 0.1, 1.5, 1.0, true, 12, function(val)
+createSlider("КОЭФФИЦИЕНТ ДРИФТА (0.1 - 1.5)", 0.1, 1.5, 1.0, true, 13, function(val)
 driftFactor = val
 updateDriftAdvice()
 end)
 updateDriftAdvice()
--- [[ 1. ЛОГИКА ДИНАМИЧЕСКИХ ПЛАТФОРМ (БЕЗ ИЗМЕНЕНИЙ) ]]
+-- [[ 1. ЛОГИКА ДИНАМИЧЕСКИХ ПЛАТФОРМ ]]
 bind(runService.Heartbeat, function()
 if not state.platActive then return end
 local char = lplayer.Character
@@ -449,7 +761,7 @@ debris:AddItem(p, 2)
 end
 end
 end)
--- [[ 2. ЛОГИКА АГРЕССИВНОГО ЗАЦЕПА (БЕЗ ИЗМЕНЕНИЙ) ]]
+-- [[ 2. ЛОГИКА АГРЕССИВНОГО ЗАЦЕПА ]]
 bind(runService.Heartbeat, function()
 local char = lplayer.Character
 local hrp = char and char:FindFirstChild("HumanoidRootPart")
@@ -482,7 +794,7 @@ hrp.AssemblyAngularVelocity = Vector3.zero
 end
 end
 end)
--- [[ 3. ЛОГИКА ESP ТРАНСПОРТА И ИГРОКОВ (БЕЗ ИЗМЕНЕНИЙ) ]]
+-- [[ 3. ЛОГИКА ESP ТРАНСПОРТА И ИГРОКОВ ]]
 local function addCarEsp(vehicleModel)
 if not vehicleModel:IsA("Model") or carHighlights[vehicleModel] then return end
 local hl = Instance.new("Highlight")
@@ -537,7 +849,7 @@ plrHighlights[char] = nil
 end
 end
 end)
--- [[ 4. АНЛОК СКОРОСТИ ДО 100 000 + УЛУЧШЕННАЯ ПОВОРАЧИВАЕМОСТЬ И ДРИФТ ]]
+-- [[ 4. АНЛОК СКОРОСТИ ДО 100 000 + ПОВОРАЧИВАЕМОСТЬ И ДРИФТ ]]
 bind(runService.Heartbeat, function(dt)
 if not state.speedUnlockActive then return end
 local char = lplayer.Character
@@ -554,7 +866,6 @@ else
 currentSpeed = currentSpeed * 0.96
 if math.abs(currentSpeed) < 1 then currentSpeed = 0 end
 end
--- Помощь в поворотах на любой скорости с учётом коэффициента дрифта
 local steerInput = 0
 if uis:IsKeyDown(Enum.KeyCode.A) then steerInput = 1 end
 if uis:IsKeyDown(Enum.KeyCode.D) then steerInput = -1 end
@@ -570,7 +881,6 @@ if flatLook.Magnitude > 0.001 then
 flatLook = flatLook.Unit
 local currentVel = carSeat.AssemblyLinearVelocity
 local desiredVel = Vector3.new(flatLook.X * currentSpeed, currentVel.Y, flatLook.Z * currentSpeed)
--- Чем ниже driftFactor, тем жёстче сцепление с траекторией; чем выше — тем сильнее занос
 local grip = math.clamp(1.15 - (driftFactor * 0.65), 0.15, 0.98)
 carSeat.AssemblyLinearVelocity = currentVel:Lerp(desiredVel, grip)
 end
@@ -636,12 +946,10 @@ end
 end)
 bind(uis.InputBegan, function(input, gpe)
 if gpe then return end
--- INSERT: Скрыть или показать меню
 if input.KeyCode == Enum.KeyCode.Insert then
 state.menuVisible = not state.menuVisible
 frame.Visible = state.menuVisible
 end
--- HOME: Полное удаление меню и сброс всех функций
 if input.KeyCode == Enum.KeyCode.Home then
 state.platActive = false
 state.magnActive = false
@@ -674,4 +982,3 @@ connections = {}
 sg:Destroy()
 end
 end)
-
