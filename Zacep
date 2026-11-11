@@ -1,293 +1,490 @@
--- [[ BROOK MULTIHACK V4.0 - ULTRA COMPACT CORE ]]
+-- [[ BROOK TORNADOZACEP V5.0 - BRUTAL EDITION ]]
 local players = game:GetService("Players")
 local lplayer = players.LocalPlayer
 local runService = game:GetService("RunService")
 local coreGui = game:GetService("CoreGui")
 local uis = game:GetService("UserInputService")
+local tweenService = game:GetService("TweenService")
 local workspace = game:GetService("Workspace")
 local debris = game:GetService("Debris")
 
 -- Очистка старых интерфейсов
-if coreGui:FindFirstChild("ZaceperV2") then coreGui.ZaceperV2:Destroy() end
-if coreGui:FindFirstChild("BrookSpeedUnlocker") then coreGui.BrookSpeedUnlocker:Destroy() end
+for _, name in ipairs({"ZaceperV2", "BrookSpeedUnlocker", "TornadoBrutalV5"}) do
+    if coreGui:FindFirstChild(name) then
+        coreGui[name]:Destroy()
+    end
+end
 
--- Основные переменные состояния
-local platActive = false
-local magnActive = false
-local carEspActive = false
-local plrEspActive = false
-local infJumpActive = false
-local speedUnlockActive = false
+-- Состояния функций
+local state = {
+    platActive = false,
+    magnActive = false,
+    carEspActive = false,
+    plrEspActive = false,
+    infJumpActive = false,
+    speedUnlockActive = false,
+    flyActive = false,
+    noclipActive = false,
+    menuVisible = true,
+    unloaded = false
+}
 
--- Технические переменные для зацепа
+-- Технические переменные
 local targetVehicle = nil
 local relativeCFrame = nil
 local lastPlatformPos = Vector3.new()
 local carHighlights = {}
 local plrHighlights = {}
 local lastPlrCheck = 0
+local connections = {}
 
--- Технические переменные для разгона
+-- Параметры скорости и дрифта
 local targetSpeed = 55
+local maxSpeedLimit = 100000
 local currentSpeed = 0
-local dragging = false
+local driftFactor = 1.0 -- Норма: 1.0 | Мин: 0.1 | Макс: 1.5
+local flySpeed = 80
 
--- Создание основы премиального интерфейса
-local sg = Instance.new("ScreenGui", coreGui)
-sg.Name = "ZaceperV2"
+-- Объекты полёта
+local flyBV = nil
+local flyBG = nil
+
+-- Хелпер для подключения событий с автоочисткой при Home
+local function bind(signal, fn)
+    local conn = signal:Connect(fn)
+    table.insert(connections, conn)
+    return conn
+end
+
+-- [[ СОЗДАНИЕ БРУТАЛЬНОГО ПРЕМИУМ ИНТЕРФЕЙСА ]]
+local sg = Instance.new("ScreenGui")
+sg.Name = "TornadoBrutalV5"
 sg.ResetOnSpawn = false
+sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+sg.Parent = coreGui
 
+-- Компактный HUD-индикатор дрифта и статуса на экране
+local hudFrame = Instance.new("Frame", sg)
+hudFrame.Size = UDim2.new(0, 390, 0, 34)
+hudFrame.Position = UDim2.new(0.5, -195, 0.015, 0)
+hudFrame.BackgroundColor3 = Color3.fromRGB(11, 11, 15)
+hudFrame.BackgroundTransparency = 0.15
+hudFrame.BorderSizePixel = 0
+
+local hudCorner = Instance.new("UICorner", hudFrame)
+hudCorner.CornerRadius = UDim.new(0, 8)
+
+local hudStroke = Instance.new("UIStroke", hudFrame)
+hudStroke.Color = Color3.fromRGB(220, 45, 55)
+hudStroke.Thickness = 1.2
+
+local hudText = Instance.new("TextLabel", hudFrame)
+hudText.Size = UDim2.new(1, -16, 1, 0)
+hudText.Position = UDim2.new(0, 8, 0, 0)
+hudText.BackgroundTransparency = 1
+hudText.Text = "ДРИФТ: 1.0 (НОРМА) | МИН: 0.1 | МАКС: 1.5  [INS: СКРЫТЬ | HOME: УДАЛИТЬ]"
+hudText.TextColor3 = Color3.fromRGB(235, 235, 245)
+hudText.Font = Enum.Font.GothamBold
+hudText.TextSize = 10
+
+-- Главное окно
 local frame = Instance.new("Frame", sg)
-frame.Size = UDim2.new(0, 260, 0, 360)
-frame.Position = UDim2.new(0.05, 0, 0.3, 0)
-frame.BackgroundColor3 = Color3.fromRGB(10, 10, 13)
+frame.Size = UDim2.new(0, 320, 0, 490)
+frame.Position = UDim2.new(0.04, 0, 0.22, 0)
+frame.BackgroundColor3 = Color3.fromRGB(9, 9, 12)
 frame.BorderSizePixel = 0
 frame.Active = true
 frame.Draggable = true
 
--- Скругление углов главного меню
 local frameCorner = Instance.new("UICorner", frame)
-frameCorner.CornerRadius = UDim.new(0, 12)
+frameCorner.CornerRadius = UDim.new(0, 14)
 
--- Стильная неоновая обводка меню
 local frameStroke = Instance.new("UIStroke", frame)
-frameStroke.Color = Color3.fromRGB(35, 35, 45)
-frameStroke.Thickness = 1.5
-frameStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+frameStroke.Color = Color3.fromRGB(225, 45, 55)
+frameStroke.Thickness = 1.8
 
--- Шапка интерфейса
-local title = Instance.new("TextLabel", frame)
-title.Size = UDim2.new(1, 0, 0, 45)
-title.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
-title.Text = "   BROOK MULTIHACK v4.0"
+-- Градиент фона главного окна
+local bgGrad = Instance.new("UIGradient", frame)
+bgGrad.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(18, 18, 24)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(8, 8, 11))
+}
+bgGrad.Rotation = 135
+
+-- Шапка меню
+local header = Instance.new("Frame", frame)
+header.Size = UDim2.new(1, 0, 0, 52)
+header.BackgroundColor3 = Color3.fromRGB(14, 14, 19)
+header.BorderSizePixel = 0
+
+local headerCorner = Instance.new("UICorner", header)
+headerCorner.CornerRadius = UDim.new(0, 14)
+
+local accentBar = Instance.new("Frame", header)
+accentBar.Size = UDim2.new(0, 4, 0, 26)
+accentBar.Position = UDim2.new(0, 12, 0.5, -13)
+accentBar.BackgroundColor3 = Color3.fromRGB(235, 45, 55)
+accentBar.BorderSizePixel = 0
+Instance.new("UICorner", accentBar).CornerRadius = UDim.new(1, 0)
+
+local title = Instance.new("TextLabel", header)
+title.Size = UDim2.new(1, -30, 0, 22)
+title.Position = UDim2.new(0, 24, 0, 7)
+title.BackgroundTransparency = 1
+title.Text = "TORNADO ZACEP // BRUTAL V5"
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
 title.TextSize = 14
-title.Font = Enum.Font.GothamBold
+title.Font = Enum.Font.GothamBlack
 title.TextXAlignment = Enum.TextXAlignment.Left
 
-local titleCorner = Instance.new("UICorner", title)
-titleCorner.CornerRadius = UDim.new(0, 12)
+local subTitle = Instance.new("TextLabel", header)
+subTitle.Size = UDim2.new(1, -30, 0, 16)
+subTitle.Position = UDim2.new(0, 24, 0, 28)
+subTitle.BackgroundTransparency = 1
+subTitle.Text = "INSERT — Скрыть/Показать   •   HOME — Выгрузить"
+subTitle.TextColor3 = Color3.fromRGB(150, 150, 165)
+subTitle.TextSize = 10
+subTitle.Font = Enum.Font.GothamSemibold
+subTitle.TextXAlignment = Enum.TextXAlignment.Left
 
--- Линия разделения шапки
-local titleLine = Instance.new("Frame", frame)
-titleLine.Size = UDim2.new(1, 0, 0, 1)
-titleLine.Position = UDim2.new(0, 0, 0, 44)
-titleLine.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-titleLine.BorderSizePixel = 0
+local headerDivider = Instance.new("Frame", frame)
+headerDivider.Size = UDim2.new(1, 0, 0, 1)
+headerDivider.Position = UDim2.new(0, 0, 0, 52)
+headerDivider.BackgroundColor3 = Color3.fromRGB(45, 20, 25)
+headerDivider.BorderSizePixel = 0
 
--- Контейнер со скроллом для функций
+-- Скролл-контейнер
 local scroll = Instance.new("ScrollingFrame", frame)
-scroll.Size = UDim2.new(1, -10, 1, -55)
-scroll.Position = UDim2.new(0, 5, 0, 50)
+scroll.Size = UDim2.new(1, -14, 1, -64)
+scroll.Position = UDim2.new(0, 7, 0, 58)
 scroll.BackgroundTransparency = 1
 scroll.BorderSizePixel = 0
-scroll.CanvasSize = UDim2.new(0, 0, 0, 430)
-scroll.ScrollBarThickness = 4
-scroll.ScrollBarImageColor3 = Color3.fromRGB(50, 50, 60)
+scroll.CanvasSize = UDim2.new(0, 0, 0, 620)
+scroll.ScrollBarThickness = 3
+scroll.ScrollBarImageColor3 = Color3.fromRGB(235, 45, 55)
 
 local layout = Instance.new("UIListLayout", scroll)
 layout.SortOrder = Enum.SortOrder.LayoutOrder
 layout.Padding = UDim.new(0, 8)
 
--- Функция создания премиальных кнопок-переключателей
-local function createBtn(text, order, callback)
-    local container = Instance.new("Frame", scroll)
-    container.Size = UDim2.new(0.96, 0, 0, 42)
-    container.BackgroundTransparency = 1
-    container.LayoutOrder = order
+-- Генератор кнопок-переключателей
+local function createToggle(text, tag, order, callback)
+    local btn = Instance.new("TextButton", scroll)
+    btn.Size = UDim2.new(0.97, 0, 0, 40)
+    btn.BackgroundColor3 = Color3.fromRGB(17, 17, 23)
+    btn.Text = ""
+    btn.AutoButtonColor = false
+    btn.LayoutOrder = order
 
-    local btn = Instance.new("TextButton", container)
-    btn.Size = UDim2.new(1, 0, 1, 0)
-    btn.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-    btn.Text = "  " .. text .. ": OFF"
-    btn.TextColor3 = Color3.fromRGB(180, 180, 190)
-    btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 11
-    btn.TextXAlignment = Enum.TextXAlignment.Left
-    btn.BorderSizePixel = 0
-    
-    local btnCorner = Instance.new("UICorner", btn)
-    btnCorner.CornerRadius = UDim.new(0, 8)
-    
-    local btnStroke = Instance.new("UIStroke", btn)
-    btnStroke.Color = Color3.fromRGB(30, 30, 38)
-    btnStroke.Thickness = 1
+    local corner = Instance.new("UICorner", btn)
+    corner.CornerRadius = UDim.new(0, 9)
 
-    local state = false
+    local stroke = Instance.new("UIStroke", btn)
+    stroke.Color = Color3.fromRGB(34, 34, 44)
+    stroke.Thickness = 1.2
+
+    local nameLbl = Instance.new("TextLabel", btn)
+    nameLbl.Size = UDim2.new(0.7, 0, 1, 0)
+    nameLbl.Position = UDim2.new(0, 12, 0, 0)
+    nameLbl.BackgroundTransparency = 1
+    nameLbl.Text = text
+    nameLbl.TextColor3 = Color3.fromRGB(205, 205, 215)
+    nameLbl.Font = Enum.Font.GothamBold
+    nameLbl.TextSize = 11
+    nameLbl.TextXAlignment = Enum.TextXAlignment.Left
+
+    local badge = Instance.new("TextLabel", btn)
+    badge.Size = UDim2.new(0, 54, 0, 22)
+    badge.Position = UDim2.new(1, -64, 0.5, -11)
+    badge.BackgroundColor3 = Color3.fromRGB(26, 26, 34)
+    badge.Text = tag or "OFF"
+    badge.TextColor3 = Color3.fromRGB(140, 140, 155)
+    badge.Font = Enum.Font.GothamBlack
+    badge.TextSize = 10
+    Instance.new("UICorner", badge).CornerRadius = UDim.new(0, 6)
+
+    local active = false
     btn.MouseButton1Click:Connect(function()
-        state = not state
-        btn.Text = "  " .. text .. (state and ": ON" or ": OFF")
-        btn.TextColor3 = state and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(180, 180, 190)
-        btn.BackgroundColor3 = state and Color3.fromRGB(235, 65, 65) or Color3.fromRGB(20, 20, 25)
-        btnStroke.Color = state and Color3.fromRGB(255, 100, 100) or Color3.fromRGB(30, 30, 38)
-        callback(state)
+        active = not active
+        tweenService:Create(btn, TweenInfo.new(0.18), {
+            BackgroundColor3 = active and Color3.fromRGB(38, 15, 20) or Color3.fromRGB(17, 17, 23)
+        }):Play()
+        tweenService:Create(stroke, TweenInfo.new(0.18), {
+            Color = active and Color3.fromRGB(235, 50, 60) or Color3.fromRGB(34, 34, 44)
+        }):Play()
+        tweenService:Create(badge, TweenInfo.new(0.18), {
+            BackgroundColor3 = active and Color3.fromRGB(235, 50, 60) or Color3.fromRGB(26, 26, 34),
+            TextColor3 = active and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(140, 140, 155)
+        }):Play()
+        badge.Text = active and "ACTIVE" or "OFF"
+        nameLbl.TextColor3 = active and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(205, 205, 215)
+        callback(active)
     end)
+
     return btn
 end
 
--- [[ ИНИЦИАЛИЗАЦИЯ КНОПОК ИЗ СЦЕНАРИЯ ЗАЦЕПА ]]
+-- Генератор продвинутого ползунка с ручным вводом чисел
+local function createSlider(titleText, minVal, maxVal, defaultVal, decimals, order, onChange)
+    local box = Instance.new("Frame", scroll)
+    box.Size = UDim2.new(0.97, 0, 0, 62)
+    box.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+    box.LayoutOrder = order
+    Instance.new("UICorner", box).CornerRadius = UDim.new(0, 9)
 
-createBtn("ДИНАМИЧЕСКАЯ ПЛАТФОРМА", 1, function(val)
-    platActive = val
+    local stroke = Instance.new("UIStroke", box)
+    stroke.Color = Color3.fromRGB(34, 34, 44)
+    stroke.Thickness = 1.2
+
+    local lbl = Instance.new("TextLabel", box)
+    lbl.Size = UDim2.new(0.62, 0, 0, 24)
+    lbl.Position = UDim2.new(0, 12, 0, 6)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = titleText
+    lbl.TextColor3 = Color3.fromRGB(190, 190, 205)
+    lbl.Font = Enum.Font.GothamBold
+    lbl.TextSize = 11
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+
+    -- Поле точного ввода значения
+    local inputBox = Instance.new("TextBox", box)
+    inputBox.Size = UDim2.new(0, 82, 0, 22)
+    inputBox.Position = UDim2.new(1, -92, 0, 7)
+    inputBox.BackgroundColor3 = Color3.fromRGB(24, 24, 32)
+    inputBox.Text = tostring(defaultVal)
+    inputBox.TextColor3 = Color3.fromRGB(255, 85, 95)
+    inputBox.Font = Enum.Font.GothamBlack
+    inputBox.TextSize = 11
+    inputBox.ClearTextOnFocus = false
+    Instance.new("UICorner", inputBox).CornerRadius = UDim.new(0, 6)
+
+    local track = Instance.new("Frame", box)
+    track.Size = UDim2.new(1, -24, 0, 6)
+    track.Position = UDim2.new(0, 12, 0, 42)
+    track.BackgroundColor3 = Color3.fromRGB(28, 28, 36)
+    track.BorderSizePixel = 0
+    Instance.new("UICorner", track).CornerRadius = UDim.new(1, 0)
+
+    local fill = Instance.new("Frame", track)
+    fill.Size = UDim2.new((defaultVal - minVal) / (maxVal - minVal), 0, 1, 0)
+    fill.BackgroundColor3 = Color3.fromRGB(235, 50, 60)
+    fill.BorderSizePixel = 0
+    Instance.new("UICorner", fill).CornerRadius = UDim.new(1, 0)
+
+    local knob = Instance.new("TextButton", track)
+    knob.Size = UDim2.new(0, 14, 0, 14)
+    knob.Position = UDim2.new((defaultVal - minVal) / (maxVal - minVal), -7, 0.5, -7)
+    knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    knob.Text = ""
+    knob.AutoButtonColor = false
+    Instance.new("UICorner", knob).CornerRadius = UDim.new(1, 0)
+
+    local isDragging = false
+    local function setValue(rawVal)
+local clamped = math.clamp(rawVal, minVal, maxVal)
+if decimals then
+clamped = math.floor(clamped * 10 + 0.5) / 10
+else
+clamped = math.floor(clamped + 0.5)
+end
+local pct = (clamped - minVal) / (maxVal - minVal)
+fill.Size = UDim2.new(pct, 0, 1, 0)
+knob.Position = UDim2.new(pct, -7, 0.5, -7)
+inputBox.Text = tostring(clamped)
+onChange(clamped)
+end
+knob.InputBegan:Connect(function(inp)
+if inp.UserInputType == Enum.UserInputType.MouseButton1 then isDragging = true end
 end)
-
-createBtn("АГРЕССИВНЫЙ ЗАЦЕП", 2, function(val)
-    magnActive = val
-    if not magnActive then
-        targetVehicle = nil
-        relativeCFrame = nil
-        local char = lplayer.Character
-        local hum = char and char:FindFirstChildOfClass("Humanoid")
-        if hum then hum:ChangeState(Enum.HumanoidStateType.Running) end
-    end
+track.InputBegan:Connect(function(inp)
+if inp.UserInputType == Enum.UserInputType.MouseButton1 then isDragging = true end
 end)
-
-createBtn("ESP ТРАНСПОРТ", 3, function(val)
-    carEspActive = val
-    if not carEspActive then
-        for model, hl in pairs(carHighlights) do
-            if hl then hl:Destroy() end
-        end
-        carHighlights = {}
-    end
+bind(uis.InputEnded, function(inp)
+if inp.UserInputType == Enum.UserInputType.MouseButton1 then isDragging = false end
 end)
-
-createBtn("ESP ИГРОКИ", 4, function(val)
-    plrEspActive = val
-    if not plrEspActive then
-        for char, hl in pairs(plrHighlights) do
-            if hl then hl:Destroy() end
-        end
-        plrHighlights = {}
-    end
+bind(runService.RenderStepped, function()
+if isDragging then
+local mX = uis:GetMouseLocation().X
+local pct = math.clamp((mX - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)
+setValue(minVal + pct * (maxVal - minVal))
+end
 end)
-
-createBtn("БЕСКОНЕЧНЫЙ ПРЫЖОК", 5, function(val)
-    infJumpActive = val
+inputBox.FocusLost:Connect(function()
+local num = tonumber(inputBox.Text)
+if num then
+setValue(num)
+else
+inputBox.Text = tostring(defaultVal)
+end
 end)
-
--- [[ ИНИЦИАЛИЗАЦИЯ КОМПОНЕНТОВ СКОРОСТИ (ДОБАВЛЕНО ПОВЕРХ СТАРЫХ ФУНКЦИЙ) ]]
-
-local speedBtn = createBtn("АНЛОК СКОРОСТИ", 6, function(val)
-    speedUnlockActive = val
-    if not speedUnlockActive then currentSpeed = 0 end
+return setValue
+end
+-- [[ ИНИЦИАЛИЗАЦИЯ ВСЕХ ФУНКЦИЙ В МЕНЮ ]]
+createToggle("ДИНАМИЧЕСКАЯ ПЛАТФОРМА", "OFF", 1, function(v)
+state.platActive = v
 end)
-
--- Контейнер кастомного ползунка скорости
-local sliderContainer = Instance.new("Frame", scroll)
-sliderContainer.Size = UDim2.new(0.96, 0, 0, 55)
-sliderContainer.BackgroundColor3 = Color3.fromRGB(16, 16, 22)
-sliderContainer.BorderSizePixel = 0
-sliderContainer.LayoutOrder = 7
-
-local sliderCorner = Instance.new("UICorner", sliderContainer)
-sliderCorner.CornerRadius = UDim.new(0, 8)
-
-local sliderStroke = Instance.new("UIStroke", sliderContainer)
-sliderStroke.Color = Color3.fromRGB(30, 30, 38)
-sliderStroke.Thickness = 1
-
-local sliderLabel = Instance.new("TextLabel", sliderContainer)
-sliderLabel.Size = UDim2.new(1, -20, 0, 25)
-sliderLabel.Position = UDim2.new(0, 10, 0, 5)
-sliderLabel.BackgroundTransparency = 1
-sliderLabel.Text = "ВЫБЕРИ СКОРОСТЬ: 55 км/ч"
-sliderLabel.TextColor3 = Color3.fromRGB(160, 160, 170)
-sliderLabel.TextSize = 11
-sliderLabel.Font = Enum.Font.GothamBold
-sliderLabel.TextXAlignment = Enum.TextXAlignment.Left
-
-local sliderFrame = Instance.new("Frame", sliderContainer)
-sliderFrame.Size = UDim2.new(1, -20, 0, 6)
-sliderFrame.Position = UDim2.new(0, 10, 0, 36)
-sliderFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-sliderFrame.BorderSizePixel = 0
-
-local sliderFrameCorner = Instance.new("UICorner", sliderFrame)
-sliderFrameCorner.CornerRadius = UDim.new(0, 3)
-
-local sliderBtn = Instance.new("TextButton", sliderFrame)
-sliderBtn.Size = UDim2.new(0, 14, 0, 14)
-sliderBtn.Position = UDim2.new(0, 0, -0.6, 0)
-sliderBtn.BackgroundColor3 = Color3.fromRGB(235, 65, 65)
-sliderBtn.Text = ""
-sliderBtn.BorderSizePixel = 0
-
-local sliderBtnCorner = Instance.new("UICorner", sliderBtn)
-sliderBtnCorner.CornerRadius = UDim.new(1, 0)
-
--- [[ ЛОГИКА ДИНАМИЧЕСКИХ ПЛАТФОРМ ]]
-runService.Heartbeat:Connect(function()
-    if not platActive then return end
-    local char = lplayer.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-    
-    if (hrp.Position - lastPlatformPos).Magnitude > 3 then
-        local raycastParams = RaycastParams.new()
-        raycastParams.FilterDescendantsInstances = {char}
-        raycastParams.FilterType = Enum.RaycastFilterType.Exclude
-        
-        local hit = workspace:Raycast(hrp.Position, Vector3.new(0, -4, 0), raycastParams)
-        if not hit or hit.Instance.Name ~= "ZacepPad" then
-            local p = Instance.new("Part")
-            p.Name = "ZacepPad"
-            p.Size = Vector3.new(6, 0.5, 6)
-            p.Position = hrp.Position - Vector3.new(0, 3.2, 0)
-            p.Transparency = 0.4
-            p.Color = Color3.fromRGB(235, 70, 70)
-            p.Anchored = true
-            p.Material = Enum.Material.Neon
-            p.Parent = workspace
-            
-            lastPlatformPos = p.Position
-            debris:AddItem(p, 2)
-        end
-    end
+createToggle("АГРЕССИВНЫЙ ЗАЦЕП", "OFF", 2, function(v)
+state.magnActive = v
+if not v then
+targetVehicle = nil
+relativeCFrame = nil
+local hum = lplayer.Character and lplayer.Character:FindFirstChildOfClass("Humanoid")
+if hum then hum:ChangeState(Enum.HumanoidStateType.Running) end
+end
 end)
-
--- [[ ЛОГИКА СИСТЕМЫ ЗАЦЕПА ]]
-runService.Heartbeat:Connect(function()
-    local char = lplayer.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    local hum = char and char:FindFirstChildOfClass("Humanoid")
-    if not hrp or not hum then return end
-    
-    if magnActive then
-        hum:ChangeState(Enum.HumanoidStateType.Physics)
-        if not targetVehicle then
-            local closestPart = nil
-            local minDst = 12
-            
-            local vehiclesFolder = workspace:FindFirstChild("Vehicles")
-            local searchIn = vehiclesFolder and vehiclesFolder:GetDescendants() or workspace:GetDescendants()
-            
-            for _, obj in pairs(searchIn) do
-                if obj:IsA("BasePart") and (obj.Name == "Body" or obj.Parent:FindFirstChild("VehicleSeat")) then
-                    local dst = (hrp.Position - obj.Position).Magnitude
-                    if dst < minDst then
-                        minDst = dst
-                        closestPart = obj
-                    end
-                end
-            end
-            
-            if closestPart then
-                targetVehicle = closestPart
-                relativeCFrame = targetVehicle.CFrame:ToObjectSpace(hrp.CFrame)
-            end
-        else
-            hrp.CFrame = targetVehicle.CFrame:ToWorldSpace(relativeCFrame)
-            hrp.AssemblyLinearVelocity = Vector3.zero
-            hrp.AssemblyAngularVelocity = Vector3.zero
-        end
-    end
+createToggle("ESP ТРАНСПОРТ", "OFF", 3, function(v)
+state.carEspActive = v
+if not v then
+for _, hl in pairs(carHighlights) do if hl then hl:Destroy() end end
+carHighlights = {}
+end
 end)
-
--- [[ ДОПОЛНИТЕЛЬНАЯ ФУНКЦИЯ ESP ТРАНСПОРТА ]]
+createToggle("ESP ИГРОКИ", "OFF", 4, function(v)
+state.plrEspActive = v
+if not v then
+for _, hl in pairs(plrHighlights) do if hl then hl:Destroy() end end
+plrHighlights = {}
+end
+end)
+createToggle("БЕСКОНЕЧНЫЙ ПРЫЖОК", "OFF", 5, function(v)
+state.infJumpActive = v
+end)
+-- Новые функции: FLY и NOCLIP
+local function stopFly()
+if flyBV then flyBV:Destroy() flyBV = nil end
+if flyBG then flyBG:Destroy() flyBG = nil end
+local hum = lplayer.Character and lplayer.Character:FindFirstChildOfClass("Humanoid")
+if hum then hum.PlatformStand = false end
+end
+createToggle("ПОЛЁТ (FLY)", "OFF", 6, function(v)
+state.flyActive = v
+if not v then stopFly() end
+end)
+createSlider("СКОРОСТЬ ПОЛЁТА", 20, 1000, 80, false, 7, function(val)
+flySpeed = val
+end)
+createToggle("СКВОЗЬ СТЕНЫ (NOCLIP)", "OFF", 8, function(v)
+state.noclipActive = v
+if not v and lplayer.Character then
+for _, part in ipairs(lplayer.Character:GetDescendants()) do
+if part:IsA("BasePart") then
+part.CanCollide = true
+end
+end
+end
+end)
+-- Секция скорости до 100 000 и настройки дрифта
+createToggle("АНЛОК СКОРОСТИ (ДО 100K)", "OFF", 9, function(v)
+state.speedUnlockActive = v
+if not v then currentSpeed = 0 end
+end)
+-- Информационная панель-советник по дрифту прямо в меню
+local driftAdviceBox = Instance.new("Frame", scroll)
+driftAdviceBox.Size = UDim2.new(0.97, 0, 0, 54)
+driftAdviceBox.BackgroundColor3 = Color3.fromRGB(24, 14, 17)
+driftAdviceBox.LayoutOrder = 11
+Instance.new("UICorner", driftAdviceBox).CornerRadius = UDim.new(0, 9)
+local driftAdviceStroke = Instance.new("UIStroke", driftAdviceBox)
+driftAdviceStroke.Color = Color3.fromRGB(160, 40, 50)
+driftAdviceStroke.Thickness = 1
+local driftAdviceLabel = Instance.new("TextLabel", driftAdviceBox)
+driftAdviceLabel.Size = UDim2.new(1, -16, 1, -8)
+driftAdviceLabel.Position = UDim2.new(0, 8, 0, 4)
+driftAdviceLabel.BackgroundTransparency = 1
+driftAdviceLabel.TextWrapped = true
+driftAdviceLabel.TextXAlignment = Enum.TextXAlignment.Left
+driftAdviceLabel.TextColor3 = Color3.fromRGB(240, 200, 205)
+driftAdviceLabel.Font = Enum.Font.GothamSemibold
+driftAdviceLabel.TextSize = 10
+local function updateDriftAdvice()
+local recText = ""
+if targetSpeed <= 250 then
+recText = "Рекомендация: оставьте ДРИФТ = 1.0 (норма) или поднимите до 1.5 для резкого заноса."
+elseif targetSpeed <= 2500 then
+recText = "Плохо поворачивает? Убавьте ДРИФТ до 0.4 – 0.7 для плавного входа в поворот."
+else
+recText = "Сверхскорость! Если не поворачивает — убавьте ДРИФТ до 0.1 – 0.3, иначе унесёт."
+end
+driftAdviceLabel.Text = string.format(
+"ДРИФТ: %.1f (Норма: 1.0 | Мин: 0.1 | Макс: 1.5)\n%s",
+driftFactor, recText
+)
+hudText.Text = string.format(
+"СКОРОСТЬ: %d | ДРИФТ: %.1f (НОРМА 1.0 / МИН 0.1 / МАКС 1.5)",
+targetSpeed, driftFactor
+)
+end
+createSlider("СКОРОСТЬ АВТО (55 - 100000)", 55, maxSpeedLimit, 55, false, 10, function(val)
+targetSpeed = val
+updateDriftAdvice()
+end)
+createSlider("КОЭФФИЦИЕНТ ДРИФТА (0.1 - 1.5)", 0.1, 1.5, 1.0, true, 12, function(val)
+driftFactor = val
+updateDriftAdvice()
+end)
+updateDriftAdvice()
+-- [[ 1. ЛОГИКА ДИНАМИЧЕСКИХ ПЛАТФОРМ (БЕЗ ИЗМЕНЕНИЙ) ]]
+bind(runService.Heartbeat, function()
+if not state.platActive then return end
+local char = lplayer.Character
+local hrp = char and char:FindFirstChild("HumanoidRootPart")
+if not hrp then return end
+if (hrp.Position - lastPlatformPos).Magnitude > 3 then
+local raycastParams = RaycastParams.new()
+raycastParams.FilterDescendantsInstances = {char}
+raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+local hit = workspace:Raycast(hrp.Position, Vector3.new(0, -4, 0), raycastParams)
+if not hit or hit.Instance.Name ~= "ZacepPad" then
+local p = Instance.new("Part")
+p.Name = "ZacepPad"
+p.Size = Vector3.new(6, 0.5, 6)
+p.Position = hrp.Position - Vector3.new(0, 3.2, 0)
+p.Transparency = 0.4
+p.Color = Color3.fromRGB(235, 70, 70)
+p.Anchored = true
+p.Material = Enum.Material.Neon
+p.Parent = workspace
+lastPlatformPos = p.Position
+debris:AddItem(p, 2)
+end
+end
+end)
+-- [[ 2. ЛОГИКА АГРЕССИВНОГО ЗАЦЕПА (БЕЗ ИЗМЕНЕНИЙ) ]]
+bind(runService.Heartbeat, function()
+local char = lplayer.Character
+local hrp = char and char:FindFirstChild("HumanoidRootPart")
+local hum = char and char:FindFirstChildOfClass("Humanoid")
+if not hrp or not hum then return end
+if state.magnActive then
+hum:ChangeState(Enum.HumanoidStateType.Physics)
+if not targetVehicle then
+local closestPart = nil
+local minDst = 12
+local vehiclesFolder = workspace:FindFirstChild("Vehicles")
+local searchIn = vehiclesFolder and vehiclesFolder:GetDescendants() or workspace:GetDescendants()
+for _, obj in pairs(searchIn) do
+if obj:IsA("BasePart") and (obj.Name == "Body" or obj.Parent:FindFirstChild("VehicleSeat")) then
+local dst = (hrp.Position - obj.Position).Magnitude
+if dst < minDst then
+minDst = dst
+closestPart = obj
+end
+end
+end
+if closestPart then
+targetVehicle = closestPart
+relativeCFrame = targetVehicle.CFrame:ToObjectSpace(hrp.CFrame)
+end
+else
+hrp.CFrame = targetVehicle.CFrame:ToWorldSpace(relativeCFrame)
+hrp.AssemblyLinearVelocity = Vector3.zero
+hrp.AssemblyAngularVelocity = Vector3.zero
+end
+end
+end)
+-- [[ 3. ЛОГИКА ESP ТРАНСПОРТА И ИГРОКОВ (БЕЗ ИЗМЕНЕНИЙ) ]]
 local function addCarEsp(vehicleModel)
-if not vehicleModel:IsA("Model") then return end
-if carHighlights[vehicleModel] then return end
+if not vehicleModel:IsA("Model") or carHighlights[vehicleModel] then return end
 local hl = Instance.new("Highlight")
 hl.FillColor = Color3.fromRGB(0, 160, 255)
 hl.FillTransparency = 0.5
@@ -297,9 +494,8 @@ hl.Adornee = vehicleModel
 hl.Parent = coreGui
 carHighlights[vehicleModel] = hl
 end
--- [[ ЦИКЛЫ ОБНОВЛЕНИЯ ESP (ТРАНСПОРТ И ИГРОКИ) ]]
-runService.Heartbeat:Connect(function()
-if carEspActive then
+bind(runService.Heartbeat, function()
+if state.carEspActive then
 local vehiclesFolder = workspace:FindFirstChild("Vehicles")
 if vehiclesFolder then
 for _, model in pairs(vehiclesFolder:GetChildren()) do
@@ -310,12 +506,12 @@ end
 end
 end
 for model, hl in pairs(carHighlights) do
-if not model or not model.Parent or not carEspActive then
+if not model or not model.Parent or not state.carEspActive then
 if hl then hl:Destroy() end
 carHighlights[model] = nil
 end
 end
-if not plrEspActive then return end
+if not state.plrEspActive then return end
 if os.clock() - lastPlrCheck > 0.5 then
 lastPlrCheck = os.clock()
 for _, p in pairs(players:GetPlayers()) do
@@ -341,83 +537,141 @@ plrHighlights[char] = nil
 end
 end
 end)
--- [[ ОБРАБОТКА ПОЛЗУНКА СКОРОСТИ ]]
-sliderBtn.InputBegan:Connect(function(input)
-if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true end
-end)
-uis.InputEnded:Connect(function(input)
-if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
-end)
-runService.Heartbeat:Connect(function()
-if dragging then
-local mousePos = uis:GetMouseLocation().X
-local sliderX = sliderFrame.AbsolutePosition.X
-local sliderWidth = sliderFrame.AbsoluteSize.X
-local percentage = math.clamp((mousePos - sliderX) / sliderWidth, 0, 1)
-sliderBtn.Position = UDim2.new(percentage, -7, -0.6, 0)
-targetSpeed = math.floor(55 + (percentage * (200 - 55)))
-sliderLabel.Text = "ВЫБЕРИ СКОРОСТЬ: " .. tostring(targetSpeed) .. " км/ч"
-end
-end)
--- [[ ЛОГИКА АНЛОКА СКОРОСТИ И ПЛАВНОГО РАЗГОНА ]]
-runService.Heartbeat:Connect(function()
-if not speedUnlockActive then return end
+-- [[ 4. АНЛОК СКОРОСТИ ДО 100 000 + УЛУЧШЕННАЯ ПОВОРАЧИВАЕМОСТЬ И ДРИФТ ]]
+bind(runService.Heartbeat, function(dt)
+if not state.speedUnlockActive then return end
 local char = lplayer.Character
 local hum = char and char:FindFirstChildOfClass("Humanoid")
 if hum and hum.SeatPart and hum.SeatPart:IsA("VehicleSeat") then
 local carSeat = hum.SeatPart
 local speedLimit = targetSpeed * 0.6
+local accelStep = math.max(1.2, speedLimit * 0.03)
 if uis:IsKeyDown(Enum.KeyCode.W) then
-currentSpeed = math.clamp(currentSpeed + 0.8, 0, speedLimit)
-local look = carSeat.CFrame.LookVector
-local flatLook = Vector3.new(look.X, 0, look.Z).Unit
-carSeat.AssemblyLinearVelocity = Vector3.new(
-flatLook.X * currentSpeed,
-carSeat.AssemblyLinearVelocity.Y,
-flatLook.Z * currentSpeed
-)
+currentSpeed = math.clamp(currentSpeed + accelStep, 0, speedLimit)
+elseif uis:IsKeyDown(Enum.KeyCode.S) then
+currentSpeed = math.clamp(currentSpeed - accelStep * 1.5, -speedLimit * 0.4, speedLimit)
 else
-currentSpeed = math.clamp(currentSpeed - 1.5, 0, speedLimit)
-if currentSpeed > 5 then
+currentSpeed = currentSpeed * 0.96
+if math.abs(currentSpeed) < 1 then currentSpeed = 0 end
+end
+-- Помощь в поворотах на любой скорости с учётом коэффициента дрифта
+local steerInput = 0
+if uis:IsKeyDown(Enum.KeyCode.A) then steerInput = 1 end
+if uis:IsKeyDown(Enum.KeyCode.D) then steerInput = -1 end
+if steerInput ~= 0 and math.abs(currentSpeed) > 2 then
+local turnRate = 2.6 * (1.6 - (driftFactor * 0.45))
+local dirSign = currentSpeed >= 0 and 1 or -1
+carSeat.CFrame = carSeat.CFrame * CFrame.Angles(0, steerInput * dirSign * turnRate * dt, 0)
+end
+if math.abs(currentSpeed) > 0.5 then
 local look = carSeat.CFrame.LookVector
-local flatLook = Vector3.new(look.X, 0, look.Z).Unit
-carSeat.AssemblyLinearVelocity = Vector3.new(
-flatLook.X * currentSpeed,
-carSeat.AssemblyLinearVelocity.Y,
-flatLook.Z * currentSpeed
-)
+local flatLook = Vector3.new(look.X, 0, look.Z)
+if flatLook.Magnitude > 0.001 then
+flatLook = flatLook.Unit
+local currentVel = carSeat.AssemblyLinearVelocity
+local desiredVel = Vector3.new(flatLook.X * currentSpeed, currentVel.Y, flatLook.Z * currentSpeed)
+-- Чем ниже driftFactor, тем жёстче сцепление с траекторией; чем выше — тем сильнее занос
+local grip = math.clamp(1.15 - (driftFactor * 0.65), 0.15, 0.98)
+carSeat.AssemblyLinearVelocity = currentVel:Lerp(desiredVel, grip)
 end
 end
 else
 currentSpeed = 0
 end
 end)
--- [[ ОБРАБОТКА ДВИЖЕНИЙ И КЛАВИШИ ПАНИКИ ]]
-uis.JumpRequest:Connect(function()
-if infJumpActive then
+-- [[ 5. ЛОГИКА FLY И NOCLIP ]]
+bind(runService.RenderStepped, function()
 local char = lplayer.Character
-local humanoid = char and char:FindFirstChildOfClass("Humanoid")
-if humanoid then humanoid:ChangeState(Enum.HumanoidStateType.Jumping) end
+local hrp = char and char:FindFirstChild("HumanoidRootPart")
+local hum = char and char:FindFirstChildOfClass("Humanoid")
+if state.flyActive and hrp and hum then
+hum.PlatformStand = true
+if not flyBV then
+flyBV = Instance.new("BodyVelocity")
+flyBV.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+flyBV.Velocity = Vector3.zero
+flyBV.Parent = hrp
+end
+if not flyBG then
+flyBG = Instance.new("BodyGyro")
+flyBG.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+flyBG.P = 9e4
+flyBG.CFrame = hrp.CFrame
+flyBG.Parent = hrp
+end
+local cam = workspace.CurrentCamera
+local moveDir = Vector3.zero
+if uis:IsKeyDown(Enum.KeyCode.W) then moveDir += cam.CFrame.LookVector end
+if uis:IsKeyDown(Enum.KeyCode.S) then moveDir -= cam.CFrame.LookVector end
+if uis:IsKeyDown(Enum.KeyCode.A) then moveDir -= cam.CFrame.RightVector end
+if uis:IsKeyDown(Enum.KeyCode.D) then moveDir += cam.CFrame.RightVector end
+if uis:IsKeyDown(Enum.KeyCode.Space) then moveDir += Vector3.new(0, 1, 0) end
+if uis:IsKeyDown(Enum.KeyCode.LeftControl) then moveDir -= Vector3.new(0, 1, 0) end
+if moveDir.Magnitude > 0 then
+flyBV.Velocity = moveDir.Unit * flySpeed
+else
+flyBV.Velocity = Vector3.zero
+end
+flyBG.CFrame = cam.CFrame
+else
+if flyBV or flyBG then stopFly() end
 end
 end)
-uis.InputBegan:Connect(function(input, gpe)
-if not gpe and input.KeyCode == Enum.KeyCode.E then
-platActive = false
-magnActive = false
-carEspActive = false
-plrEspActive = false
-infJumpActive = false
-speedUnlockActive = false
+bind(runService.Stepped, function()
+if state.noclipActive and lplayer.Character then
+for _, part in ipairs(lplayer.Character:GetDescendants()) do
+if part:IsA("BasePart") and part.CanCollide then
+part.CanCollide = false
+end
+end
+end
+end)
+-- [[ 6. БЕСКОНЕЧНЫЙ ПРЫЖОК И ГОРЯЧИЕ КЛАВИШИ (INSERT / HOME) ]]
+bind(uis.JumpRequest, function()
+if state.infJumpActive then
+local char = lplayer.Character
+local hum = char and char:FindFirstChildOfClass("Humanoid")
+if hum then hum:ChangeState(Enum.HumanoidStateType.Jumping) end
+end
+end)
+bind(uis.InputBegan, function(input, gpe)
+if gpe then return end
+-- INSERT: Скрыть или показать меню
+if input.KeyCode == Enum.KeyCode.Insert then
+state.menuVisible = not state.menuVisible
+frame.Visible = state.menuVisible
+end
+-- HOME: Полное удаление меню и сброс всех функций
+if input.KeyCode == Enum.KeyCode.Home then
+state.platActive = false
+state.magnActive = false
+state.carEspActive = false
+state.plrEspActive = false
+state.infJumpActive = false
+state.speedUnlockActive = false
+state.flyActive = false
+state.noclipActive = false
 targetVehicle = nil
 relativeCFrame = nil
 currentSpeed = 0
+stopFly()
 for _, hl in pairs(carHighlights) do if hl then hl:Destroy() end end
 for _, hl in pairs(plrHighlights) do if hl then hl:Destroy() end end
 carHighlights = {}
 plrHighlights = {}
 local char = lplayer.Character
-local hum = char and char:FindFirstChildOfClass("Humanoid")
+if char then
+for _, part in ipairs(char:GetDescendants()) do
+if part:IsA("BasePart") then part.CanCollide = true end
+end
+local hum = char:FindFirstChildOfClass("Humanoid")
 if hum then hum:ChangeState(Enum.HumanoidStateType.Running) end
+end
+for _, conn in ipairs(connections) do
+if conn.Connected then conn:Disconnect() end
+end
+connections = {}
 sg:Destroy()
 end
 end)
+
