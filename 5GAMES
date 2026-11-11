@@ -1,18 +1,20 @@
 -- =====================================================================
--- 🌪️ TORNADO NEXT-GEN MULTI-HUB v5 (NEO-PREMIUM EDITION)
--- 🔒 РАЗРАБОТЧИК: CHO_NAX4 | 📱 TIKTOK: 6TORNADIKS7 | СБОРКА И ФИКС: TWKS
+-- 🌪️ TORNADO NEXT-GEN MULTI-HUB v5 (CLEAN LOADER EDITION)
+-- 🔒 РАЗРАБОТЧИК: CHO_NAX4 | 📱 TIKTOK: 6TORNADIKS7
 -- =====================================================================
 
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
-local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
-local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
 
--- Тотальная очистка старого интерфейса и конфликтующих оверлеев
-local guisToDestroy = {"GameChooserHub", "DoubleTpHub", "CandyCollectorGui", "Kontra_Standalone_ESP_System", "CandyESP", "TwksEspMenu", "RailsideScriptMenu", "SakuraPremiumMenu"}
+-- Очистка старого интерфейса при перезапуске
+local guisToDestroy = {
+    "GameChooserHub", "DoubleTpHub", "CandyCollectorGui", 
+    "Kontra_Standalone_ESP_System", "CandyESP", "TwksEspMenu", 
+    "RailsideScriptMenu", "SakuraPremiumMenu"
+}
 for _, guiName in ipairs(guisToDestroy) do
     local oldGui = CoreGui:FindFirstChild(guiName)
     if oldGui then pcall(function() oldGui:Destroy() end) end
@@ -22,31 +24,25 @@ for _, oldGui in ipairs(CoreGui:GetChildren()) do
 end
 task.wait(0.05)
 
--- Определение мобильной ориентации и адаптивные размеры меню
+-- Адаптация размеров под ПК и мобильные устройства
 local screenSize = Camera and Camera.ViewportSize or Vector2.new(1280, 720)
 local isMobile = UserInputService.TouchEnabled or screenSize.X < 800
 
--- Константы размеров корпуса под текущее устройство
 local mainWidth = isMobile and 460 or 680
 local mainHeight = isMobile and 290 or 420
 local navWidth = isMobile and 150 or 220
 local textPadding = isMobile and 10 or 18
 
--- ГЛОБАЛЬНЫЕ НАСТРОЙКИ ДЛЯ ПРЯМОГО WORKSPACE ESP
-_G.ESP_ENABLED = true
-_G.SHOW_BOX = true
-_G.SHOW_SKELETON = true
-_G.SHOW_NAME = true
-_G.ESP_COLOR = Color3.fromRGB(255, 105, 180) -- Фирменный розовый Sakura
-_G.Cache = _G.Cache or {}
+-- Акцентный цвет меню (Розовый Sakura)
+local ACCENT_COLOR = Color3.fromRGB(255, 105, 180)
 
--- ИНИЦИАЛИЗАЦИЯ НЕО-ИНТЕРФЕЙСА
+-- ИНИЦИАЛИЗАЦИЯ ИНТЕРФЕЙСА
 local ModernHubGui = Instance.new("ScreenGui")
 ModernHubGui.Name = "GameChooserHub"
 ModernHubGui.Parent = CoreGui
 ModernHubGui.ResetOnSpawn = false
 
--- ГЛАВНЫЙ КОНТЕЙНЕР (Студийный тёмный Неон)
+-- ГЛАВНЫЙ КОНТЕЙНЕР
 local MainContainer = Instance.new("Frame")
 MainContainer.Name = "MainContainer"
 MainContainer.Size = UDim2.new(0, mainWidth, 0, mainHeight)
@@ -55,22 +51,31 @@ MainContainer.BackgroundColor3 = Color3.fromRGB(13, 13, 18)
 MainContainer.Active = true
 MainContainer.Parent = ModernHubGui
 
-local CornerRadius = Instance.new("UICorner", MainContainer)
-CornerRadius.CornerRadius = UDim.new(0, 14)
+Instance.new("UICorner", MainContainer).CornerRadius = UDim.new(0, 14)
 
 local GlowStroke = Instance.new("UIStroke", MainContainer)
 GlowStroke.Thickness = isMobile and 1.5 or 2
-GlowStroke.Color = _G.ESP_COLOR
+GlowStroke.Color = ACCENT_COLOR
 
--- Перетаскивание панели
+-- Перетаскивание окна
 local dragging, dragInput, dragStart, startPos
 MainContainer.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true dragStart = input.Position startPos = MainContainer.Position
-        input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging = false end end)
+        dragging = true
+        dragStart = input.Position
+        startPos = MainContainer.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
     end
 end)
-MainContainer.InputChanged:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end end)
+MainContainer.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
 UserInputService.InputChanged:Connect(function(input)
     if input == dragInput and dragging then
         local delta = input.Position - dragStart
@@ -78,7 +83,7 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
--- БОКОВАЯ НАВИГАЦИОННАЯ ПАНЕЛЬ (TAB PANEL)
+-- БОКОВАЯ ПАНЕЛЬ НАВИГАЦИИ
 local NavigationBar = Instance.new("Frame", MainContainer)
 NavigationBar.Name = "NavigationBar"
 NavigationBar.Size = UDim2.new(0, navWidth, 1, 0)
@@ -91,9 +96,9 @@ NavLine.Position = UDim2.new(1, -2, 0, 20)
 NavLine.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
 NavLine.BorderSizePixel = 0
 
--- ЛОГОТИП И БРЕНДИНГ
+-- ЛОГОТИП
 local LogoLabel = Instance.new("TextLabel", NavigationBar)
-LogoLabel.Size = UDim2.new(1, 0, 0, isMobile and 35 or 45)
+LogoLabel.Size = UDim2.new(1, -12, 0, isMobile and 35 or 45)
 LogoLabel.Position = UDim2.new(0, 12, 0, 12)
 LogoLabel.BackgroundTransparency = 1
 LogoLabel.Text = isMobile and "🌪️ TORNADO v5" or "🌪️ TORNADO HUB v5"
@@ -102,13 +107,13 @@ LogoLabel.Font = Enum.Font.GothamBold
 LogoLabel.TextSize = isMobile and 14 or 18
 LogoLabel.TextXAlignment = Enum.TextXAlignment.Left
 
--- Скролл-контейнер для вкладок
+-- СПИСОК ВКЛАДОК
 local TabScroll = Instance.new("ScrollingFrame", NavigationBar)
 TabScroll.Size = UDim2.new(1, -8, 1, isMobile and -55 or -70)
 TabScroll.Position = UDim2.new(0, 4, 0, isMobile and 50 or 65)
 TabScroll.BackgroundTransparency = 1
 TabScroll.ScrollBarThickness = 2
-TabScroll.ScrollBarImageColor3 = _G.ESP_COLOR
+TabScroll.ScrollBarImageColor3 = ACCENT_COLOR
 TabScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
 
 local TabListLayout = Instance.new("UIListLayout", TabScroll)
@@ -118,7 +123,7 @@ TabListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
     TabScroll.CanvasSize = UDim2.new(0, 0, 0, TabListLayout.AbsoluteContentSize.Y + 15)
 end)
 
--- ОСНОВНОЙ КОНТЕНТ-ФРЕЙМ
+-- ОКНО КОНТЕНТА
 local ContentWindow = Instance.new("Frame", MainContainer)
 ContentWindow.Name = "ContentWindow"
 ContentWindow.Size = UDim2.new(1, -(navWidth + textPadding + 15), 1, -30)
@@ -130,37 +135,71 @@ local Buttons = {}
 local activePage = nil
 local AboutPage = nil
 
--- ФУНКЦИЯ ДЛЯ СУПЕР-КРАСИВЫХ АНИМАЦИЙ КНОПОК
+-- ИСПРАВЛЕННАЯ АНИМАЦИЯ КНОПОК (БЕЗ БАГА РАСТЯЖЕНИЯ)
 local function applyNeonEffects(btn, isTabBtn)
     local stroke = Instance.new("UIStroke", btn)
     stroke.Thickness = 1.2
-    stroke.Color = isTabBtn and Color3.fromRGB(35, 35, 45) or _G.ESP_COLOR
+    stroke.Color = isTabBtn and Color3.fromRGB(35, 35, 45) or ACCENT_COLOR
     
+    local baseSize = btn.Size
+    local hoverSize = baseSize + UDim2.fromOffset(isMobile and 2 or 4, 0)
     local defaultColor = btn.BackgroundColor3
     local hoverColor = isTabBtn and Color3.fromRGB(24, 24, 32) or Color3.fromRGB(255, 130, 195)
     local pressColor = isTabBtn and Color3.fromRGB(32, 32, 45) or Color3.fromRGB(220, 70, 140)
     
     btn.MouseEnter:Connect(function()
         if btn:GetAttribute("Active") then return end
-        TweenService:Create(btn, TweenInfo.new(0.25, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {
+        TweenService:Create(btn, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
             BackgroundColor3 = hoverColor,
-            Size = btn.Size + UDim2.fromOffset(isMobile and 2 or 4, 0)
+            Size = hoverSize
         }):Play()
-        if isTabBtn then TweenService:Create(stroke, TweenInfo.new(0.2), {Color = _G.ESP_COLOR}):Play() end
+        if isTabBtn then
+            TweenService:Create(stroke, TweenInfo.new(0.2), {Color = ACCENT_COLOR}):Play()
+        end
     end)
     
     btn.MouseLeave:Connect(function()
         TweenService:Create(btn, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            BackgroundColor3 = btn:GetAttribute("Active") and _G.ESP_COLOR or defaultColor,
-            Size = btn.Size - UDim2.fromOffset(isMobile and 2 or 4, 0)
+            BackgroundColor3 = btn:GetAttribute("Active") and ACCENT_COLOR or defaultColor,
+            Size = baseSize
         }):Play()
-        if isTabBtn and not btn:GetAttribute("Active") then TweenService:Create(stroke, TweenInfo.new(0.2), {Color = Color3.fromRGB(35, 35, 45)}):Play() end
+        if isTabBtn and not btn:GetAttribute("Active") then
+            TweenService:Create(stroke, TweenInfo.new(0.2), {Color = Color3.fromRGB(35, 35, 45)}):Play()
+        end
     end)
     
-    btn.MouseButton1Down:Connect(function() TweenService:Create(btn, TweenInfo.new(0.1), {BackgroundColor3 = pressColor}):Play() end)
+    btn.MouseButton1Down:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.1), {BackgroundColor3 = pressColor}):Play()
+    end)
 end
 
--- КОНСТРУКТОР ВКЛАДОК ДЛЯ ИГР
+-- ФУНКЦИЯ ПЕРЕКЛЮЧЕНИЯ ВКЛАДОК
+local function switchTab(targetBtn, targetPage, pageName)
+    for _, b in pairs(Buttons) do
+        b:SetAttribute("Active", false)
+        b.BackgroundColor3 = Color3.fromRGB(16, 16, 22)
+        b.TextColor3 = Color3.fromRGB(200, 200, 205)
+        local st = b:FindFirstChildOfClass("UIStroke")
+        if st then st.Color = Color3.fromRGB(35, 35, 45) end
+    end
+    for _, p in pairs(Pages) do
+        p.Visible = false
+    end
+    if AboutPage then
+        AboutPage.Visible = false
+    end
+    
+    targetBtn:SetAttribute("Active", true)
+    targetBtn.BackgroundColor3 = ACCENT_COLOR
+    targetBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    local st = targetBtn:FindFirstChildOfClass("UIStroke")
+    if st then st.Color = Color3.fromRGB(255, 150, 210) end
+    
+    targetPage.Visible = true
+    activePage = pageName
+end
+
+-- КОНСТРУКТОР ИГРОВЫХ ВКЛАДОК
 local function registerHubTab(name, titleText, descText, scriptUrl, isGate, correctKey)
     local newPage = Instance.new("Frame", ContentWindow)
     newPage.Size = UDim2.new(1, 0, 1, 0)
@@ -169,7 +208,7 @@ local function registerHubTab(name, titleText, descText, scriptUrl, isGate, corr
     Pages[name] = newPage
     
     local pageTitle = Instance.new("TextLabel", newPage)
-    pageTitle.Size = UDim2.new(1, 0, 0, isMobile and 25 or 40)
+    pageTitle.Size = UDim2.new(1, -35, 0, isMobile and 25 or 40)
     pageTitle.BackgroundTransparency = 1
     pageTitle.Text = titleText
     pageTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -203,25 +242,30 @@ local function registerHubTab(name, titleText, descText, scriptUrl, isGate, corr
         keyTextBox.TextSize = isMobile and 11 or 12
         keyTextBox.TextXAlignment = Enum.TextXAlignment.Left
         Instance.new("UICorner", keyTextBox).CornerRadius = UDim.new(0, 6)
-        Instance.new("UIStroke", keyTextBox).Color = Color3.fromRGB(45, 45, 60)
-    end
-
-    local runBtn = Instance.new("TextButton", newPage)
-    runBtn.Size = UDim2.new(0, isMobile and 210 or 300, 0, isMobile and 36 or 44)
-    runBtn.Position = UDim2.new(0, 0, 0, isGate and (isMobile and 140 or 205) or (isMobile and 110 or 160))
-    runBtn.BackgroundColor3 = _G.ESP_COLOR
-    runBtn.Text = "🔥 ЗАПУСТИТЬ ХАБ ИГРЫ"
-    runBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    runBtn.Font = Enum.Font.GothamBold
-    runBtn.TextSize = isMobile and 12 or 14
-    Instance.new("UICorner", runBtn).CornerRadius = UDim.new(0, 8)
+Instance.new("UIStroke", keyTextBox).Color = Color3.fromRGB(45, 45, 60)
+end
+local runBtn = Instance.new("TextButton", newPage)
+runBtn.Size = UDim2.new(0, isMobile and 210 or 300, 0, isMobile and 36 or 44)
+runBtn.Position = UDim2.new(0, 0, 0, isGate and (isMobile and 140 or 205) or (isMobile and 110 or 160))
+runBtn.BackgroundColor3 = ACCENT_COLOR
+runBtn.Text = "🔥 ЗАПУСТИТЬ ХАБ ИГРЫ"
+runBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+runBtn.Font = Enum.Font.GothamBold
+runBtn.TextSize = isMobile and 12 or 14
+Instance.new("UICorner", runBtn).CornerRadius = UDim.new(0, 8)
 applyNeonEffects(runBtn, false)
 runBtn.MouseButton1Click:Connect(function()
 if isGate and keyTextBox then
-if keyTextBox.Text == correctKey then _G.AnimalsHubForcedTier = "PREMIUM" else _G.AnimalsHubForcedTier = "FREE" end
+if keyTextBox.Text == correctKey then
+_G.AnimalsHubForcedTier = "PREMIUM"
+else
+_G.AnimalsHubForcedTier = "FREE"
+end
 end
 ModernHubGui:Destroy()
-if scriptUrl then loadstring(game:HttpGet(scriptUrl))() end
+if scriptUrl and scriptUrl ~= "" then
+loadstring(game:HttpGet(scriptUrl))()
+end
 end)
 local tabBtn = Instance.new("TextButton", TabScroll)
 tabBtn.Size = UDim2.new(1, -12, 0, isMobile and 32 or 36)
@@ -234,43 +278,68 @@ tabBtn.TextXAlignment = Enum.TextXAlignment.Left
 Instance.new("UICorner", tabBtn).CornerRadius = UDim.new(0, 6)
 applyNeonEffects(tabBtn, true)
 tabBtn.MouseButton1Click:Connect(function()
-for _, b in pairs(Buttons) do
-b:SetAttribute("Active", false)
-b.BackgroundColor3 = Color3.fromRGB(16, 16, 22)
-b.TextColor3 = Color3.fromRGB(200, 200, 205)
-local st = b:FindFirstChildOfClass("UIStroke")
-if st then st.Color = Color3.fromRGB(35, 35, 45) end
-end
-for _, p in pairs(Pages) do p.Visible = false end
-if AboutPage then AboutPage.Visible = false end
-tabBtn.BackgroundColor3 = _G.ESP_COLOR
-tabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-tabBtn:SetAttribute("Active", true)
-local st = tabBtn:FindFirstChildOfClass("UIStroke")
-if st then st.Color = Color3.fromRGB(255, 150, 210) end
-newPage.Visible = true
-activePage = name
+switchTab(tabBtn, newPage, name)
 end)
 table.insert(Buttons, tabBtn)
+return tabBtn, newPage
 end
 -- =====================================================================
--- 📂 РЕГИСТРАЦИЯ ИГРОВЫХ ВКЛАДОК (ПОЛНЫЙ ИСПРАВЛЕННЫЙ СПИСОК)
+-- 📂 РЕГИСТРАЦИЯ ИГРОВЫХ ВКЛАДОК (ЗАМЕНИ ССЫЛКИ НА СВОИ RAW URL)
 -- =====================================================================
-registerHubTab("GET A GRIP", "GET A GRIP (АВТОФАРМ)", "Лицензионный оригинальный скрипт от CHO_NAX4.\nВнутренние системы оптимизированы, баги отрисовки и обходы исправлены.\nНажмите кнопку ниже для инжекта во внутреннюю память сессии.", "githubusercontent.com")
-registerHubTab("STICKERS! KONTRAA", "STICKERS! KONTRAA (SMART ESP)", "Лицензионный оригинальный скрипт от CHO_NAX4.\nВнутренние системы оптимизированы, баги отрисовки и обходы исправлены.\nНажмите кнопку ниже для инжекта во внутреннюю память сессии.", "githubusercontent.com")
-registerHubTab("RAILSIDE", "RAILSIDE SCRIPT (PREMIUM HUB)", "Скрипт содержит ЕСП игроков (Транспортная Безопасность, Анти-присяд, Граждане), ЕСП полезных предметов (Аптечки АИ-2, Противогазы ГП-5).\n\n⚠️ ВНИМАНИЕ: Функции персонажа (Спидхак, Ноклип и Инф. Прыжок) вызывают частые автоматические баны! Используйте их максимально аккуратно и на свой страх и риск.", "githubusercontent.com")
-registerHubTab("LOST FRONT", "LOST FRONT (ROSE ESP)", "Новейший хаб для Lost Front!\nСкрипт активирует продвинутое низкоуровневое меню с отрисовкой линий, 2D хитбоксов и скелетов.\n\n🔥 ОСОБЕННОСТЬ: ESP абсолютно всех игроков на карте окрашено в премиальный Розовый цвет для лучшей видимости.", "githubusercontent.com")
-registerHubTab("FIND THE ANIMALS", "FIND THE ANIMALS 283 (FREE & PREM)", "🐾 Топовый скрипт для поиска животных на карте!\nДоступен продвинутый авто-сбор, ESP на все 283 питомца и полет.\n\n🎁 Подарок подписчикам! Введите ключ XENOXANIMALS для активации Premium-версии совершенно бесплатно и играйте в удовольствие!", "githubusercontent.com", true, "XENOXANIMALS")
-registerHubTab("BLOX STRIKE ESP", "BLOX STRIKE (ROSE CHAMS)", "🐾 Наш совместный приватный чит-пак для Blox Strike!\nПолная розовая анатомическая подсветка тела (Chams) с золотым контуром силуэтов и белые никнеймы.\n\n🔥 ОСОБЕННОСТЬ: Полностью защищён от сброса раундов, сносит мёртвые коробки при смерти и сканирует Debris на наличие пушек и бомбы с эмодзи!", "githubusercontent.com", false, "")
-registerHubTab("BROOK ZACEP V2", "BROOKHAVEN (ZACEP & SPEED)", "🌪️ Эксклюзивный приватный хаб зацепа для Брукхейвена!\nСодержит агрессивный зацеп, неоновые платформы под ногами, бесконечный прыжок, ESP на игроков и анлок скорости машин до 200 км/ч.", "githubusercontent.com", false, "")
--- ВКЛАДКА О РАЗРАБОТЧИКЕ (БЕЗОПАСНОСТЬ)
+local firstBtn, firstPage = registerHubTab(
+"GET A GRIP",
+"GET A GRIP (АВТОФАРМ)",
+"Лицензионный оригинальный скрипт от CHO_NAX4.\nВнутренние системы оптимизированы, баги отрисовки и обходы исправлены.\nНажмите кнопку ниже для инжекта во внутреннюю память сессии.",
+"https://raw.githubusercontent.com/tORNADIK-crypto/tornado-hub/refs/heads/main/FARM_GETAGRIP"
+)
+registerHubTab(
+"STICKERS! KONTRAA",
+"STICKERS! KONTRAA (SMART ESP)",
+"Лицензионный оригинальный скрипт от CHO_NAX4.\nВнутренние системы оптимизированы, баги отрисовки и обходы исправлены.\nНажмите кнопку ниже для инжекта во внутреннюю память сессии.",
+"https://raw.githubusercontent.com/tORNADIK-crypto/tornado-hub/refs/heads/main/spooky%20kontra"
+)
+registerHubTab(
+"RAILSIDE",
+"RAILSIDE SCRIPT (PREMIUM HUB)",
+"Скрипт содержит ЕСП игроков (Транспортная Безопасность, Анти-присяд, Граждане), ЕСП полезных предметов (Аптечки АИ-2, Противогазы ГП-5).\n\n⚠️ ВНИМАНИЕ: Функции персонажа (Спидхак, Ноклип и Инф. Прыжок) вызывают частые автоматические баны! Используйте их максимально аккуратно и на свой страх и риск.",
+"https://raw.githubusercontent.com/tORNADIK-crypto/tornado-hub/refs/heads/main/railside"
+)
+registerHubTab(
+"LOST FRONT",
+"LOST FRONT (ROSE ESP)",
+"Новейший хаб для Lost Front!\nСкрипт активирует продвинутое низкоуровневое меню с отрисовкой линий, 2D хитбоксов и скелетов.\n\n🔥 ОСОБЕННОСТЬ: ESP абсолютно всех игроков на карте окрашено в премиальный Розовый цвет для лучшей видимости.",
+"https://raw.githubusercontent.com/tORNADIK-crypto/tornado-hub/refs/heads/main/Lostfront"
+)
+registerHubTab(
+"FIND THE ANIMALS",
+"FIND THE ANIMALS 283 (FREE & PREM)",
+"🐾 Топовый скрипт для поиска животных на карте!\nДоступен продвинутый авто-сбор, ESP на все 283 питомца и полет.\n\n🎁 Подарок подписчикам! Введите ключ XENOXANIMALS для активации Premium-версии совершенно бесплатно и играйте в удовольствие!",
+"https://raw.githubusercontent.com/tORNADIK-crypto/tornado-hub/refs/heads/main/FIND%20THE%20ANIMALS%20280",
+true,
+"XENOXANIMALS"
+)
+registerHubTab(
+"BLOX STRIKE ESP",
+"BLOX STRIKE (ROSE CHAMS)",
+"🐾 Наш совместный приватный чит-пак для Blox Strike!\nПолная розовая анатомическая подсветка тела (Chams) с золотым контуром силуэтов и белые никнеймы.\n\n🔥 ОСОБЕННОСТЬ: Полностью защищён от сброса раундов, сносит мёртвые коробки при смерти и сканирует Debris на наличие пушек и бомбы с эмодзи!",
+"https://raw.githubusercontent.com/tORNADIK-crypto/tornado-hub/refs/heads/main/bloxstrikeesp"
+)
+registerHubTab(
+"BROOK ZACEP V2",
+"BROOKHAVEN (ZACEP & SPEED)",
+"🌪️ Эксклюзивный приватный хаб зацепа для Брукхейвена!\nСодержит агрессивный зацеп, неоновые платформы под ногами, бесконечный прыжок, ESP на игроков и анлок скорости машин до 200 км/ч.",
+"https://raw.githubusercontent.com/tORNADIK-crypto/tornado-hub/refs/heads/main/Zacep"
+)
+-- =====================================================================
+-- 👑 ВКЛАДКА О РАЗРАБОТЧИКЕ
+-- =====================================================================
 AboutPage = Instance.new("Frame", ContentWindow)
 AboutPage.Name = "AboutPage"
 AboutPage.Size = UDim2.new(1, 0, 1, 0)
 AboutPage.BackgroundTransparency = 1
 AboutPage.Visible = false
 local AboutTitle = Instance.new("TextLabel", AboutPage)
-AboutTitle.Size = UDim2.new(1, 0, 0, isMobile and 25 or 40)
+AboutTitle.Size = UDim2.new(1, -35, 0, isMobile and 25 or 40)
 AboutTitle.BackgroundTransparency = 1
 AboutTitle.Text = "👑 ОФИЦИАЛЬНЫЙ РАЗРАБОТЧИК"
 AboutTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -304,156 +373,36 @@ DisclaimerText.Font = Enum.Font.Gotham
 DisclaimerText.TextSize = isMobile and 10 or 12
 DisclaimerText.TextWrapped = true
 DisclaimerText.TextXAlignment = Enum.TextXAlignment.Left
-DisclaimerText.Parent = AboutPage
-InfoText.Parent = InfoCard
--- Создание кнопки "Обо мне"
-local AboutTabBtn = Instance.new("TextButton", TabScroll)
-AboutTabBtn.Size = UDim2.new(1, -12, 0, isMobile and 32 or 36)
-AboutTabBtn.BackgroundColor3 = Color3.fromRGB(16, 16, 22)
-AboutTabBtn.Text = "  👑 Обо мне"
-AboutTabBtn.TextColor3 = Color3.fromRGB(200, 200, 205)
-AboutTabBtn.Font = Enum.Font.GothamBold
-AboutTabBtn.TextSize = isMobile and 11 or 12
-AboutTabBtn.TextXAlignment = Enum.TextXAlignment.Left
-Instance.new("UICorner", AboutTabBtn).CornerRadius = UDim.new(0, 6)
-applyNeonEffects(AboutTabBtn, true)
-AboutTabBtn.MouseButton1Click:Connect(function()
-for _, b in pairs(Buttons) do
-b:SetAttribute("Active", false)
-b.BackgroundColor3 = Color3.fromRGB(16, 16, 22)
-b.TextColor3 = Color3.fromRGB(200, 200, 205)
-local st = b:FindFirstChildOfClass("UIStroke")
-if st then st.Color = Color3.fromRGB(35, 35, 45) end
-end
-for _, p in pairs(Pages) do p.Visible = false end
-AboutTabBtn.BackgroundColor3 = _G.ESP_COLOR
-AboutTabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-AboutTabBtn:SetAttribute("Active", true)
-local st = AboutTabBtn:FindFirstChildOfClass("UIStroke")
-if st then st.Color = Color3.fromRGB(255, 150, 210) end
-AboutPage.Visible = true
-activePage = "ABOUT"
+DisclaimerText.TextYAlignment = Enum.TextYAlignment.Top
+-- Кнопка для вкладки "О разработчике"
+local aboutBtn = Instance.new("TextButton", TabScroll)
+aboutBtn.Size = UDim2.new(1, -12, 0, isMobile and 32 or 36)
+aboutBtn.BackgroundColor3 = Color3.fromRGB(16, 16, 22)
+aboutBtn.Text = "  👑 О РАЗРАБОТЧИКЕ"
+aboutBtn.TextColor3 = Color3.fromRGB(200, 200, 205)
+aboutBtn.Font = Enum.Font.GothamBold
+aboutBtn.TextSize = isMobile and 11 or 12
+aboutBtn.TextXAlignment = Enum.TextXAlignment.Left
+Instance.new("UICorner", aboutBtn).CornerRadius = UDim.new(0, 6)
+applyNeonEffects(aboutBtn, true)
+aboutBtn.MouseButton1Click:Connect(function()
+switchTab(aboutBtn, AboutPage, "ABOUT")
 end)
-table.insert(Buttons, AboutTabBtn)
--- АВТОМАТИЧЕСКИЙ СТАРТ НА ПЕРВОЙ ВКЛАДКЕ
-if Buttons then
-Buttons.BackgroundColor3 = _G.ESP_COLOR
-Buttons.TextColor3 = Color3.fromRGB(255, 255, 255)
-Buttons:SetAttribute("Active", true)
-local st = Buttons:FindFirstChildOfClass("UIStroke")
-if st then st.Color = Color3.fromRGB(255, 150, 210) end
-Pages["GET A GRIP"].Visible = true
-activePage = "GET A GRIP"
-end
--- КНОПКА СВЕРНУТЬ/РАЗВЕРНУТЬ НА КЛАВИШУ INSERT
-UserInputService.InputBegan:Connect(function(input, processed)
-if not processed and input.KeyCode == Enum.KeyCode.Insert then
-MainContainer.Visible = not MainContainer.Visible
-end
+table.insert(Buttons, aboutBtn)
+-- Кнопка закрытия окна (X)
+local CloseBtn = Instance.new("TextButton", MainContainer)
+CloseBtn.Size = UDim2.new(0, 26, 0, 26)
+CloseBtn.Position = UDim2.new(1, -34, 0, 8)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(24, 24, 32)
+CloseBtn.Text = "✕"
+CloseBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.TextSize = 14
+Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 6)
+CloseBtn.MouseButton1Click:Connect(function()
+ModernHubGui:Destroy()
 end)
--- =====================================================================
--- 👁️ ТОТАЛЬНЫЙ СКАНЕР ВСЕХ ОБЪЕКТОВ WORKSPACE (ПОЛНОЭКРАННЫЙ РОЗОВЫЙ ESP)
--- =====================================================================
-local function getOrCreateDrawData(model)
-if not _G.Cache[model] then
-local bonesTable = {}
-for i = 1, 6 do
-local bLine = Drawing.new("Line")
-bLine.Color = _G.ESP_COLOR
-bLine.Thickness = 1.5
-bLine.Visible = false
-table.insert(bonesTable, bLine)
+-- Автоматически открываем первую вкладку при запуске
+if firstBtn and firstPage then
+switchTab(firstBtn, firstPage, "GET A GRIP")
 end
-_G.Cache[model] = {
-Box = Drawing.new("Square"),
-Tracer = Drawing.new("Line"),
-Name = Drawing.new("Text"),
-Bones = bonesTable
-}
-local data = _G.Cache[model]
-data.Box.Color = _G.ESP_COLOR
-data.Box.Thickness = 1.5
-data.Box.Visible = false
-data.Tracer.Color = _G.ESP_COLOR
-data.Tracer.Thickness = 1.2
-data.Tracer.Visible = false
-data.Name.Color = Color3.fromRGB(255, 255, 255)
-data.Name.Size = 13
-data.Name.Center = true
-data.Name.Outline = true
-data.Name.OutlineColor = Color3.fromRGB(0, 0, 0)
-data.Name.Visible = false
-end
-return _G.Cache[model]
-end
-RunService.RenderStepped:Connect(function()
-local viewportSize = Camera.ViewportSize
-local screenCenter = Vector2.new(viewportSize.X / 2, viewportSize.Y)
-local activeModels = {}
-for _, child in ipairs(workspace:GetChildren()) do
-if child:IsA("Model") and child.Name ~= LocalPlayer.Name and Players:FindFirstChild(child.Name) then
-local head = child:FindFirstChild("Head")
-local root = child:FindFirstChild("HumanoidRootPart") or head
-if head and root and _G.ESP_ENABLED then
-activeModels[child] = true
-local data = getOrCreateDrawData(child)
-local pos, onScreen = Camera:WorldToViewportPoint(root.Position)
-if onScreen then
-local headScreenPos = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 1.8, 0))
-local legScreenPos = Camera:WorldToViewportPoint(root.Position - Vector3.new(0, -3, 0))
-local sizeY = math.clamp(math.abs(headScreenPos.Y - legScreenPos.Y), 15, 450)
-local sizeX = math.clamp(sizeY / 1.4, 10, 300)
-if _G.SHOW_BOX then
-data.Box.Size = Vector2.new(sizeX, sizeY)
-data.Box.Position = Vector2.new(pos.X - sizeX / 2, pos.Y - sizeY / 2)
-data.Box.Visible = true
-else data.Box.Visible = false end
-if _G.SHOW_NAME then
-data.Name.Text = child.Name
-data.Name.Position = Vector2.new(pos.X, pos.Y - sizeY / 2 - 15)
-data.Name.Visible = true
-else data.Name.Visible = false end
-if _G.SHOW_SKELETON then
-local bIndex = 1
-local function drawBone(p1, p2)
-local part1 = child:FindFirstChild(p1)
-local part2 = child:FindFirstChild(p2)
-if part1 and part2 and data.Bones[bIndex] then
-local v1, os1 = Camera:WorldToViewportPoint(part1.Position)
-local v2, os2 = Camera:WorldToViewportPoint(part2.Position)
-if os1 and os2 then
-data.Bones[bIndex].From = Vector2.new(v1.X, v1.Y)
-data.Bones[bIndex].To = Vector2.new(v2.X, v2.Y)
-data.Bones[bIndex].Visible = true
-bIndex = bIndex + 1
-return
-end
-end
-if data.Bones[bIndex] then data.Bones[bIndex].Visible = false bIndex = bIndex + 1 end
-end
-drawBone("Head", "UpperTorso")
-drawBone("UpperTorso", "LeftUpperArm")
-drawBone("UpperTorso", "RightUpperArm")
-drawBone("UpperTorso", "LowerTorso")
-drawBone("LowerTorso", "LeftUpperLeg")
-drawBone("LowerTorso", "RightUpperLeg")
-for i = bIndex, #data.Bones do data.Bones[i].Visible = false end
-else
-for i = 1, #data.Bones do data.Bones[i].Visible = false end
-end
-else
-data.Box.Visible = false data.Name.Visible = false
-for i = 1, #data.Bones do data.Bones[i].Visible = false end
-end
-end
-end
-end
-for model, data in pairs(_G.Cache) do
-if not activeModels[model] then
-data.Box.Visible = false
-data.Name.Visible = false
-for _, b in pairs(data.Bones) do b.Visible = false end
-end
-end
-end)
-print("[🌪️ TORNADO HUB]: Все конфликты решены. Brookhaven Collector вырезан полностью.")
